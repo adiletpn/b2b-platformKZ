@@ -436,8 +436,12 @@ enum OrderStatus {
   ACCEPTED_BY_STORE
   ACCEPTED_WITH_DISCREPANCY
   AWAITING_PAYMENT
+  /// Срок оплаты прошёл, оплаты нет (раздел 5.2 ТЗ).
+  OVERDUE
   PAID
   CLOSED
+  /// Спор по расхождениям или оплате, разбирает администратор (раздел 5.2 ТЗ).
+  DISPUTE
   CANCELLED
 }
 
@@ -454,7 +458,11 @@ model Order {
   deliveryDate    DateTime?     @db.Date
   comment         String?
   paymentMethod   PaymentMethod @default(ON_DELIVERY)
+  /// Срок оплаты по отсрочке поставщика (раздел 3.6 ТЗ).
+  paymentDueDate  DateTime?     @db.Date
   rejectionReason String?
+  /// Причина спора по расхождениям или оплате (раздел 5.2 ТЗ).
+  disputeReason   String?
   totalWithVat    Decimal       @default(0) @db.Decimal(14, 2)
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt

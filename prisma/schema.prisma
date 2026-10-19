@@ -149,6 +149,10 @@ model Company {
   bik                String?
   bankName           String?
   contactPhone       String?
+  /// Условия оплаты поставщика и кредитный лимит на магазин (разделы 3.1 и 3.6 ТЗ).
+  paymentTerms       PaymentMethod      @default(ON_DELIVERY)
+  deferralDays       Int?
+  creditLimit        Decimal?           @db.Decimal(14, 2)
   verificationStatus VerificationStatus @default(NOT_VERIFIED)
   /// Принятие оферты платформы при регистрации (раздел 3.11 ТЗ).
   offerAcceptedAt    DateTime?
@@ -174,6 +178,7 @@ model Company {
   impersonations       ImpersonationLog[]
   ratingsGiven         Rating[]               @relation("RatingsGiven")
   ratingsReceived      Rating[]               @relation("RatingsReceived")
+  priceLists           PriceList[]
   storeChats           Chat[]                 @relation("StoreChats")
   supplierChats        Chat[]                 @relation("SupplierChats")
   sentMessages         Message[]              @relation("SentMessages")
@@ -256,6 +261,8 @@ model DeliveryZone {
   city           City     @relation(fields: [cityId], references: [id])
   minOrderAmount Decimal  @default(0) @db.Decimal(14, 2)
   leadTimeDays   Int      @default(1)
+  /// Дни доставки: 1 — понедельник, 7 — воскресенье. Пусто — возит в любой день.
+  deliveryDays   Int[]    @default([])
   createdAt      DateTime @default(now())
 
   @@unique([supplierId, cityId])
@@ -362,6 +369,7 @@ model SupplierOffer {
   swipeActions    SwipeAction[]
   cartItems       CartItem[]
   orderItems      OrderItem[]
+  priceRules      PriceRule[]
 
   @@unique([supplierId, productId])
   @@index([supplierId])
@@ -915,4 +923,44 @@ model Message {
 
   @@index([chatId, createdAt])
   @@map("messages")
+}
+
+// ---------- Прайсы, скидки и акции (раздел 3.2 ТЗ) ----------
+
+/// Прайс поставщика: базовый или индивидуальный для группы магазинов.
+model PriceList {
+  id         String   @id @default(cuid())
+  supplierId String
+  supplier   Company  @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  name       String
+  /// Базовый прайс применяется ко всем магазинам; индивидуальный — только к перечисленным.
+  isDefault  Boolean  @default(false)
+  storeIds   String[] @default([])
+  createdAt  DateTime @default(now())
+
+  rules PriceRule[]
+
+  @@index([supplierId])
+  @@map("price_lists")
+}
+
+/// Правило цены: спеццена, скидка от объёма или акция с датами.
+model PriceRule {
+  id              String        @id @default(cuid())
+  priceListId     String
+  priceList       PriceList     @relation(fields: [priceListId], references: [id], onDelete: Cascade)
+  offerId         String
+  offer           SupplierOffer @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  /// Либо фиксированная цена с НДС, либо процент скидки от базовой.
+  priceWithVat    Decimal?      @db.Decimal(14, 2)
+  discountPercent Decimal?      @db.Decimal(5, 2)
+  /// Скидка от объёма: правило включается от этого количества.
+  minQuantity     Decimal       @default(0) @db.Decimal(12, 3)
+  /// Акция подсвечивается бейджем в ленте (раздел 3.3 ТЗ).
+  isPromo         Boolean       @default(false)
+  validFrom       DateTime?     @db.Date
+  validTo         DateTime?     @db.Date
+
+  @@index([offerId])
+  @@map("price_rules")
 }

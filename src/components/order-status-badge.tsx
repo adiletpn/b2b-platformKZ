@@ -3,21 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { Badge } from '@/components/ui/badge';
 
-type Status =
-  | 'DRAFT'
-  | 'SENT'
-  | 'ACCEPTED'
-  | 'CHANGED_BY_SUPPLIER'
-  | 'REJECTED'
-  | 'PICKING'
-  | 'SHIPPED'
-  | 'DELIVERED'
-  | 'ACCEPTED_BY_STORE'
-  | 'ACCEPTED_WITH_DISCREPANCY'
-  | 'AWAITING_PAYMENT'
-  | 'PAID'
-  | 'CLOSED'
-  | 'CANCELLED';
+import type { OrderStatus as Status } from '@/generated/prisma/enums';
 
 /** Цвет статуса: ждём действия — синий, проблема — красный, завершено — зелёный. */
 const TONES: Record<Status, 'neutral' | 'info' | 'success' | 'warning' | 'danger'> = {
@@ -32,8 +18,10 @@ const TONES: Record<Status, 'neutral' | 'info' | 'success' | 'warning' | 'danger
   ACCEPTED_BY_STORE: 'success',
   ACCEPTED_WITH_DISCREPANCY: 'warning',
   AWAITING_PAYMENT: 'warning',
+  OVERDUE: 'danger',
   PAID: 'success',
   CLOSED: 'success',
+  DISPUTE: 'danger',
   CANCELLED: 'danger',
 };
 

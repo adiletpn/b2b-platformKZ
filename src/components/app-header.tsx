@@ -13,7 +13,9 @@ type NavItem = {
     | '/catalog'
     | '/ratings'
     | '/requisites'
-    | '/employees';
+    | '/employees'
+    | '/settlements'
+    | '/chat';
   label: string;
   testId: string;
 };
@@ -40,8 +42,14 @@ export async function AppHeader() {
     }
     if (company.type !== 'STORE') {
       items.push({ href: '/catalog', label: t('catalogLink'), testId: 'go-catalog' });
+      items.push({
+        href: '/settlements',
+        label: t('settlementsLink'),
+        testId: 'go-settlements',
+      });
     }
     items.push({ href: '/orders', label: t('ordersLink'), testId: 'go-orders' });
+    items.push({ href: '/chat', label: t('chatLink'), testId: 'go-chat' });
     items.push({ href: '/ratings', label: t('ratingsLink'), testId: 'go-ratings' });
     items.push({ href: '/requisites', label: t('requisitesLink'), testId: 'go-requisites' });
     items.push({ href: '/employees', label: t('employeesLink'), testId: 'go-employees' });

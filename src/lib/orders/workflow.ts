@@ -17,9 +17,13 @@ export const TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   DELIVERED: ['ACCEPTED_BY_STORE', 'ACCEPTED_WITH_DISCREPANCY'],
   ACCEPTED_BY_STORE: ['AWAITING_PAYMENT'],
   ACCEPTED_WITH_DISCREPANCY: ['AWAITING_PAYMENT'],
-  AWAITING_PAYMENT: ['PAID'],
+  // Срок оплаты прошёл: заявка помечается просроченной и ждёт оплаты (раздел 5.2 ТЗ).
+  AWAITING_PAYMENT: ['PAID', 'OVERDUE', 'DISPUTE'],
+  OVERDUE: ['PAID', 'DISPUTE'],
   PAID: ['CLOSED'],
   CLOSED: [],
+  // Спор разбирает администратор платформы, стороны его только открывают.
+  DISPUTE: ['AWAITING_PAYMENT', 'PAID', 'CANCELLED'],
   CANCELLED: [],
 };
 
@@ -36,8 +40,10 @@ const ACTOR: Record<OrderStatus, 'store' | 'supplier' | 'both'> = {
   ACCEPTED_BY_STORE: 'store',
   ACCEPTED_WITH_DISCREPANCY: 'store',
   AWAITING_PAYMENT: 'both',
+  OVERDUE: 'both',
   PAID: 'both',
   CLOSED: 'both',
+  DISPUTE: 'both',
   CANCELLED: 'store',
 };
 
@@ -78,10 +84,29 @@ export async function changeStatus(
   const allowed = ACTOR[to];
   if (allowed !== 'both' && allowed !== side) return { status: 'wrong_side' };
 
+  // Раздел 3.6 ТЗ: отсрочка считается от выставления к оплате.
+  let paymentDueDate: Date | null = null;
+  if (to === 'AWAITING_PAYMENT') {
+    const supplier = await prisma.company.findUniqueOrThrow({
+      where: { id: order.supplierId },
+      select: { paymentTerms: true, deferralDays: true },
+    });
+    const due = new Date();
+    due.setDate(
+      due.getDate() + (supplier.paymentTerms === 'DEFERRED' ? (supplier.deferralDays ?? 0) : 0),
+    );
+    paymentDueDate = due;
+  }
+
   await prisma.$transaction(async (tx) => {
     await tx.order.update({
       where: { id: orderId },
-      data: { status: to, ...(to === 'REJECTED' ? { rejectionReason: comment ?? null } : {}) },
+      data: {
+        status: to,
+        ...(paymentDueDate ? { paymentDueDate } : {}),
+        ...(to === 'REJECTED' ? { rejectionReason: comment ?? null } : {}),
+        ...(to === 'DISPUTE' ? { disputeReason: comment ?? null } : {}),
+      },
     });
     await tx.orderStatusLog.create({
       data: { orderId, fromStatus: order.status, toStatus: to, userId, comment: comment ?? null },

@@ -19,7 +19,7 @@ async function cities() {
 
 async function createSupplier(index: number, cityIds: string[], withWarehouse?: string) {
   const user = await prisma.user.create({
-    data: { phone: `+7800${String(index).padStart(7, '0')}` },
+    data: { phone: `+7770${String(index).padStart(7, '0')}` },
   });
   const result = await registerCompany({
     userId: user.id,

@@ -3,8 +3,12 @@ import { notFound } from 'next/navigation';
 import { hasLocale, NextIntlClientProvider } from 'next-intl';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { routing } from '@/i18n/routing';
-import { LanguageSwitcher } from '@/components/language-switcher';
+import { AppHeader } from '@/components/app-header';
 import '../globals.css';
+
+// Шапка читает сессию из cookie: макет не должен попадать в статическую сборку,
+// иначе навигация и выход пропадают.
+export const dynamic = 'force-dynamic';
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
@@ -35,10 +39,8 @@ export default async function LocaleLayout({
     <html lang={locale}>
       <body>
         <NextIntlClientProvider>
-          {/* Язык переключается с любого экрана: требование двуязычного интерфейса из ТЗ. */}
-          <div className="border-border flex justify-end border-b px-4 py-2">
-            <LanguageSwitcher />
-          </div>
+          {/* Шапка общая: разделы, язык и выход доступны с любого экрана. */}
+          <AppHeader />
           {children}
         </NextIntlClientProvider>
       </body>

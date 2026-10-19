@@ -85,6 +85,19 @@ test('cashier_cannot_reach_orders_and_prices_through_api', async ({}, testInfo) 
   const exportResponse = await cashierPage.request.get('/api/catalog/template?locale=ru');
   expect(exportResponse.status()).toBe(403);
 
+  // Новые разделы тоже закрыты ролью: роли, согласование и ручной ввод товара.
+  for (const path of ['/api/employees/roles', '/api/orders/approvals', '/api/feed/geography']) {
+    expect((await cashierPage.request.get(path)).status(), path).toBe(403);
+  }
+  const manualOffer = await cashierPage.request.post('/api/catalog/offer', {
+    data: { barcode: '4870001000018', nameRu: 'Товар', nameKk: 'Тауар' },
+  });
+  expect(manualOffer.status()).toBe(403);
+  const limits = await cashierPage.request.put('/api/employees/any-membership-id/access', {
+    data: { orderLimit: '100' },
+  });
+  expect(limits.status()).toBe(403);
+
   // Остатки своей точки кассиру доступны.
   const stock = await cashierPage.request.get('/api/stock');
   expect(stock.status()).toBe(200);

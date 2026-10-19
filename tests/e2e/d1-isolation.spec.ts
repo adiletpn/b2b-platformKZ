@@ -71,3 +71,66 @@ test('company_data_requires_authentication', async ({ browser }, testInfo) => {
 
   await anonymous.close();
 });
+
+test('new_routes_are_closed_without_session', async ({ browser }, testInfo) => {
+  test.skip(
+    testInfo.project.name !== ONLY_PROJECT,
+    'проверка уровня API, достаточно одного прогона',
+  );
+
+  const anonymous = await browser.newContext();
+
+  // Правило 4: без сессии данные компании не отдаются ни одним из новых маршрутов.
+  const gets = [
+    '/api/employees/roles',
+    '/api/orders/approvals',
+    '/api/feed/geography',
+    '/api/feed/any-offer-id',
+    '/api/catalog/barcode?code=4870001000018',
+  ];
+  for (const path of gets) {
+    const response = await anonymous.request.get(path);
+    expect(response.status(), path).toBe(401);
+  }
+
+  const posts: [string, unknown][] = [
+    ['/api/employees/roles', { nameRu: 'Роль', nameKk: 'Рөл', permissions: [] }],
+    ['/api/catalog/offer', { barcode: '4870001000018' }],
+    ['/api/orders/any-order-id/approval', { approved: true }],
+    ['/api/company/owner', { membershipId: 'any' }],
+    ['/api/company/switch', { companyId: 'any' }],
+  ];
+  for (const [path, body] of posts) {
+    const response = await anonymous.request.post(path, { data: body });
+    expect(response.status(), path).toBe(401);
+  }
+
+  const puts: [string, unknown][] = [
+    ['/api/employees/any-membership-id/access', { orderLimit: '100' }],
+    ['/api/notifications/channels', { channels: ['email'] }],
+  ];
+  for (const [path, body] of puts) {
+    const response = await anonymous.request.put(path, { data: body });
+    expect(response.status(), path).toBe(401);
+  }
+
+  await anonymous.close();
+});
+
+test('admin_routes_are_closed_without_admin_session', async ({ browser }, testInfo) => {
+  test.skip(
+    testInfo.project.name !== ONLY_PROJECT,
+    'проверка уровня API, достаточно одного прогона',
+  );
+
+  const anonymous = await browser.newContext();
+
+  // Админка живёт на отдельной сессии: кабинет компании к ней доступа не даёт.
+  for (const path of ['/api/admin/disputes', '/api/admin/tariffs', '/api/admin/subscriptions']) {
+    expect((await anonymous.request.get(path)).status(), path).toBe(401);
+  }
+  expect((await anonymous.request.post('/api/admin/tariffs', { data: {} })).status()).toBe(401);
+  expect((await anonymous.request.post('/api/admin/reference', { data: {} })).status()).toBe(401);
+
+  await anonymous.close();
+});

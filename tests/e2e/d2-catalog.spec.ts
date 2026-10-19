@@ -112,6 +112,8 @@ test('supplier_adds_product_by_hand_and_lookup_fills_card', async ({}, testInfo)
   const barcode = `${seed}${(10 - (sum % 10)) % 10}`;
 
   await page.goto('/ru/catalog');
+  // Ручной ввод спрятан под раскрывающийся блок.
+  await page.getByTestId('manual-toggle').click();
   await page.getByTestId('manual-barcode').fill(barcode);
   await page.getByTestId('manual-name-ru').fill('Товар вручную');
   await page.getByTestId('manual-name-kk').fill('Қолмен тауар');
@@ -134,6 +136,7 @@ test('supplier_adds_product_by_hand_and_lookup_fills_card', async ({}, testInfo)
 
 test('manual_entry_rejects_wrong_barcode', async () => {
   await page.goto('/ru/catalog');
+  await page.getByTestId('manual-toggle').click();
   await page.getByTestId('manual-barcode').fill('1234567890123');
   await page.getByTestId('manual-name-ru').fill('Неверный штрихкод');
   await page.getByTestId('manual-name-kk').fill('Дұрыс емес штрихкод');

@@ -64,11 +64,27 @@ test('stock_documents_are_closed_for_another_company', async ({ browser }, testI
   ).toBe(401);
   expect((await anonymous.request.get('/api/stock/ledger/any-product')).status()).toBe(401);
   expect((await anonymous.request.get('/api/stock/replenishment')).status()).toBe(401);
+  expect((await anonymous.request.get('/api/stock/expiring')).status()).toBe(401);
+  expect((await anonymous.request.get('/api/stock/pricing')).status()).toBe(401);
+  expect((await anonymous.request.get('/api/stock/labels?locale=ru')).status()).toBe(401);
   expect((await anonymous.request.post('/api/stock/replenishment')).status()).toBe(401);
   expect(
     (await anonymous.request.put('/api/stock/minimum', { data: { productId: 'any' } })).status(),
   ).toBe(401);
   await anonymous.close();
+});
+
+test('markup_rule_is_saved_and_prices_need_stock', async ({}, testInfo) => {
+  test.skip(testInfo.project.name !== ONLY_PROJECT, 'склад');
+
+  await storePage.goto('/ru/stock');
+  await storePage.getByTestId('markup-percent').fill('25');
+  await storePage.getByTestId('markup-save').click();
+  await expect(storePage.getByTestId('pricing-error')).toBeHidden();
+
+  // Остатков нет — пересчитывать нечего, но правило уже сохранено.
+  await storePage.getByTestId('reprice').click();
+  await expect(storePage.getByTestId('repriced')).toContainText('0');
 });
 
 test('stock_screen_fits_phone_width', async ({}, testInfo) => {

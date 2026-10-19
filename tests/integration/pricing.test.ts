@@ -1,280 +1,136 @@
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 import Decimal from 'decimal.js';
 import { createTestPrisma, resetTransactionalData } from '../helpers/test-db';
-import { buildCatalogXlsx, toArrayBuffer, validRow } from '../helpers/catalog-fixture';
 import { registerCompany } from '@/lib/registration/register-company';
-import { importCatalog } from '@/lib/catalog/import';
-import { effectivePrices, isNewProduct } from '@/lib/pricing/price';
-import { getFeed } from '@/lib/feed/query';
+import { createOfferManually } from '@/lib/catalog/manual';
+import { applyBalanceChange } from '@/lib/stock/balance';
+import { getLabels, repriceAll, setMarkup } from '@/lib/stock/pricing';
 import { testPoolBin } from '@/mocks/bin-registry';
 
 const prisma = createTestPrisma();
 
-async function setup(index: number) {
+function ean13(base: string) {
+  const digits = base.padStart(12, '0').slice(0, 12).split('').map(Number);
+  const sum = digits.reduce((acc, digit, index) => acc + digit * (index % 2 === 0 ? 1 : 3), 0);
+  return `${digits.join('')}${(10 - (sum % 10)) % 10}`;
+}
+
+/** Магазин с товаром на остатке и себестоимостью 100 ₸. */
+async function storeWithCost(index: number, categoryCode?: string) {
   const supplierUser = await prisma.user.create({
-    data: { phone: `+7760${String(index).padStart(7, '0')}` },
+    data: { phone: `+7777${String(index).padStart(7, '0')}` },
   });
   const storeUser = await prisma.user.create({
-    data: { phone: `+7761${String(index).padStart(7, '0')}` },
+    data: { phone: `+7778${String(index).padStart(7, '0')}` },
   });
   const taraz = await prisma.city.findUniqueOrThrow({ where: { code: 'taraz' } });
 
   const supplier = await registerCompany({
     userId: supplierUser.id,
-    bin: testPoolBin(450 + index * 2),
+    bin: testPoolBin(930 + index * 2),
     type: 'SUPPLIER',
     deliveryCityIds: [taraz.id],
     consentAccepted: true,
   });
   const store = await registerCompany({
     userId: storeUser.id,
-    bin: testPoolBin(451 + index * 2),
+    bin: testPoolBin(931 + index * 2),
     type: 'STORE',
-    location: { cityId: taraz.id, address: 'ул. Демонстрационная, 30' },
+    location: { cityId: taraz.id, address: 'ул. Демонстрационная, 160' },
     consentAccepted: true,
   });
   if (supplier.status !== 'created' || store.status !== 'created') throw new Error('регистрация');
 
-  await importCatalog(
-    supplier.companyId,
-    toArrayBuffer(
-      await buildCatalogXlsx([
-        validRow(140000 + index, { priceWithoutVat: '100.00', packSize: 1, minBatch: 1 }),
-      ]),
-    ),
-  );
-
-  const offer = await prisma.supplierOffer.findFirstOrThrow({
-    where: { supplierId: supplier.companyId },
+  const offer = await createOfferManually(supplier.companyId, {
+    barcode: ean13(`48700040000${index}`),
+    nameRu: 'Товар с ценником',
+    nameKk: 'Бағажапсырмасы бар тауар',
+    unitCode: 'pcs',
+    vatCode: 'vat-16',
+    priceWithoutVat: '100',
+    packSize: '1',
+    minBatch: '1',
+    stock: '0',
+    categoryCode,
   });
+  if (offer.status !== 'ok') throw new Error(offer.status);
+  const saved = await prisma.supplierOffer.findUniqueOrThrow({ where: { id: offer.offerId } });
   const location = await prisma.location.findFirstOrThrow({
     where: { companyId: store.companyId },
   });
 
-  return {
-    supplierId: supplier.companyId,
-    storeId: store.companyId,
-    cityId: taraz.id,
-    locationId: location.id,
-    offer,
-  };
-}
-
-async function priceFor(context: Awaited<ReturnType<typeof setup>>, quantity?: string) {
-  const map = await effectivePrices(
-    [
-      {
-        id: context.offer.id,
-        priceWithVat: context.offer.priceWithVat.toString(),
-        supplierId: context.supplierId,
-      },
-    ],
-    context.storeId,
-    quantity ? new Map([[context.offer.id, new Decimal(quantity)]]) : undefined,
+  await prisma.$transaction((tx) =>
+    applyBalanceChange(tx, {
+      locationId: location.id,
+      productId: saved.productId,
+      quantity: new Decimal(10),
+      costPrice: new Decimal(100),
+    }),
   );
-  return map.get(context.offer.id)!;
+
+  return {
+    companyId: store.companyId,
+    userId: storeUser.id,
+    productId: saved.productId,
+  };
 }
 
 beforeEach(async () => {
   await resetTransactionalData(prisma);
+  await prisma.auditLog.deleteMany();
 });
 
 afterAll(async () => {
   await prisma.$disconnect();
 });
 
-describe('прайсы и скидки', () => {
-  it('base_price_is_used_when_no_rules_exist', async () => {
-    const context = await setup(1);
-    const price = await priceFor(context);
+describe('наценка и переоценка', () => {
+  it('common_markup_sets_retail_price', async () => {
+    const store = await storeWithCost(1);
+    await setMarkup(store.companyId, null, '30');
 
-    // 100 ₸ без НДС и ставка 16% дают 116 ₸.
-    expect(price.priceWithVat).toBe('116.00');
-    expect(price.discountPercent).toBe('0.00');
-    expect(price.isPromo).toBe(false);
+    expect(await repriceAll(store.companyId, store.userId)).toEqual({ status: 'ok', updated: 1 });
+
+    const price = await prisma.retailPrice.findFirstOrThrow({
+      where: { companyId: store.companyId },
+    });
+    // Правило 1: 100 × 1,3 = 130,00.
+    expect(price.price.toFixed(2)).toBe('130.00');
   });
 
-  it('individual_price_list_overrides_base_one', async () => {
-    const context = await setup(2);
+  it('category_rule_wins_over_common', async () => {
+    const category = await prisma.category.findFirstOrThrow();
+    const store = await storeWithCost(2, category.code);
+    await setMarkup(store.companyId, null, '10');
+    await setMarkup(store.companyId, category.id, '50');
 
-    const base = await prisma.priceList.create({
-      data: { supplierId: context.supplierId, name: 'Базовый', isDefault: true },
-    });
-    await prisma.priceRule.create({
-      data: { priceListId: base.id, offerId: context.offer.id, discountPercent: '5' },
-    });
+    await repriceAll(store.companyId, store.userId);
 
-    const personal = await prisma.priceList.create({
-      data: {
-        supplierId: context.supplierId,
-        name: 'Для сети',
-        storeIds: [context.storeId],
-      },
+    const price = await prisma.retailPrice.findFirstOrThrow({
+      where: { companyId: store.companyId },
     });
-    await prisma.priceRule.create({
-      data: { priceListId: personal.id, offerId: context.offer.id, priceWithVat: '99.00' },
-    });
-
-    const price = await priceFor(context);
-    // Индивидуальный прайс важнее базового, даже если базовая скидка тоже действует.
-    expect(price.priceWithVat).toBe('99.00');
+    expect(price.price.toFixed(2)).toBe('150.00');
   });
 
-  it('volume_discount_applies_from_minimum_quantity', async () => {
-    const context = await setup(3);
-    const list = await prisma.priceList.create({
-      data: { supplierId: context.supplierId, name: 'Объём', isDefault: true },
-    });
-    await prisma.priceRule.create({
-      data: {
-        priceListId: list.id,
-        offerId: context.offer.id,
-        discountPercent: '10',
-        minQuantity: '12',
-      },
-    });
+  it('wrong_percent_is_refused_and_reprice_needs_rules', async () => {
+    const store = await storeWithCost(3);
 
-    expect((await priceFor(context, '5')).priceWithVat).toBe('116.00');
-    expect((await priceFor(context, '12')).priceWithVat).toBe('104.40');
+    expect(await setMarkup(store.companyId, null, '-5')).toEqual({ status: 'invalid_percent' });
+    expect(await repriceAll(store.companyId, store.userId)).toEqual({ status: 'no_rules' });
   });
 
-  it('promo_is_limited_by_dates', async () => {
-    const context = await setup(4);
-    const list = await prisma.priceList.create({
-      data: { supplierId: context.supplierId, name: 'Акции', isDefault: true },
-    });
+  it('labels_are_built_only_from_own_prices', async () => {
+    const store = await storeWithCost(4);
+    const other = await storeWithCost(5);
+    await setMarkup(store.companyId, null, '20');
+    await repriceAll(store.companyId, store.userId);
 
-    const past = new Date();
-    past.setDate(past.getDate() - 10);
-    await prisma.priceRule.create({
-      data: {
-        priceListId: list.id,
-        offerId: context.offer.id,
-        discountPercent: '20',
-        isPromo: true,
-        validFrom: past,
-        validTo: past,
-      },
-    });
+    const labels = await getLabels(store.companyId);
+    expect(labels).toHaveLength(1);
+    expect(labels[0]!.price).toBe('120.00');
+    expect(labels[0]!.barcode).toHaveLength(13);
 
-    // Акция закончилась — цена базовая.
-    expect((await priceFor(context)).isPromo).toBe(false);
-
-    const future = new Date();
-    future.setDate(future.getDate() + 10);
-    await prisma.priceRule.updateMany({
-      where: { priceListId: list.id },
-      data: { validTo: future },
-    });
-
-    const active = await priceFor(context);
-    expect(active.isPromo).toBe(true);
-    expect(active.priceWithVat).toBe('92.80');
-    expect(active.discountPercent).toBe('20.00');
-  });
-
-  it('price_list_of_another_store_is_not_applied', async () => {
-    const context = await setup(5);
-    const stranger = await setup(6);
-
-    const personal = await prisma.priceList.create({
-      data: {
-        supplierId: context.supplierId,
-        name: 'Чужой прайс',
-        storeIds: [stranger.storeId],
-      },
-    });
-    await prisma.priceRule.create({
-      data: { priceListId: personal.id, offerId: context.offer.id, priceWithVat: '10.00' },
-    });
-
-    expect((await priceFor(context)).priceWithVat).toBe('116.00');
-  });
-});
-
-describe('бейджи ленты', () => {
-  it('feed_marks_promo_new_and_cheapest_offers', async () => {
-    const context = await setup(7);
-    const list = await prisma.priceList.create({
-      data: { supplierId: context.supplierId, name: 'Акции', isDefault: true },
-    });
-    await prisma.priceRule.create({
-      data: {
-        priceListId: list.id,
-        offerId: context.offer.id,
-        discountPercent: '15',
-        isPromo: true,
-      },
-    });
-
-    const feed = await getFeed(context.storeId, context.cityId, { forSwipe: false });
-    const item = feed.find((offer) => offer.id === context.offer.id)!;
-
-    expect(item.isPromo).toBe(true);
-    expect(item.isNew).toBe(true);
-    expect(item.priceWithVat).toBe('98.60');
-    expect(item.basePriceWithVat).toBe('116.00');
-  });
-
-  it('feed_sorts_promotions_first', async () => {
-    const context = await setup(8);
-    await importCatalog(
-      context.supplierId,
-      toArrayBuffer(
-        await buildCatalogXlsx([
-          validRow(141000, { nameRu: 'Яблоки', priceWithoutVat: '100.00' }),
-          validRow(141001, { nameRu: 'Абрикосы', priceWithoutVat: '100.00' }),
-        ]),
-      ),
-    );
-
-    const promoOffer = await prisma.supplierOffer.findFirstOrThrow({
-      where: { supplierId: context.supplierId, product: { nameRu: 'Яблоки' } },
-    });
-    const list = await prisma.priceList.create({
-      data: { supplierId: context.supplierId, name: 'Акции', isDefault: true },
-    });
-    await prisma.priceRule.create({
-      data: { priceListId: list.id, offerId: promoOffer.id, discountPercent: '10', isPromo: true },
-    });
-
-    const feed = await getFeed(context.storeId, context.cityId, { forSwipe: false });
-    // Акция идёт первой, несмотря на алфавит.
-    expect(feed[0]!.id).toBe(promoOffer.id);
-  });
-
-  it('feed_filters_show_only_promotions', async () => {
-    const context = await setup(9);
-    const list = await prisma.priceList.create({
-      data: { supplierId: context.supplierId, name: 'Акции', isDefault: true },
-    });
-    await prisma.priceRule.create({
-      data: {
-        priceListId: list.id,
-        offerId: context.offer.id,
-        discountPercent: '10',
-        isPromo: true,
-      },
-    });
-
-    const all = await getFeed(context.storeId, context.cityId, { forSwipe: false });
-    const promos = await getFeed(context.storeId, context.cityId, {
-      forSwipe: false,
-      filters: { onlyPromo: true },
-    });
-
-    expect(all.length).toBeGreaterThanOrEqual(promos.length);
-    expect(promos.every((offer) => offer.isPromo)).toBe(true);
-  });
-});
-
-describe('признак новинки', () => {
-  it('product_is_new_for_thirty_days', () => {
-    const now = new Date('2026-10-19T00:00:00.000Z');
-    const recent = new Date('2026-10-01T00:00:00.000Z');
-    const old = new Date('2026-08-01T00:00:00.000Z');
-
-    expect(isNewProduct(recent, now)).toBe(true);
-    expect(isNewProduct(old, now)).toBe(false);
+    // Правило 4: чужие цены не отдаются.
+    expect(await getLabels(other.companyId)).toEqual([]);
   });
 });

@@ -272,6 +272,7 @@ model Location {
   stockBalances   StockBalance[]
   stockDocuments  StockDocument[] @relation("StockDocumentLocation")
   stockDocTargets StockDocument[] @relation("StockDocumentTarget")
+  stockBatches    StockBatch[]
 
   @@index([companyId])
   @@index([cityId])
@@ -369,6 +370,7 @@ model Product {
   stockMovements StockMovement[]
   stockBalances  StockBalance[]
   stockDocLines  StockDocumentLine[]
+  stockBatches   StockBatch[]
 
   @@index([categoryId])
   @@map("products")
@@ -715,6 +717,22 @@ model StockDocumentLine {
 
   @@index([documentId])
   @@map("stock_document_lines")
+}
+
+/// Партия товара на точке: учёт по дате годности и списание по FEFO (раздел 4.1 ТЗ).
+model StockBatch {
+  id         String    @id @default(cuid())
+  locationId String
+  location   Location  @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product   @relation(fields: [productId], references: [id])
+  quantity   Decimal   @db.Decimal(12, 3)
+  costPrice  Decimal   @db.Decimal(14, 2)
+  expiresAt  DateTime? @db.Date
+  receivedAt DateTime  @default(now())
+
+  @@index([locationId, productId, expiresAt])
+  @@map("stock_batches")
 }
 
 /// Правило 3: остаток меняется только документом движения и только в транзакции.

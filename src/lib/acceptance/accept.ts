@@ -1,5 +1,6 @@
 import Decimal from 'decimal.js';
 import { prisma } from '@/lib/prisma';
+import { receiveBatch } from '@/lib/stock/batches';
 import { nextDocumentNumber } from '@/lib/orders/numbering';
 import { documentTotals, lineTotals } from '@/lib/documents/totals';
 import { formatDate } from '@/lib/documents/create';
@@ -214,6 +215,14 @@ export async function acceptDelivery(
       if (values.accepted.lessThanOrEqualTo(0)) continue;
 
       const costPrice = new Decimal(item.priceWithoutVat.toString());
+      // Раздел 4.1 ТЗ: товар приходуется партией с датой годности из предложения.
+      await receiveBatch(tx, {
+        locationId: order.locationId,
+        productId: item.offer.productId,
+        quantity: values.accepted,
+        costPrice,
+        expiresAt: item.offer.expiresAt,
+      });
       await tx.stockMovement.create({
         data: {
           locationId: order.locationId,

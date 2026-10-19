@@ -5,6 +5,7 @@ import { LONG_TRANSACTION } from '@/lib/db-tx';
 import { nextDocumentNumber } from '@/lib/orders/numbering';
 import { writeAudit } from '@/lib/auth/permissions';
 import { applyBalanceChange, currentBalance } from './balance';
+import { consumeFefo, receiveBatch } from './batches';
 
 export type DocumentLineInput = { productId: string; quantity: string };
 
@@ -95,6 +96,18 @@ export async function transferStock(
           costPrice: cost.toFixed(2),
         },
       });
+
+      // Партии уезжают по FEFO и встают на приёмной точке с теми же сроками.
+      const lots = await consumeFefo(tx, from.id, line.productId, line.quantity);
+      for (const lot of lots ?? []) {
+        await receiveBatch(tx, {
+          locationId: to.id,
+          productId: line.productId,
+          quantity: lot.quantity,
+          costPrice: lot.costPrice,
+          expiresAt: lot.expiresAt,
+        });
+      }
 
       await tx.stockMovement.create({
         data: {
@@ -200,6 +213,8 @@ export async function writeOffStock(
           costPrice: cost.toFixed(2),
         },
       });
+      // Списывается партия с ближайшим сроком (FEFO).
+      await consumeFefo(tx, location.id, line.productId, line.quantity);
       await tx.stockMovement.create({
         data: {
           locationId: location.id,
@@ -282,6 +297,18 @@ export async function stocktake(
 
       // Совпало — движения не нужны, строка описи всё равно остаётся.
       if (difference.isZero()) continue;
+
+      // Недостача уходит по FEFO, излишек приходуется партией без срока.
+      if (difference.isNegative()) {
+        await consumeFefo(tx, location.id, line.productId, difference.negated());
+      } else {
+        await receiveBatch(tx, {
+          locationId: location.id,
+          productId: line.productId,
+          quantity: difference,
+          costPrice: balance.averageCost,
+        });
+      }
 
       await tx.stockMovement.create({
         data: {

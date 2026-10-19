@@ -196,6 +196,8 @@ model Company {
   roles                Role[]
   subscriptions        Subscription[]
   stockDocuments       StockDocument[]
+  markupRules          MarkupRule[]
+  retailPrices         RetailPrice[]
   invitations          Invitation[]
   auditLogs            AuditLog[]
   verificationRequests VerificationRequest[]
@@ -332,14 +334,15 @@ model Unit {
 
 /// Категория товара. Дерево из раздела 3.13 ТЗ, в демо используется один уровень.
 model Category {
-  id       String     @id @default(cuid())
-  code     String     @unique
-  nameRu   String
-  nameKk   String
-  parentId String?
-  parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id])
-  children Category[] @relation("CategoryTree")
-  products Product[]
+  id          String       @id @default(cuid())
+  markupRules MarkupRule[]
+  code        String       @unique
+  nameRu      String
+  nameKk      String
+  parentId    String?
+  parent      Category?    @relation("CategoryTree", fields: [parentId], references: [id])
+  children    Category[]   @relation("CategoryTree")
+  products    Product[]
 
   @@map("categories")
 }
@@ -371,6 +374,7 @@ model Product {
   stockBalances  StockBalance[]
   stockDocLines  StockDocumentLine[]
   stockBatches   StockBatch[]
+  retailPrices   RetailPrice[]
 
   @@index([categoryId])
   @@map("products")
@@ -717,6 +721,34 @@ model StockDocumentLine {
 
   @@index([documentId])
   @@map("stock_document_lines")
+}
+
+/// Правило наценки: по категории или общее для компании (раздел 4.1 ТЗ).
+model MarkupRule {
+  id         String    @id @default(cuid())
+  companyId  String
+  company    Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  categoryId String?
+  category   Category? @relation(fields: [categoryId], references: [id])
+  percent    Decimal   @db.Decimal(5, 2)
+  updatedAt  DateTime  @updatedAt
+
+  @@unique([companyId, categoryId])
+  @@map("markup_rules")
+}
+
+/// Розничная цена товара в компании: результат наценки или ручной переоценки.
+model RetailPrice {
+  id        String   @id @default(cuid())
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+  price     Decimal  @db.Decimal(14, 2)
+  updatedAt DateTime @updatedAt
+
+  @@unique([companyId, productId])
+  @@map("retail_prices")
 }
 
 /// Партия товара на точке: учёт по дате годности и списание по FEFO (раздел 4.1 ТЗ).

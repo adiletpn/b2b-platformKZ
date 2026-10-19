@@ -1,5 +1,5 @@
 import { loadEnvFile } from 'node:process';
-import { defineConfig, env } from 'prisma/config';
+import { defineConfig } from 'prisma/config';
 
 // Prisma 7 больше не читает .env сам. Node читает файл нативно, без лишней зависимости.
 try {
@@ -10,6 +10,7 @@ try {
 
 export default defineConfig({
   schema: 'prisma/schema.prisma',
-  datasource: { url: env('DATABASE_URL') },
+  // На сборке переменной может не быть: `prisma generate` обязан отработать и без неё.
+  datasource: { url: process.env.DATABASE_URL ?? '' },
   migrations: { seed: 'tsx --env-file-if-exists=.env prisma/seed.ts' },
 });

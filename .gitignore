@@ -16,3 +16,6 @@ next-env.d.ts
 /blob-report
 /playwright/.cache
 /src/generated
+
+# Генерируется Next.js при dev-запуске
+AGENTS.md

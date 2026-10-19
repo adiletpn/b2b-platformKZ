@@ -8,6 +8,7 @@ import { Field } from '@/components/ui/field';
 import { ProductPhoto } from '@/components/product-photo';
 import { SwipeDeck } from './swipe-deck';
 import { OfferDetailsPanel } from './offer-details-panel';
+import { GeographyPanel } from './geography-panel';
 import type { OfferDetails } from '@/lib/feed/offer-details';
 import type { FeedOffer, Option } from './types';
 import { Page } from '@/components/ui/page';
@@ -240,7 +241,7 @@ export function FeedScreen({
         </div>
       </header>
 
-      <div className="mt-4 flex flex-wrap gap-2">
+      <div className="mt-4 flex flex-wrap items-center gap-2">
         <Button
           variant="outline"
           size="sm"
@@ -249,6 +250,7 @@ export function FeedScreen({
         >
           {t('repeatLastOrder')}
         </Button>
+        <GeographyPanel locale={locale} />
       </div>
 
       {notice ? (

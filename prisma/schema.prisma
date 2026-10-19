@@ -156,25 +156,27 @@ enum VerificationStatus {
 
 /// Компания: магазин, поставщик или оба сразу. БИН уникален — повторная регистрация невозможна.
 model Company {
-  id                 String             @id @default(cuid())
-  type               CompanyType
-  bin                String             @unique
-  name               String
-  legalForm          LegalForm
-  isVatPayer         Boolean            @default(false)
-  legalAddress       String
-  iik                String?
-  bik                String?
-  bankName           String?
-  contactPhone       String?
+  id                   String             @id @default(cuid())
+  /// Каналы уведомлений компании: пользователь выбирает их сам (раздел 3.10 ТЗ).
+  notificationChannels String[]           @default(["whatsapp", "telegram", "email"])
+  type                 CompanyType
+  bin                  String             @unique
+  name                 String
+  legalForm            LegalForm
+  isVatPayer           Boolean            @default(false)
+  legalAddress         String
+  iik                  String?
+  bik                  String?
+  bankName             String?
+  contactPhone         String?
   /// Условия оплаты поставщика и кредитный лимит на магазин (разделы 3.1 и 3.6 ТЗ).
-  paymentTerms       PaymentMethod      @default(ON_DELIVERY)
-  deferralDays       Int?
-  creditLimit        Decimal?           @db.Decimal(14, 2)
-  verificationStatus VerificationStatus @default(NOT_VERIFIED)
+  paymentTerms         PaymentMethod      @default(ON_DELIVERY)
+  deferralDays         Int?
+  creditLimit          Decimal?           @db.Decimal(14, 2)
+  verificationStatus   VerificationStatus @default(NOT_VERIFIED)
   /// Принятие оферты платформы при регистрации (раздел 3.11 ТЗ).
-  offerAcceptedAt    DateTime?
-  createdAt          DateTime           @default(now())
+  offerAcceptedAt      DateTime?
+  createdAt            DateTime           @default(now())
 
   memberships          Membership[]
   ownerTransfers       OwnerTransfer[]

@@ -27,12 +27,23 @@ export async function notify(
   orderId?: string,
 ) {
   console.info(`[notify-mock] ${event} → компания ${companyId.slice(0, 6)}…`);
+
+  // Раздел 3.10 ТЗ: уведомление уходит только в выбранные компанией каналы.
+  const company = await prisma.company.findUnique({
+    where: { id: companyId },
+    select: { notificationChannels: true },
+  });
+  const channels = (company?.notificationChannels ?? [...NOTIFICATION_CHANNELS]).filter(
+    (channel): channel is (typeof NOTIFICATION_CHANNELS)[number] =>
+      (NOTIFICATION_CHANNELS as readonly string[]).includes(channel),
+  );
+
   await prisma.notification.create({
     data: {
       companyId,
       event,
       orderId: orderId ?? null,
-      channels: [...NOTIFICATION_CHANNELS],
+      channels,
       payload,
     },
   });

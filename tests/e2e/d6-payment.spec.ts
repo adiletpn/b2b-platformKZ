@@ -155,3 +155,16 @@ test('payment_with_wrong_amount_is_rejected', async ({}, testInfo) => {
   expect(response.status()).toBe(400);
   expect(await response.json()).toMatchObject({ status: 'wrong_status' });
 });
+
+test('company_chooses_notification_channels', async ({}, testInfo) => {
+  test.skip(testInfo.project.name !== ONLY_PROJECT, 'настройки компании');
+
+  await storePage.goto('/ru/requisites');
+  // Раздел 3.10 ТЗ: каналы выбирает сам пользователь.
+  await storePage.getByTestId('channel-email').uncheck();
+  await expect(storePage.getByTestId('channels-saved')).toBeVisible();
+
+  await storePage.reload();
+  await expect(storePage.getByTestId('channel-email')).not.toBeChecked();
+  await expect(storePage.getByTestId('channel-telegram')).toBeChecked();
+});

@@ -150,7 +150,7 @@ function buildTestPool(count: number): BinRegistryEntry[] {
   return pool;
 }
 
-const TEST_POOL = buildTestPool(800);
+const TEST_POOL = buildTestPool(1000);
 
 export function lookupBin(bin: string): BinRegistryEntry | null {
   return (

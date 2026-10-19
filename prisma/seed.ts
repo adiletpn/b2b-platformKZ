@@ -270,6 +270,17 @@ const ADMINS = [
   { phone: '+77009000002', name: 'Модератор платформы (тест)', role: 'MODERATOR' as const },
 ];
 
+/**
+ * Районные центры демо-регионов (раздел 3.9 ТЗ): нужны для поиска поставщиков
+ * в соседних городах. Остальные области пока представлены только центром.
+ */
+const districtCities = [
+  { regionCode: 'zhambyl', code: 'shu', nameRu: 'Шу', nameKk: 'Шу' },
+  { regionCode: 'zhambyl', code: 'karatau', nameRu: 'Каратау', nameKk: 'Қаратау' },
+  { regionCode: 'zhambyl', code: 'zhanatas', nameRu: 'Жанатас', nameKk: 'Жаңатас' },
+  { regionCode: 'zhetysu', code: 'taldykorgan-tekeli', nameRu: 'Текели', nameKk: 'Текелі' },
+];
+
 /** Тарифные планы платформы (раздел 3.13 ТЗ). Правило 5: лимиты в справочнике БД. */
 const TARIFF_PLANS = [
   {
@@ -333,6 +344,16 @@ async function main() {
       where: { code: center.code },
       update: { ...center, regionId: saved.id },
       create: { ...center, regionId: saved.id },
+    });
+  }
+
+  for (const city of districtCities) {
+    const region = await prisma.region.findUniqueOrThrow({ where: { code: city.regionCode } });
+    const data = { nameRu: city.nameRu, nameKk: city.nameKk, regionId: region.id };
+    await prisma.city.upsert({
+      where: { code: city.code },
+      update: data,
+      create: { code: city.code, ...data },
     });
   }
 

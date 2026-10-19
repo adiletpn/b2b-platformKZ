@@ -8,14 +8,20 @@ import { Input } from '@/components/ui/input';
 import { Field } from '@/components/ui/field';
 import { Page } from '@/components/ui/page';
 
+const CHANNELS = ['whatsapp', 'telegram', 'email'] as const;
+
 export function RequisitesForm({
   initial,
+  initialChannels,
 }: {
   initial: { iik: string; bik: string; bankName: string };
+  initialChannels: string[];
 }) {
   const t = useTranslations('requisites');
   const tDashboard = useTranslations('dashboard');
   const [values, setValues] = useState(initial);
+  const [channels, setChannels] = useState<string[]>(initialChannels);
+  const [channelsSaved, setChannelsSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [pending, setPending] = useState(false);
@@ -39,6 +45,29 @@ export function RequisitesForm({
       return;
     }
     setSaved(true);
+  }
+
+  /** Раздел 3.10 ТЗ: пользователь сам выбирает каналы уведомлений. */
+  async function saveChannels(next: string[]) {
+    setChannels(next);
+    setChannelsSaved(false);
+    setError(null);
+    if (next.length === 0) {
+      setError('no_channels');
+      return;
+    }
+
+    const response = await fetch('/api/notifications/channels', {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ channels: next }),
+    });
+    const data = (await response.json()) as { status?: string };
+    if (data.status !== 'ok') {
+      setError(data.status ?? 'unknown');
+      return;
+    }
+    setChannelsSaved(true);
   }
 
   return (
@@ -82,6 +111,37 @@ export function RequisitesForm({
           {t('save')}
         </Button>
       </form>
+
+      <section className="border-border mt-6 rounded-lg border border-dashed p-4">
+        <h2 className="text-muted-foreground text-sm font-medium">{t('channelsTitle')}</h2>
+        <p className="text-muted-foreground mt-1 text-xs">{t('channelsHint')}</p>
+
+        <div className="mt-3 space-y-2" data-testid="notification-channels">
+          {CHANNELS.map((channel) => (
+            <label key={channel} className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={channels.includes(channel)}
+                data-testid={`channel-${channel}`}
+                onChange={(event) =>
+                  void saveChannels(
+                    event.target.checked
+                      ? [...channels, channel]
+                      : channels.filter((item) => item !== channel),
+                  )
+                }
+              />
+              {t(`channels.${channel}`)}
+            </label>
+          ))}
+        </div>
+
+        {channelsSaved ? (
+          <p className="text-muted-foreground mt-2 text-sm" data-testid="channels-saved">
+            {t('channelsSaved')}
+          </p>
+        ) : null}
+      </section>
 
       {saved ? (
         <p className="text-muted-foreground mt-3 text-sm" data-testid="requisites-saved">

@@ -43,6 +43,19 @@ describe('импорт каталога', () => {
     expect(await prisma.product.count()).toBe(200);
   }, 120_000);
 
+  // Критерий этапа 1 ТЗ: 1 000 товаров из Excel по шаблону без ошибок.
+  it('supplier_imports_1000_products_without_errors', async () => {
+    const supplierId = await createSupplier('+77020000010', '120340001230');
+    const rows = Array.from({ length: 1000 }, (_, index) => validRow(index + 2001));
+    const file = await buildCatalogXlsx(rows);
+
+    const result = await importCatalog(supplierId, toArrayBuffer(file));
+
+    expect(result.errors).toEqual([]);
+    expect(result.created).toBe(1000);
+    expect(await prisma.supplierOffer.count({ where: { supplierId } })).toBe(1000);
+  }, 300_000);
+
   it('import_computes_price_with_vat_from_reference_rate', async () => {
     const supplierId = await createSupplier('+77020000002', '120340001230');
     const file = await buildCatalogXlsx([validRow(1, { priceWithoutVat: '1000.00' })]);

@@ -16,12 +16,17 @@ export function GeographyPanel({ locale }: { locale: 'ru' | 'kk' }) {
   const t = useTranslations('feed');
   const [geography, setGeography] = useState<Geography | null>(null);
   const [open, setOpen] = useState(false);
+  const [failed, setFailed] = useState(false);
 
   async function load() {
     setOpen(true);
     if (geography) return;
+    setFailed(false);
     const response = await fetch('/api/feed/geography');
-    if (!response.ok) return;
+    if (!response.ok) {
+      setFailed(true);
+      return;
+    }
     setGeography((await response.json()) as Geography);
   }
 
@@ -40,7 +45,7 @@ export function GeographyPanel({ locale }: { locale: 'ru' | 'kk' }) {
   }
 
   return (
-    <Card className="mt-4" data-testid="geography">
+    <Card className="mt-4 w-full" data-testid="geography">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <CardTitle className="text-sm">{t('geography.title')}</CardTitle>
         <Button
@@ -55,7 +60,9 @@ export function GeographyPanel({ locale }: { locale: 'ru' | 'kk' }) {
       <p className="text-muted-foreground mt-1 text-xs">{t('geography.hint')}</p>
 
       {geography === null ? (
-        <p className="text-muted-foreground mt-3 text-sm">{t('geography.loading')}</p>
+        <p className="text-muted-foreground mt-3 text-sm">
+          {failed ? t('geography.failed') : t('geography.loading')}
+        </p>
       ) : (
         <>
           <ul className="mt-3 space-y-1 text-sm" data-testid="geography-points">

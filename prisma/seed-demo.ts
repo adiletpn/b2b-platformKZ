@@ -435,6 +435,41 @@ async function main() {
     data: { minOrderAmount: '10000.00', leadTimeDays: 2 },
   });
 
+  // Склады поставщиков: по ним строится карта поставщиков города (раздел 3.9 ТЗ).
+  const tarazCity = await prisma.city.findUniqueOrThrow({ where: { code: 'taraz' } });
+  const almatyCity = await prisma.city.findUniqueOrThrow({ where: { code: 'almaty' } });
+  await prisma.location.createMany({
+    data: [
+      {
+        companyId: dairy.companyId,
+        cityId: tarazCity.id,
+        type: 'WAREHOUSE',
+        address: 'ул. Складская, 7',
+      },
+      {
+        companyId: drinks.companyId,
+        cityId: tarazCity.id,
+        type: 'WAREHOUSE',
+        address: 'ул. Промышленная, 21',
+      },
+      {
+        companyId: grocery.companyId,
+        cityId: almatyCity.id,
+        type: 'WAREHOUSE',
+        address: 'ул. Рыскулова, 14',
+      },
+    ],
+  });
+
+  // Поставщик соседнего города: в Тараз доставку не указывал — его находят с пометкой.
+  const neighbour = await createCompany({
+    phone: '+77010000004',
+    bin: '220640004683',
+    type: 'SUPPLIER',
+    cityCodes: ['shu'],
+  });
+  await fillCatalog(neighbour.companyId, GROCERY.slice(0, 3));
+
   // Магазины.
   const storeCompany = await createCompany({
     phone: '+77020000001',

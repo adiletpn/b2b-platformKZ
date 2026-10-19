@@ -510,7 +510,7 @@ export function EmployeesScreen({
           <table className="w-full min-w-[640px] text-sm">
             <thead className="text-muted-foreground text-left">
               <tr>
-                <th className="px-2 py-2 font-medium">{t('role')}</th>
+                <th className="px-2 py-2 font-medium">{t('section')}</th>
                 {PERMISSION_ACTIONS.map((action) => (
                   <th key={action} className="px-2 py-2 font-medium">
                     {t(`permissionActions.${action}`)}

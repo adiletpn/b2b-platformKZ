@@ -262,14 +262,17 @@ export function FeedScreen({
       ) : null}
 
       <section className={`mt-5 ${swipeClass}`} data-testid="swipe-mode">
-        <SwipeDeck
-          offers={swipeOffers}
-          locale={locale}
-          onDecision={decide}
-          onUndo={undo}
-          onOpenDetails={openDetails}
-          canUndo={swipeCount > 0}
-        />
+        {/* Свайп — мобильный сценарий: на широком экране колода остаётся карточкой. */}
+        <div className="mx-auto w-full max-w-md">
+          <SwipeDeck
+            offers={swipeOffers}
+            locale={locale}
+            onDecision={decide}
+            onUndo={undo}
+            onOpenDetails={openDetails}
+            canUndo={swipeCount > 0}
+          />
+        </div>
 
         {details ? (
           <OfferDetailsPanel

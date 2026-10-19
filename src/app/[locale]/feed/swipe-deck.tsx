@@ -178,17 +178,17 @@ export function SwipeDeck({
         </dl>
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="grid grid-cols-2 gap-2">
         <Button
           variant="outline"
-          className="h-12 flex-1"
+          className="h-12"
           onClick={() => onDecision(current, 'SKIP')}
           data-testid="swipe-skip"
         >
           {t('skip')}
         </Button>
         <Button
-          className="h-12 flex-1"
+          className="h-12"
           onClick={() => onDecision(current, 'LIKE')}
           data-testid="swipe-take"
         >
@@ -196,7 +196,7 @@ export function SwipeDeck({
         </Button>
         <Button
           variant="outline"
-          className="h-12 flex-1"
+          className="col-span-2 h-12"
           onClick={() => onDecision(current, 'FAV')}
           data-testid="swipe-favorite"
         >
@@ -204,7 +204,7 @@ export function SwipeDeck({
         </Button>
         <Button
           variant="ghost"
-          className="w-full"
+          className="col-span-2"
           onClick={() => onOpenDetails(current)}
           data-testid="swipe-details"
         >
@@ -212,7 +212,7 @@ export function SwipeDeck({
         </Button>
         <Button
           variant="ghost"
-          className="w-full"
+          className="col-span-2"
           disabled={!canUndo}
           onClick={onUndo}
           data-testid="swipe-undo"

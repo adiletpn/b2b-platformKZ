@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -19,7 +20,13 @@ export function OfferDetailsPanel({
   onTake: (offerId: string) => void;
 }) {
   const t = useTranslations('feed');
+  const panel = useRef<HTMLDivElement>(null);
   const name = locale === 'kk' ? details.nameKk : details.nameRu;
+
+  // Панель открывается под колодой: подводим её к глазам пользователя.
+  useEffect(() => {
+    panel.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, [details.offerId]);
 
   const marks = (
     [
@@ -32,6 +39,7 @@ export function OfferDetailsPanel({
 
   return (
     <div
+      ref={panel}
       className="border-border bg-card shadow-card mt-4 rounded-xl border p-4 sm:p-5"
       data-testid="offer-details"
     >
@@ -47,28 +55,30 @@ export function OfferDetailsPanel({
         </Button>
       </div>
 
-      <ProductPhoto size="lg" src={details.photoUrls[0] ?? null} name={name} className="mt-3" />
+      <div className="mt-3 flex flex-wrap items-start gap-4">
+        <ProductPhoto size="md" src={details.photoUrls[0] ?? null} name={name} />
 
-      <dl className="mt-3 grid grid-cols-2 gap-3 text-sm">
-        {(
-          [
-            ['brand', details.brand],
-            ['manufacturer', details.manufacturer],
-            ['country', details.country],
-            ['packSize', details.packSize],
-            ['minBatch', details.minBatch],
-            ['expiresAt', details.expiresAt],
-            ['tnved', details.tnvedCode],
-          ] as const
-        ).map(([key, value]) => (
-          <div key={key}>
-            <dt className="text-muted-foreground text-xs">{t(`details.${key}`)}</dt>
-            <dd className="break-words" data-testid={`details-${key}`}>
-              {value ?? '—'}
-            </dd>
-          </div>
-        ))}
-      </dl>
+        <dl className="grid min-w-56 flex-1 grid-cols-2 gap-3 text-sm">
+          {(
+            [
+              ['brand', details.brand],
+              ['manufacturer', details.manufacturer],
+              ['country', details.country],
+              ['packSize', details.packSize],
+              ['minBatch', details.minBatch],
+              ['expiresAt', details.expiresAt],
+              ['tnved', details.tnvedCode],
+            ] as const
+          ).map(([key, value]) => (
+            <div key={key}>
+              <dt className="text-muted-foreground text-xs">{t(`details.${key}`)}</dt>
+              <dd className="break-words" data-testid={`details-${key}`}>
+                {value ?? '—'}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      </div>
 
       {marks.length > 0 ? (
         <div className="mt-3 flex flex-wrap gap-1.5" data-testid="details-marks">

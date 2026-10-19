@@ -120,8 +120,6 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
           {t('adminLink')}
         </Link>
       </nav>
-
-      <p className="text-muted-foreground mt-4 text-sm">{t('nextStage')}</p>
     </Page>
   );
 }

@@ -533,7 +533,10 @@
     "markupSave": "Сохранить правило",
     "reprice": "Пересчитать цены",
     "repriced": "Переоценено позиций: {count}",
-    "printLabels": "Печать ценников"
+    "printLabels": "Печать ценников",
+    "scan": "Сканер",
+    "scanPlaceholder": "Отсканируйте штрихкод",
+    "scanNotFound": "Такого штрихкода на точке нет"
   },
   "payment": {
     "title": "Оплата",
@@ -576,7 +579,8 @@
       "invalid_bik": "БИК должен быть из 8 символов, например HSBKKZKX",
       "invalid_bank": "Укажите название банка",
       "unknown": "Не удалось сохранить реквизиты",
-      "no_channels": "Оставьте хотя бы один канал"
+      "no_channels": "Оставьте хотя бы один канал",
+      "invalid_method": "Неизвестный метод себестоимости"
     },
     "paymentTerms": "Условия оплаты",
     "deferralDays": "Отсрочка, дней",
@@ -588,6 +592,13 @@
       "whatsapp": "WhatsApp",
       "telegram": "Telegram",
       "email": "Электронная почта"
+    },
+    "costMethodTitle": "Себестоимость",
+    "costMethodHint": "По какой цене списывается товар со склада",
+    "costMethodSaved": "Метод сохранён",
+    "costMethods": {
+      "AVERAGE": "Средневзвешенная",
+      "FIFO": "FIFO — первый пришёл, первый ушёл"
     }
   },
   "employees": {

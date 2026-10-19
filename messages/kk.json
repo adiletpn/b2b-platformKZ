@@ -533,7 +533,10 @@
     "markupSave": "Ережені сақтау",
     "reprice": "Бағаны қайта есептеу",
     "repriced": "Қайта бағаланған позиция: {count}",
-    "printLabels": "Бағажапсырманы басып шығару"
+    "printLabels": "Бағажапсырманы басып шығару",
+    "scan": "Сканер",
+    "scanPlaceholder": "Штрихкодты сканерлеңіз",
+    "scanNotFound": "Нүктеде мұндай штрихкод жоқ"
   },
   "payment": {
     "title": "Төлем",
@@ -576,7 +579,8 @@
       "invalid_bik": "БСК 8 таңбадан тұруы керек, мысалы HSBKKZKX",
       "invalid_bank": "Банк атауын көрсетіңіз",
       "unknown": "Деректемелерді сақтау мүмкін болмады",
-      "no_channels": "Кемінде бір арнаны қалдырыңыз"
+      "no_channels": "Кемінде бір арнаны қалдырыңыз",
+      "invalid_method": "Белгісіз өзіндік құн әдісі"
     },
     "paymentTerms": "Төлем шарттары",
     "deferralDays": "Кейінге қалдыру, күн",
@@ -588,6 +592,13 @@
       "whatsapp": "WhatsApp",
       "telegram": "Telegram",
       "email": "Электрондық пошта"
+    },
+    "costMethodTitle": "Өзіндік құн",
+    "costMethodHint": "Тауар қоймадан қай бағамен есептен шығады",
+    "costMethodSaved": "Әдіс сақталды",
+    "costMethods": {
+      "AVERAGE": "Орташа өлшенген",
+      "FIFO": "FIFO — бірінші келген бірінші кетеді"
     }
   },
   "employees": {

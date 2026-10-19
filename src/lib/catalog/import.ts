@@ -88,6 +88,7 @@ async function upsertRow(
       isExcise: row.isExcise,
       requiresSnt: row.requiresSnt,
       isLicensed: row.isLicensed,
+      ...(row.photoUrl ? { photoUrls: [row.photoUrl] } : {}),
     },
     create: {
       barcode: row.barcode,
@@ -103,6 +104,7 @@ async function upsertRow(
       isExcise: row.isExcise,
       requiresSnt: row.requiresSnt,
       isLicensed: row.isLicensed,
+      photoUrls: row.photoUrl ? [row.photoUrl] : [],
     },
   });
 

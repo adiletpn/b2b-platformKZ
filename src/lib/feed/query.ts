@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import { windowStart as ratingWindowStart } from '@/lib/ratings/metrics';
 
 /** Раздел 3.3 ТЗ: пропущенная карточка не показывается 14 дней. */
 export const SKIP_HIDE_DAYS = 14;
@@ -28,6 +29,10 @@ export type FeedOffer = {
   stock: string;
   leadTimeDays: number;
   inStock: boolean;
+  photoUrl: string | null;
+  /** Рейтинг поставщика за 12 месяцев: null — оценок ещё нет (раздел 3.3 ТЗ). */
+  supplierRating: string | null;
+  supplierRatingCount: number;
 };
 
 /**
@@ -76,6 +81,20 @@ export async function getFeed(
     take: options.limit ?? 50,
   });
 
+  // Рейтинг поставщиков берём одним запросом, а не по карточке.
+  const ratings = await prisma.rating.groupBy({
+    by: ['targetCompanyId'],
+    where: { targetCompanyId: { in: supplierIds }, createdAt: { gte: ratingWindowStart() } },
+    _avg: { score: true },
+    _count: { _all: true },
+  });
+  const ratingBySupplier = new Map(
+    ratings.map((row) => [
+      row.targetCompanyId,
+      { score: row._avg.score?.toFixed(2) ?? null, count: row._count._all },
+    ]),
+  );
+
   return offers.map<FeedOffer>((offer) => ({
     id: offer.id,
     barcode: offer.product.barcode,
@@ -93,6 +112,9 @@ export async function getFeed(
     stock: offer.stock.toFixed(3),
     leadTimeDays: leadTimeBySupplier.get(offer.supplierId) ?? 1,
     inStock: offer.stock.greaterThan(0),
+    photoUrl: offer.product.photoUrls[0] ?? null,
+    supplierRating: ratingBySupplier.get(offer.supplierId)?.score ?? null,
+    supplierRatingCount: ratingBySupplier.get(offer.supplierId)?.count ?? 0,
   }));
 }
 

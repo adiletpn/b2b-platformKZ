@@ -19,6 +19,7 @@ export type RowError = {
     | 'negative'
     | 'invalid_date'
     | 'invalid_boolean'
+    | 'invalid_photo_url'
     | 'empty_file'
     | 'no_sheet';
   /** Подставляется в текст ошибки: дублирующая строка, неизвестный код и т. п. */
@@ -47,6 +48,7 @@ export type ParsedRow = {
   requiresSnt: boolean;
   isLicensed: boolean;
   tnvedCode: string | null;
+  photoUrl: string | null;
 };
 
 export type ParseReference = {
@@ -111,6 +113,19 @@ function parseBoolean(
   if (FALSE_WORDS.has(normalized)) return false;
   errors.push({ row, column, code: 'invalid_boolean' });
   return false;
+}
+
+/** Фото хранится ссылкой: загрузка файлов требует хранилища S3 и в демо не делается. */
+function parsePhotoUrl(text: string, row: number, errors: RowError[]): string | null {
+  const value = text.trim();
+  if (value === '') return null;
+
+  const isHttpUrl = /^https?:\/\/\S+$/i.test(value) || value.startsWith('/');
+  if (!isHttpUrl) {
+    errors.push({ row, column: 'photoUrl', code: 'invalid_photo_url' });
+    return null;
+  }
+  return value;
 }
 
 function parseDate(text: string, row: number, errors: RowError[]): Date | null {
@@ -236,6 +251,7 @@ export async function parseCatalogFile(
       requiresSnt: parseBoolean(text(row, 'requiresSnt'), rowNumber, 'requiresSnt', errors),
       isLicensed: parseBoolean(text(row, 'isLicensed'), rowNumber, 'isLicensed', errors),
       tnvedCode: text(row, 'tnvedCode') || null,
+      photoUrl: parsePhotoUrl(text(row, 'photoUrl'), rowNumber, errors),
     };
 
     if (errors.length === errorsBefore) rows.push(parsed);

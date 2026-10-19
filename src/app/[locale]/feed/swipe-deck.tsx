@@ -3,6 +3,8 @@
 import { useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { ProductPhoto } from '@/components/product-photo';
 import type { FeedOffer } from './types';
 
 const SWIPE_THRESHOLD = 80;
@@ -70,9 +72,25 @@ export function SwipeDeck({
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
       >
-        <p className="text-muted-foreground text-xs">
-          {t('supplier')}: {current.supplierName}
-        </p>
+        <ProductPhoto
+          size="lg"
+          src={current.photoUrl}
+          name={locale === 'kk' ? current.nameKk : current.nameRu}
+          className="mb-4"
+        />
+
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-muted-foreground min-w-0 truncate text-xs">
+            {t('supplier')}: {current.supplierName}
+          </p>
+          {current.supplierRating ? (
+            <Badge tone="success" data-testid="swipe-supplier-rating">
+              ★ {current.supplierRating}
+            </Badge>
+          ) : (
+            <Badge data-testid="swipe-supplier-few-ratings">{t('fewRatings')}</Badge>
+          )}
+        </div>
         <h2 className="mt-1 text-xl font-semibold break-words" data-testid="swipe-card-name">
           {locale === 'kk' ? current.nameKk : current.nameRu}
         </h2>

@@ -15,6 +15,9 @@ export type FeedOffer = {
   stock: string;
   leadTimeDays: number;
   inStock: boolean;
+  photoUrl: string | null;
+  supplierRating: string | null;
+  supplierRatingCount: number;
 };
 
 export type Option = { id: string; name: string };

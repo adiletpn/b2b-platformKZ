@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 360" width="480" height="360">
+  <rect width="480" height="360" fill="#e3edf7"/>
+  <circle cx="240" cy="150" r="74" fill="#3f6188" opacity="0.14"/>
+  <text x="240" y="166" text-anchor="middle" font-family="Helvetica, Arial, sans-serif"
+        font-size="34" font-weight="600" fill="#3f6188">Молочные</text>
+  <text x="240" y="214" text-anchor="middle" font-family="Helvetica, Arial, sans-serif"
+        font-size="17" fill="#3f6188" opacity="0.7">демо-изображение</text>
+</svg>

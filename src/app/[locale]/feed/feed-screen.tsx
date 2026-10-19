@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Field } from '@/components/ui/field';
+import { ProductPhoto } from '@/components/product-photo';
 import { SwipeDeck } from './swipe-deck';
 import type { FeedOffer, Option } from './types';
 import { Page } from '@/components/ui/page';
@@ -311,8 +312,16 @@ export function FeedScreen({
                 {listOffers.map((offer) => (
                   <tr key={offer.id} data-testid={`list-row-${offer.id}`}>
                     <td className="px-3 py-2">
-                      <span className="break-words">
-                        {locale === 'kk' ? offer.nameKk : offer.nameRu}
+                      <span className="flex items-center gap-2.5">
+                        <ProductPhoto
+                          size="sm"
+                          src={offer.photoUrl}
+                          name={locale === 'kk' ? offer.nameKk : offer.nameRu}
+                          className="shrink-0"
+                        />
+                        <span className="break-words">
+                          {locale === 'kk' ? offer.nameKk : offer.nameRu}
+                        </span>
                       </span>
                       {!offer.inStock ? (
                         <span className="bg-muted text-muted-foreground ml-2 rounded px-1.5 py-0.5 text-xs">

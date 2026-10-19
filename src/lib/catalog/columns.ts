@@ -98,6 +98,13 @@ export const CATALOG_COLUMNS = [
     width: 22,
   },
   { key: 'tnvedCode', titleRu: 'Код ТН ВЭД', titleKk: 'СЭҚ ТН коды', required: false, width: 16 },
+  {
+    key: 'photoUrl',
+    titleRu: 'Фото (ссылка)',
+    titleKk: 'Фото (сілтеме)',
+    required: false,
+    width: 36,
+  },
 ] as const;
 
 export type CatalogColumnKey = (typeof CATALOG_COLUMNS)[number]['key'];

@@ -44,13 +44,18 @@ export function FeedScreen({
   const [supplierId, setSupplierId] = useState('');
   const [brand, setBrand] = useState('');
   const [priceMax, setPriceMax] = useState('');
+  const [flags, setFlags] = useState({ onlyPromo: false, onlyNew: false, onlyTomorrow: false });
 
   const searchTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const swipeClass = mode === 'auto' ? 'md:hidden' : mode === 'swipe' ? '' : 'hidden';
   const listClass = mode === 'auto' ? 'hidden md:block' : mode === 'list' ? '' : 'hidden';
 
-  async function reloadList(next?: Partial<Record<string, string>>) {
+  async function reloadList(
+    next?: Partial<Record<string, string>>,
+    nextFlags?: Partial<typeof flags>,
+  ) {
+    const active = { ...flags, ...nextFlags };
     const params = new URLSearchParams({
       mode: 'list',
       search: next?.search ?? search,
@@ -58,6 +63,9 @@ export function FeedScreen({
       supplierId: next?.supplierId ?? supplierId,
       brand: next?.brand ?? brand,
       priceMax: next?.priceMax ?? priceMax,
+      ...(active.onlyPromo ? { onlyPromo: 'true' } : {}),
+      ...(active.onlyNew ? { onlyNew: 'true' } : {}),
+      ...(active.onlyTomorrow ? { onlyTomorrow: 'true' } : {}),
     });
     for (const [key, value] of [...params.entries()]) if (!value) params.delete(key);
 
@@ -147,7 +155,12 @@ export function FeedScreen({
     setSupplierId('');
     setBrand('');
     setPriceMax('');
-    void reloadList({ search: '', categoryId: '', supplierId: '', brand: '', priceMax: '' });
+    const cleared = { onlyPromo: false, onlyNew: false, onlyTomorrow: false };
+    setFlags(cleared);
+    void reloadList(
+      { search: '', categoryId: '', supplierId: '', brand: '', priceMax: '' },
+      cleared,
+    );
   }
 
   return (
@@ -284,7 +297,24 @@ export function FeedScreen({
                 }}
               />
             </Field>
-            <div className="flex items-end">
+            <div className="flex flex-wrap items-end gap-3 sm:col-span-2 lg:col-span-3">
+              {(['onlyPromo', 'onlyNew', 'onlyTomorrow'] as const).map((flag) => (
+                <label key={flag} className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    className="size-4"
+                    checked={flags[flag]}
+                    data-testid={`filter-${flag}`}
+                    onChange={(event) => {
+                      const nextFlags = { ...flags, [flag]: event.target.checked };
+                      setFlags(nextFlags);
+                      void reloadList(undefined, nextFlags);
+                    }}
+                  />
+                  {t(`filters.${flag}`)}
+                </label>
+              ))}
+
               <Button variant="ghost" onClick={resetFilters} data-testid="filter-reset">
                 {t('filters.reset')}
               </Button>

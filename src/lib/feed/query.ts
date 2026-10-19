@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { windowStart as ratingWindowStart } from '@/lib/ratings/metrics';
+import { effectivePrices, isNewProduct } from '@/lib/pricing/price';
 
 /** Раздел 3.3 ТЗ: пропущенная карточка не показывается 14 дней. */
 export const SKIP_HIDE_DAYS = 14;
@@ -10,6 +11,11 @@ export type FeedFilters = {
   brand?: string;
   priceMax?: string;
   search?: string;
+  /** Фильтры раздела 3.3 ТЗ. */
+  onlyPromo?: boolean;
+  onlyNew?: boolean;
+  onlyTomorrow?: boolean;
+  minRating?: string;
 };
 
 export type FeedOffer = {
@@ -33,6 +39,15 @@ export type FeedOffer = {
   /** Рейтинг поставщика за 12 месяцев: null — оценок ещё нет (раздел 3.3 ТЗ). */
   supplierRating: string | null;
   supplierRatingCount: number;
+  /** Базовая цена до скидок: показывается зачёркнутой при акции. */
+  basePriceWithVat: string;
+  discountPercent: string;
+  isPromo: boolean;
+  isNew: boolean;
+  /** Дешевле, чем у других поставщиков этого же товара в городе (раздел 3.3 ТЗ). */
+  isCheapest: boolean;
+  /** Сколько поставщиков возят этот товар в город. */
+  supplierCount: number;
 };
 
 /**
@@ -95,7 +110,45 @@ export async function getFeed(
     ]),
   );
 
-  return offers.map<FeedOffer>((offer) => ({
+  // Цены по прайсам магазина: индивидуальные прайсы, скидки от объёма и акции.
+  const prices = await effectivePrices(
+    offers.map((offer) => ({
+      id: offer.id,
+      priceWithVat: offer.priceWithVat.toString(),
+      supplierId: offer.supplierId,
+    })),
+    storeId,
+  );
+
+  // Сравнение цен: сколько поставщиков возят товар в город и у кого дешевле.
+  const competing = await prisma.supplierOffer.findMany({
+    where: {
+      productId: { in: offers.map((offer) => offer.productId) },
+      supplierId: { in: supplierIds },
+      isActive: true,
+    },
+    select: { id: true, productId: true, priceWithVat: true, supplierId: true },
+  });
+  const competingPrices = await effectivePrices(
+    competing.map((offer) => ({
+      id: offer.id,
+      priceWithVat: offer.priceWithVat.toString(),
+      supplierId: offer.supplierId,
+    })),
+    storeId,
+  );
+
+  const byProduct = new Map<string, { count: number; min: number }>();
+  for (const offer of competing) {
+    const price = Number(competingPrices.get(offer.id)?.priceWithVat ?? offer.priceWithVat);
+    const current = byProduct.get(offer.productId) ?? { count: 0, min: Number.POSITIVE_INFINITY };
+    byProduct.set(offer.productId, {
+      count: current.count + 1,
+      min: Math.min(current.min, price),
+    });
+  }
+
+  const mapped = offers.map<FeedOffer>((offer) => ({
     id: offer.id,
     barcode: offer.product.barcode,
     nameRu: offer.product.nameRu,
@@ -105,7 +158,7 @@ export async function getFeed(
     unitKk: offer.product.unit.nameKk,
     supplierId: offer.supplierId,
     supplierName: offer.supplier.name,
-    priceWithVat: offer.priceWithVat.toFixed(2),
+    priceWithVat: prices.get(offer.id)?.priceWithVat ?? offer.priceWithVat.toFixed(2),
     pricePerPack: offer.priceWithVat.times(offer.packSize).toFixed(2),
     minBatch: offer.minBatch.toFixed(3),
     packSize: offer.packSize.toFixed(3),
@@ -113,9 +166,36 @@ export async function getFeed(
     leadTimeDays: leadTimeBySupplier.get(offer.supplierId) ?? 1,
     inStock: offer.stock.greaterThan(0),
     photoUrl: offer.product.photoUrls[0] ?? null,
+    basePriceWithVat: prices.get(offer.id)?.basePriceWithVat ?? offer.priceWithVat.toFixed(2),
+    discountPercent: prices.get(offer.id)?.discountPercent ?? '0.00',
+    isPromo: prices.get(offer.id)?.isPromo ?? false,
+    isNew: isNewProduct(offer.product.createdAt),
+    isCheapest:
+      (byProduct.get(offer.productId)?.count ?? 1) > 1 &&
+      Number(prices.get(offer.id)?.priceWithVat ?? offer.priceWithVat) <=
+        (byProduct.get(offer.productId)?.min ?? 0),
+    supplierCount: byProduct.get(offer.productId)?.count ?? 1,
     supplierRating: ratingBySupplier.get(offer.supplierId)?.score ?? null,
     supplierRatingCount: ratingBySupplier.get(offer.supplierId)?.count ?? 0,
   }));
+
+  const filtered = mapped.filter((item) => {
+    if (filters.onlyPromo && !item.isPromo) return false;
+    if (filters.onlyNew && !item.isNew) return false;
+    // «Доставка завтра» — срок доставки не больше одного дня.
+    if (filters.onlyTomorrow && item.leadTimeDays > 1) return false;
+    if (filters.minRating && Number(item.supplierRating ?? 0) < Number(filters.minRating)) {
+      return false;
+    }
+    return true;
+  });
+
+  // Сортировка ленты: сначала акции и новинки, затем остальные (раздел 3.3 ТЗ).
+  return filtered.sort((left, right) => {
+    const weight = (item: FeedOffer) => (item.isPromo ? 0 : item.isNew ? 1 : 2);
+    const byWeight = weight(left) - weight(right);
+    return byWeight !== 0 ? byWeight : left.nameRu.localeCompare(right.nameRu, 'ru');
+  });
 }
 
 /** Что не показываем в свайпе: уже взятое и пропущенное за последние 14 дней. */

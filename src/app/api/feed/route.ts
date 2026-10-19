@@ -25,6 +25,10 @@ export async function GET(request: Request) {
       brand: params.get('brand') ?? undefined,
       priceMax: params.get('priceMax') ?? undefined,
       search: params.get('search')?.trim() || undefined,
+      onlyPromo: params.get('onlyPromo') === 'true',
+      onlyNew: params.get('onlyNew') === 'true',
+      onlyTomorrow: params.get('onlyTomorrow') === 'true',
+      minRating: params.get('minRating') ?? undefined,
     },
   });
 

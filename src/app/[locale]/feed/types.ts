@@ -18,6 +18,12 @@ export type FeedOffer = {
   photoUrl: string | null;
   supplierRating: string | null;
   supplierRatingCount: number;
+  basePriceWithVat: string;
+  discountPercent: string;
+  isPromo: boolean;
+  isNew: boolean;
+  isCheapest: boolean;
+  supplierCount: number;
 };
 
 export type Option = { id: string; name: string };

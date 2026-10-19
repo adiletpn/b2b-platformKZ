@@ -96,9 +96,41 @@ export function SwipeDeck({
         </h2>
         {current.brand ? <p className="text-muted-foreground text-sm">{current.brand}</p> : null}
 
-        <p className="mt-4 text-3xl font-semibold tabular-nums">
+        <div className="mt-3 flex flex-wrap gap-1.5" data-testid="swipe-badges">
+          {current.isPromo ? (
+            <Badge tone="danger" data-testid="badge-promo">
+              {t('promo')}
+            </Badge>
+          ) : null}
+          {current.isNew ? (
+            <Badge tone="info" data-testid="badge-new">
+              {t('new')}
+            </Badge>
+          ) : null}
+          {current.isCheapest ? (
+            <Badge tone="success" data-testid="badge-cheapest">
+              {t('cheapest')}
+            </Badge>
+          ) : null}
+        </div>
+
+        <p className="mt-3 text-3xl font-semibold tabular-nums">
           {current.priceWithVat} <span className="text-muted-foreground text-base">₸</span>
+          {Number(current.discountPercent) > 0 ? (
+            <span
+              className="text-muted-foreground ml-2 text-base font-normal line-through"
+              data-testid="swipe-base-price"
+            >
+              {current.basePriceWithVat}
+            </span>
+          ) : null}
         </p>
+
+        {current.supplierCount > 1 ? (
+          <p className="text-muted-foreground mt-1 text-xs" data-testid="swipe-compare">
+            {t('comparePrices', { count: current.supplierCount })}
+          </p>
+        ) : null}
 
         <dl className="mt-3 space-y-1 text-sm">
           <div className="flex justify-between gap-3">

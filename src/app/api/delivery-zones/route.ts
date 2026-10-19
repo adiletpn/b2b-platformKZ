@@ -17,7 +17,12 @@ export async function PUT(request: Request) {
   if (!active) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
   const body = (await request.json()) as {
-    zones?: { cityId: string; minOrderAmount?: string; leadTimeDays?: number }[];
+    zones?: {
+      cityId: string;
+      minOrderAmount?: string;
+      leadTimeDays?: number;
+      deliveryDays?: number[];
+    }[];
   };
   const zones = body.zones ?? [];
 
@@ -30,6 +35,8 @@ export async function PUT(request: Request) {
         cityId: zone.cityId,
         minOrderAmount: zone.minOrderAmount ?? '0',
         leadTimeDays: zone.leadTimeDays ?? 1,
+        // Дни доставки: 1 — понедельник, 7 — воскресенье (раздел 3.1 ТЗ).
+        deliveryDays: (zone.deliveryDays ?? []).filter((day) => day >= 1 && day <= 7),
       })),
     });
   });

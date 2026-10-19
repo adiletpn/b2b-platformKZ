@@ -78,6 +78,7 @@ model User {
   accessRequests  CompanyAccessRequest[]
   orderStatusLogs OrderStatusLog[]
   auditLogs       AuditLog[]
+  messages        Message[]
 
   @@map("users")
 }
@@ -173,6 +174,9 @@ model Company {
   impersonations       ImpersonationLog[]
   ratingsGiven         Rating[]               @relation("RatingsGiven")
   ratingsReceived      Rating[]               @relation("RatingsReceived")
+  storeChats           Chat[]                 @relation("StoreChats")
+  supplierChats        Chat[]                 @relation("SupplierChats")
+  sentMessages         Message[]              @relation("SentMessages")
 
   @@map("companies")
 }
@@ -453,6 +457,7 @@ model Order {
   documents     Document[]
   payments      Payment[]
   ratings       Rating[]
+  chats         Chat[]
 
   // Раздел 3.5 ТЗ: нумерация отдельная у каждой компании, поэтому номер уникален в пределах магазина.
   @@unique([storeId, number])
@@ -870,4 +875,44 @@ model Rating {
   @@unique([orderId, authorCompanyId])
   @@index([targetCompanyId, createdAt])
   @@map("ratings")
+}
+
+// ---------- Чат (раздел 3.7 ТЗ) ----------
+
+/// Переписка магазина с поставщиком. Может быть привязана к заявке.
+model Chat {
+  id         String   @id @default(cuid())
+  storeId    String
+  store      Company  @relation("StoreChats", fields: [storeId], references: [id], onDelete: Cascade)
+  supplierId String
+  supplier   Company  @relation("SupplierChats", fields: [supplierId], references: [id], onDelete: Cascade)
+  orderId    String?
+  order      Order?   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  messages Message[]
+
+  /// Один общий чат на пару компаний плюс отдельные чаты внутри заявок.
+  @@unique([storeId, supplierId, orderId])
+  @@index([storeId, updatedAt])
+  @@index([supplierId, updatedAt])
+  @@map("chats")
+}
+
+model Message {
+  id              String    @id @default(cuid())
+  chatId          String
+  chat            Chat      @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  authorCompanyId String
+  authorCompany   Company   @relation("SentMessages", fields: [authorCompanyId], references: [id], onDelete: Cascade)
+  authorUserId    String?
+  authorUser      User?     @relation(fields: [authorUserId], references: [id])
+  text            String
+  /// Статус прочтения второй стороной (раздел 3.7 ТЗ).
+  readAt          DateTime?
+  createdAt       DateTime  @default(now())
+
+  @@index([chatId, createdAt])
+  @@map("messages")
 }

@@ -22,8 +22,12 @@ function checkDigit(twelve: string) {
   return (10 - (sum % 10)) % 10;
 }
 
-/** Среднее по прогонам без первого: он греет план запроса. */
-async function worstOf(runs: number, run: () => Promise<unknown>) {
+/**
+ * Медиана по прогонам без первого: он греет план запроса. Берём медиану, а не худший
+ * прогон: тесты идут на общей машине вместе с остальным набором, и разовый выброс
+ * ничего не говорит о запросе. Чистый замер с p50 и p95 — в `npm run perf:feed`.
+ */
+async function medianOf(runs: number, run: () => Promise<unknown>) {
   await run();
   const times: number[] = [];
   for (let index = 0; index < runs; index += 1) {
@@ -31,7 +35,8 @@ async function worstOf(runs: number, run: () => Promise<unknown>) {
     await run();
     times.push(performance.now() - started);
   }
-  return Math.max(...times);
+  times.sort((left, right) => left - right);
+  return times[Math.floor(times.length / 2)]!;
 }
 
 beforeAll(async () => {
@@ -103,19 +108,19 @@ afterAll(async () => {
 
 describe('производительность ленты и поиска', () => {
   it('swipe_card_is_served_under_300ms_on_large_catalog', async () => {
-    const worst = await worstOf(5, () => getFeed(storeId, cityId, { forSwipe: true, limit: 1 }));
-    expect(worst).toBeLessThan(300);
+    const median = await medianOf(5, () => getFeed(storeId, cityId, { forSwipe: true, limit: 1 }));
+    expect(median).toBeLessThan(300);
   }, 120_000);
 
   it('search_by_name_and_barcode_is_served_under_one_second', async () => {
-    const byName = await worstOf(3, () =>
+    const byName = await medianOf(3, () =>
       getFeed(storeId, cityId, {
         forSwipe: false,
         limit: 50,
         filters: { search: `${PREFIX}товар ${OFFERS - 1}` },
       }),
     );
-    const byBarcode = await worstOf(3, () =>
+    const byBarcode = await medianOf(3, () =>
       getFeed(storeId, cityId, { forSwipe: false, limit: 50, filters: { search: '778000000100' } }),
     );
 
@@ -124,7 +129,9 @@ describe('производительность ленты и поиска', () =
   }, 120_000);
 
   it('feed_page_of_fifty_offers_is_served_under_one_second', async () => {
-    const worst = await worstOf(3, () => getFeed(storeId, cityId, { forSwipe: false, limit: 50 }));
-    expect(worst).toBeLessThan(1000);
+    const median = await medianOf(3, () =>
+      getFeed(storeId, cityId, { forSwipe: false, limit: 50 }),
+    );
+    expect(median).toBeLessThan(1000);
   }, 120_000);
 });

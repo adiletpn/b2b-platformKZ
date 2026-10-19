@@ -63,6 +63,11 @@ test('stock_documents_are_closed_for_another_company', async ({ browser }, testI
     ).status(),
   ).toBe(401);
   expect((await anonymous.request.get('/api/stock/ledger/any-product')).status()).toBe(401);
+  expect((await anonymous.request.get('/api/stock/replenishment')).status()).toBe(401);
+  expect((await anonymous.request.post('/api/stock/replenishment')).status()).toBe(401);
+  expect(
+    (await anonymous.request.put('/api/stock/minimum', { data: { productId: 'any' } })).status(),
+  ).toBe(401);
   await anonymous.close();
 });
 

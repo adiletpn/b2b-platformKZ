@@ -8,6 +8,11 @@ const LABELS = {
     waybillForm: 'Форма З-2',
     invoiceTitle: 'Счёт на оплату',
     actTitle: 'Акт о расхождениях при приёмке',
+    returnTitle: 'Накладная на возврат товара поставщику',
+    settlementTitle: 'Акт сверки взаиморасчётов',
+    debit: 'Дебет',
+    credit: 'Кредит',
+    balance: 'Остаток',
     number: 'Номер',
     date: 'Дата',
     order: 'По заявке',
@@ -47,6 +52,11 @@ const LABELS = {
     waybillForm: 'З-2 нысаны',
     invoiceTitle: 'Төлеуге арналған шот',
     actTitle: 'Қабылдау кезіндегі алшақтықтар актісі',
+    returnTitle: 'Тауарды жеткізушіге қайтару жүкқұжаты',
+    settlementTitle: 'Өзара есеп айырысуды салыстыру актісі',
+    debit: 'Дебет',
+    credit: 'Кредит',
+    balance: 'Қалдық',
     number: 'Нөмірі',
     date: 'Күні',
     order: 'Өтінім бойынша',
@@ -276,12 +286,29 @@ export function discrepancyActHtml(payload: DocumentPayload, locale: Locale) {
   );
 }
 
+/** Возвратная накладная: та же форма, другой заголовок и направление движения. */
+export function returnWaybillHtml(payload: DocumentPayload, locale: Locale) {
+  const t = LABELS[locale];
+  return page(
+    `${t.returnTitle} ${payload.number}`,
+    `
+      ${header(t.returnTitle, null, payload, locale)}
+      ${linesTable(payload, locale)}
+      ${vatNote(payload, locale)}
+      <div class="signatures">
+        <div class="signature">${t.received}</div>
+        <div class="signature">${t.released}</div>
+      </div>`,
+  );
+}
+
 export function documentHtml(
-  type: 'WAYBILL' | 'INVOICE' | 'DISCREPANCY_ACT',
+  type: 'WAYBILL' | 'INVOICE' | 'DISCREPANCY_ACT' | 'RETURN_WAYBILL' | 'SETTLEMENT_ACT',
   payload: DocumentPayload,
   locale: Locale,
 ) {
   if (type === 'WAYBILL') return waybillHtml(payload, locale);
   if (type === 'INVOICE') return invoiceHtml(payload, locale);
+  if (type === 'RETURN_WAYBILL') return returnWaybillHtml(payload, locale);
   return discrepancyActHtml(payload, locale);
 }

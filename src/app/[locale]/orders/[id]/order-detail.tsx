@@ -9,7 +9,7 @@ import { Field } from '@/components/ui/field';
 import { Page, PageHeader } from '@/components/ui/page';
 import { OrderStatusBadge } from '@/components/order-status-badge';
 
-import type { OrderStatus as Status } from '@/generated/prisma/enums';
+import type { DocumentType, OrderStatus as Status } from '@/generated/prisma/enums';
 
 type Item = {
   id: string;
@@ -24,7 +24,7 @@ type Item = {
 
 type DocumentRow = {
   id: string;
-  type: 'WAYBILL' | 'INVOICE' | 'DISCREPANCY_ACT';
+  type: DocumentType;
   number: string;
   totalWithVat: string;
 };

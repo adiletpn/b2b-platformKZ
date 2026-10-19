@@ -341,7 +341,9 @@
     "types": {
       "WAYBILL": "Накладная З-2",
       "INVOICE": "Счёт на оплату",
-      "DISCREPANCY_ACT": "Акт расхождений"
+      "DISCREPANCY_ACT": "Акт расхождений",
+      "RETURN_WAYBILL": "Возвратная накладная",
+      "SETTLEMENT_ACT": "Акт сверки"
     },
     "errors": {
       "wrong_status": "Накладная формируется по принятой заявке",

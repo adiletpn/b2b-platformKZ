@@ -341,7 +341,9 @@
     "types": {
       "WAYBILL": "З-2 жүкқұжаты",
       "INVOICE": "Төлеуге арналған шот",
-      "DISCREPANCY_ACT": "Алшақтық актісі"
+      "DISCREPANCY_ACT": "Алшақтық актісі",
+      "RETURN_WAYBILL": "Қайтару жүкқұжаты",
+      "SETTLEMENT_ACT": "Салыстыру актісі"
     },
     "errors": {
       "wrong_status": "Жүкқұжат қабылданған өтінім бойынша жасалады",

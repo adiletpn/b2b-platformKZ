@@ -77,6 +77,7 @@ model User {
   sessions        Session[]
   accessRequests  CompanyAccessRequest[]
   orderStatusLogs OrderStatusLog[]
+  stockDocuments  StockDocument[]
   approvedOrders  Order[]                @relation("ApprovedOrders")
   createdOrders   Order[]                @relation("CreatedOrders")
   auditLogs       AuditLog[]
@@ -194,6 +195,7 @@ model Company {
   receivedDocuments    Document[]             @relation("ReceivedDocuments")
   roles                Role[]
   subscriptions        Subscription[]
+  stockDocuments       StockDocument[]
   invitations          Invitation[]
   auditLogs            AuditLog[]
   verificationRequests VerificationRequest[]
@@ -255,19 +257,21 @@ enum LocationType {
 
 /// Торговая точка магазина или склад поставщика.
 model Location {
-  id             String          @id @default(cuid())
-  companyId      String
-  company        Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  type           LocationType
-  cityId         String
-  city           City            @relation(fields: [cityId], references: [id])
-  address        String
-  format         String?
-  createdAt      DateTime        @default(now())
-  cart           Cart?
-  orders         Order[]
-  stockMovements StockMovement[]
-  stockBalances  StockBalance[]
+  id              String          @id @default(cuid())
+  companyId       String
+  company         Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  type            LocationType
+  cityId          String
+  city            City            @relation(fields: [cityId], references: [id])
+  address         String
+  format          String?
+  createdAt       DateTime        @default(now())
+  cart            Cart?
+  orders          Order[]
+  stockMovements  StockMovement[]
+  stockBalances   StockBalance[]
+  stockDocuments  StockDocument[] @relation("StockDocumentLocation")
+  stockDocTargets StockDocument[] @relation("StockDocumentTarget")
 
   @@index([companyId])
   @@index([cityId])
@@ -364,6 +368,7 @@ model Product {
   offers         SupplierOffer[]
   stockMovements StockMovement[]
   stockBalances  StockBalance[]
+  stockDocLines  StockDocumentLine[]
 
   @@index([categoryId])
   @@map("products")
@@ -656,20 +661,79 @@ enum StockMovementType {
   INVENTORY
 }
 
+/// Складской документ без заявки: перемещение, списание, инвентаризация (раздел 4.1 ТЗ).
+enum StockDocumentType {
+  TRANSFER
+  WRITE_OFF
+  STOCKTAKE
+}
+
+/// Причина списания: порча, истёк срок, бой (раздел 4.1 ТЗ).
+enum WriteOffReason {
+  DAMAGE
+  EXPIRED
+  BREAKAGE
+  OTHER
+}
+
+model StockDocument {
+  id               String            @id @default(cuid())
+  type             StockDocumentType
+  number           String
+  companyId        String
+  company          Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  locationId       String
+  location         Location          @relation("StockDocumentLocation", fields: [locationId], references: [id])
+  /// Куда перемещаем; у списания и инвентаризации пусто.
+  targetLocationId String?
+  targetLocation   Location?         @relation("StockDocumentTarget", fields: [targetLocationId], references: [id])
+  reason           WriteOffReason?
+  comment          String?
+  userId           String?
+  user             User?             @relation(fields: [userId], references: [id])
+  createdAt        DateTime          @default(now())
+
+  lines     StockDocumentLine[]
+  movements StockMovement[]
+
+  @@unique([companyId, number])
+  @@index([companyId, createdAt])
+  @@map("stock_documents")
+}
+
+model StockDocumentLine {
+  id         String        @id @default(cuid())
+  documentId String
+  document   StockDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product       @relation(fields: [productId], references: [id])
+  /// Фактическое количество: при инвентаризации — пересчитанное, иначе — перемещаемое.
+  quantity   Decimal       @db.Decimal(12, 3)
+  /// Учётное количество на момент инвентаризационной описи.
+  expected   Decimal?      @db.Decimal(12, 3)
+  costPrice  Decimal       @db.Decimal(14, 2)
+
+  @@index([documentId])
+  @@map("stock_document_lines")
+}
+
 /// Правило 3: остаток меняется только документом движения и только в транзакции.
 model StockMovement {
-  id         String            @id @default(cuid())
-  locationId String
-  location   Location          @relation(fields: [locationId], references: [id], onDelete: Cascade)
-  productId  String
-  product    Product           @relation(fields: [productId], references: [id])
-  quantity   Decimal           @db.Decimal(12, 3)
-  costPrice  Decimal           @db.Decimal(14, 2)
-  type       StockMovementType
-  documentId String?
-  document   Document?         @relation(fields: [documentId], references: [id])
-  expiresAt  DateTime?         @db.Date
-  createdAt  DateTime          @default(now())
+  id              String            @id @default(cuid())
+  locationId      String
+  location        Location          @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  productId       String
+  product         Product           @relation(fields: [productId], references: [id])
+  quantity        Decimal           @db.Decimal(12, 3)
+  costPrice       Decimal           @db.Decimal(14, 2)
+  type            StockMovementType
+  documentId      String?
+  document        Document?         @relation(fields: [documentId], references: [id])
+  /// Складской документ без заявки: перемещение, списание, инвентаризация.
+  stockDocumentId String?
+  stockDocument   StockDocument?    @relation(fields: [stockDocumentId], references: [id])
+  expiresAt       DateTime?         @db.Date
+  createdAt       DateTime          @default(now())
 
   @@index([locationId, productId])
   @@map("stock_movements")

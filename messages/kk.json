@@ -466,7 +466,51 @@
     "product": "Тауар",
     "quantity": "Қалдық",
     "averageCost": "Өзіндік құны",
-    "hint": "Қалдықтар тек қозғалыс құжаттарымен өзгереді"
+    "hint": "Қалдықтар тек қозғалыс құжаттарымен өзгереді",
+    "documentsTitle": "Қозғалыс құжаттары",
+    "documentsHint": "Қалдық тек құжатпен өзгереді: ауыстыру, есептен шығару, түгендеу",
+    "documentsListTitle": "Соңғы құжаттар",
+    "documentType": "Құжат",
+    "documentTypes": {
+      "TRANSFER": "Ауыстыру",
+      "WRITE_OFF": "Есептен шығару",
+      "STOCKTAKE": "Түгендеу"
+    },
+    "movementTypes": {
+      "RECEIPT": "Кіріс",
+      "ISSUE": "Шығыс",
+      "WRITE_OFF": "Есептен шығару",
+      "TRANSFER": "Ауыстыру",
+      "INVENTORY": "Түгендеу"
+    },
+    "reasons": {
+      "DAMAGE": "Бүліну",
+      "EXPIRED": "Мерзімі өткен",
+      "BREAKAGE": "Сыну",
+      "OTHER": "Басқа"
+    },
+    "location": "Нүкте",
+    "targetLocation": "Қайда",
+    "reason": "Себебі",
+    "actualQuantity": "Қайта санау фактісі",
+    "comment": "Түсініктеме",
+    "create": "Құжатты өткізу",
+    "creating": "Өткізілуде",
+    "created": "{number} құжаты өткізілді",
+    "ledgerFor": "Тауар бойынша журнал",
+    "openLedger": "Журналды көрсету",
+    "ledgerTitle": "Тауар қозғалысы",
+    "ledgerEmpty": "Қозғалыс әзірге жоқ",
+    "errors": {
+      "not_found": "Нүкте табылмады",
+      "same_location": "Әртүрлі нүкте таңдаңыз",
+      "empty_lines": "Кемінде бір позиция қосыңыз",
+      "invalid_quantity": "Мөлшерді тексеріңіз",
+      "not_enough_stock": "Нүктеде сонша жоқ",
+      "forbidden": "Құқық жеткіліксіз",
+      "unknown": "Құжатты өткізу мүмкін болмады"
+    },
+    "documentsEmpty": "Қозғалыс құжаттары қоймада тауар болғанда шығады: оны жүкқұжат бойынша қабылдаңыз"
   },
   "payment": {
     "title": "Төлем",

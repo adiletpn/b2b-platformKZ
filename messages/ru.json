@@ -466,7 +466,51 @@
     "product": "Товар",
     "quantity": "Остаток",
     "averageCost": "Себестоимость",
-    "hint": "Остатки меняются только документами движения"
+    "hint": "Остатки меняются только документами движения",
+    "documentsTitle": "Документы движения",
+    "documentsHint": "Остаток меняется только документом: перемещение, списание, инвентаризация",
+    "documentsListTitle": "Последние документы",
+    "documentType": "Документ",
+    "documentTypes": {
+      "TRANSFER": "Перемещение",
+      "WRITE_OFF": "Списание",
+      "STOCKTAKE": "Инвентаризация"
+    },
+    "movementTypes": {
+      "RECEIPT": "Приход",
+      "ISSUE": "Расход",
+      "WRITE_OFF": "Списание",
+      "TRANSFER": "Перемещение",
+      "INVENTORY": "Инвентаризация"
+    },
+    "reasons": {
+      "DAMAGE": "Порча",
+      "EXPIRED": "Истёк срок",
+      "BREAKAGE": "Бой",
+      "OTHER": "Другое"
+    },
+    "location": "Точка",
+    "targetLocation": "Куда",
+    "reason": "Причина",
+    "actualQuantity": "Факт по пересчёту",
+    "comment": "Комментарий",
+    "create": "Провести документ",
+    "creating": "Проводим",
+    "created": "Документ {number} проведён",
+    "ledgerFor": "Журнал по товару",
+    "openLedger": "Показать журнал",
+    "ledgerTitle": "Движение товара",
+    "ledgerEmpty": "Движений пока нет",
+    "errors": {
+      "not_found": "Точка не найдена",
+      "same_location": "Выберите разные точки",
+      "empty_lines": "Добавьте хотя бы одну позицию",
+      "invalid_quantity": "Проверьте количество",
+      "not_enough_stock": "На точке столько нет",
+      "forbidden": "Недостаточно прав",
+      "unknown": "Не удалось провести документ"
+    },
+    "documentsEmpty": "Документы движения появятся, когда на складе будет товар: примите его по накладной"
   },
   "payment": {
     "title": "Оплата",

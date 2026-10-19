@@ -9,21 +9,7 @@ import { Field } from '@/components/ui/field';
 import { Page, PageHeader } from '@/components/ui/page';
 import { OrderStatusBadge } from '@/components/order-status-badge';
 
-type Status =
-  | 'DRAFT'
-  | 'SENT'
-  | 'ACCEPTED'
-  | 'CHANGED_BY_SUPPLIER'
-  | 'REJECTED'
-  | 'PICKING'
-  | 'SHIPPED'
-  | 'DELIVERED'
-  | 'ACCEPTED_BY_STORE'
-  | 'ACCEPTED_WITH_DISCREPANCY'
-  | 'AWAITING_PAYMENT'
-  | 'PAID'
-  | 'CLOSED'
-  | 'CANCELLED';
+import type { OrderStatus as Status } from '@/generated/prisma/enums';
 
 type Item = {
   id: string;

@@ -114,7 +114,8 @@
     "ratingsLink": "Рейтинги",
     "chatLink": "Чат",
     "adminLink": "Админка",
-    "employeesLink": "Сотрудники"
+    "employeesLink": "Сотрудники",
+    "settlementsLink": "Взаиморасчёты"
   },
   "companyType": {
     "STORE": "Магазин",
@@ -306,8 +307,10 @@
       "ACCEPTED_BY_STORE": "Принята магазином",
       "ACCEPTED_WITH_DISCREPANCY": "Принята с расхождениями",
       "AWAITING_PAYMENT": "Ожидает оплаты",
+      "OVERDUE": "Просрочена",
       "PAID": "Оплачена",
       "CLOSED": "Закрыта",
+      "DISPUTE": "Спор",
       "CANCELLED": "Отменена"
     },
     "events": {
@@ -590,5 +593,19 @@
     "5": "Пт",
     "6": "Сб",
     "7": "Вс"
+  },
+  "settlements": {
+    "title": "Взаиморасчёты",
+    "subtitle": "Дебиторка по магазинам и сроки оплаты",
+    "total": "Ожидается к оплате",
+    "overdueTotal": "Из них просрочено",
+    "overdueHint": "Просрочка считается от срока оплаты по отсрочке",
+    "empty": "Неоплаченных заявок нет",
+    "order": "Заявка",
+    "store": "Магазин",
+    "dueDate": "Срок оплаты",
+    "amount": "Сумма",
+    "overdueDays": "Просрочка, дней",
+    "onTime": "В срок"
   }
 }

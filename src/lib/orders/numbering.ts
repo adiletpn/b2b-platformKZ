@@ -5,6 +5,8 @@ const PREFIXES: Record<string, string> = {
   waybill: 'З-2',
   invoice: 'СЧТ',
   discrepancy: 'АКТ',
+  return: 'ВОЗВ',
+  settlement: 'СВЕР',
 };
 
 /** Нумерация отдельная у каждой компании и года (раздел 3.5 ТЗ). */

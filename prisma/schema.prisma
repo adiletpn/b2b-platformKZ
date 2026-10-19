@@ -575,25 +575,39 @@ enum DocumentType {
   WAYBILL
   INVOICE
   DISCREPANCY_ACT
+  /// Возвратная накладная и акт сверки (разделы 3.5 и 3.6 ТЗ).
+  RETURN_WAYBILL
+  SETTLEMENT_ACT
+}
+
+/// Решение поставщика по акту расхождений (раздел 3.5 ТЗ).
+enum DiscrepancyDecision {
+  PENDING
+  CONFIRMED
+  DISPUTED
 }
 
 /// Первичный документ. Снимок данных хранится в payload: печатная форма не должна
 /// меняться задним числом вслед за каталогом.
 model Document {
-  id              String       @id @default(cuid())
+  id              String              @id @default(cuid())
   type            DocumentType
   number          String
-  issuedAt        DateTime     @default(now())
+  issuedAt        DateTime            @default(now())
   orderId         String
-  order           Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order           Order               @relation(fields: [orderId], references: [id], onDelete: Cascade)
   issuerId        String
-  issuer          Company      @relation("IssuedDocuments", fields: [issuerId], references: [id])
+  issuer          Company             @relation("IssuedDocuments", fields: [issuerId], references: [id])
   recipientId     String
-  recipient       Company      @relation("ReceivedDocuments", fields: [recipientId], references: [id])
-  version         Int          @default(1)
-  totalWithoutVat Decimal      @db.Decimal(14, 2)
-  vatAmount       Decimal      @db.Decimal(14, 2)
-  totalWithVat    Decimal      @db.Decimal(14, 2)
+  recipient       Company             @relation("ReceivedDocuments", fields: [recipientId], references: [id])
+  version         Int                 @default(1)
+  /// Поставщик подтверждает или оспаривает акт расхождений (раздел 3.5 ТЗ).
+  decision        DiscrepancyDecision @default(PENDING)
+  decisionReason  String?
+  decidedAt       DateTime?
+  totalWithoutVat Decimal             @db.Decimal(14, 2)
+  vatAmount       Decimal             @db.Decimal(14, 2)
+  totalWithVat    Decimal             @db.Decimal(14, 2)
   payload         Json
 
   movements StockMovement[]

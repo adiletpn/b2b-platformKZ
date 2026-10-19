@@ -73,16 +73,16 @@ export function SwipeDeck({
         <p className="text-muted-foreground text-xs">
           {t('supplier')}: {current.supplierName}
         </p>
-        <h2 className="mt-1 text-lg font-semibold break-words" data-testid="swipe-card-name">
+        <h2 className="mt-1 text-xl font-semibold break-words" data-testid="swipe-card-name">
           {locale === 'kk' ? current.nameKk : current.nameRu}
         </h2>
         {current.brand ? <p className="text-muted-foreground text-sm">{current.brand}</p> : null}
 
-        <dl className="mt-4 space-y-1 text-sm">
-          <div className="flex justify-between gap-3">
-            <dt className="text-muted-foreground">{t('perUnit')}</dt>
-            <dd className="font-medium tabular-nums">{current.priceWithVat} ₸</dd>
-          </div>
+        <p className="mt-4 text-3xl font-semibold tabular-nums">
+          {current.priceWithVat} <span className="text-muted-foreground text-base">₸</span>
+        </p>
+
+        <dl className="mt-3 space-y-1 text-sm">
           <div className="flex justify-between gap-3">
             <dt className="text-muted-foreground">{t('perPack')}</dt>
             <dd className="tabular-nums">{current.pricePerPack} ₸</dd>
@@ -105,14 +105,14 @@ export function SwipeDeck({
       <div className="flex flex-wrap gap-2">
         <Button
           variant="outline"
-          className="flex-1"
+          className="h-12 flex-1"
           onClick={() => onDecision(current, 'SKIP')}
           data-testid="swipe-skip"
         >
           {t('skip')}
         </Button>
         <Button
-          className="flex-1"
+          className="h-12 flex-1"
           onClick={() => onDecision(current, 'LIKE')}
           data-testid="swipe-take"
         >

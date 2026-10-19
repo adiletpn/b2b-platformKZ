@@ -1,8 +1,11 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { redirect, Link } from '@/i18n/navigation';
+import { Link, redirect } from '@/i18n/navigation';
 import { getActiveCompany } from '@/lib/auth/active-company';
 import { prisma } from '@/lib/prisma';
 import { buttonVariants } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { EmptyState, Page, PageHeader } from '@/components/ui/page';
+import { OrderStatusBadge } from '@/components/order-status-badge';
 import { NotificationList } from './notification-list';
 
 export default async function OrdersPage({ params }: { params: Promise<{ locale: string }> }) {
@@ -30,57 +33,63 @@ export default async function OrdersPage({ params }: { params: Promise<{ locale:
   const t = await getTranslations('orders');
 
   return (
-    <main className="mx-auto w-full max-w-4xl px-4 py-6">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold">{t('title')}</h1>
-        <Link href="/dashboard" className={buttonVariants({ variant: 'outline', size: 'sm' })}>
-          {t('back')}
-        </Link>
-      </header>
+    <Page width="lg">
+      <PageHeader title={t('title')} />
 
       {orders.length === 0 ? (
-        <p className="text-muted-foreground mt-6 text-sm" data-testid="orders-empty">
-          {t('empty')}
-        </p>
+        <EmptyState>
+          <span data-testid="orders-empty">{t('empty')}</span>
+        </EmptyState>
       ) : (
-        <div className="border-border bg-card mt-5 overflow-x-auto rounded-lg border">
-          <table className="w-full min-w-[640px] text-sm">
-            <thead className="text-muted-foreground text-left">
-              <tr>
-                <th className="px-3 py-2 font-medium">{t('number')}</th>
-                <th className="px-3 py-2 font-medium">{t('counterparty')}</th>
-                <th className="px-3 py-2 font-medium">{t('statusLabel')}</th>
-                <th className="px-3 py-2 text-right font-medium">{t('total')}</th>
-                <th className="px-3 py-2" />
-              </tr>
-            </thead>
-            <tbody className="divide-border divide-y" data-testid="orders-table">
-              {orders.map((order) => (
-                <tr key={order.id} data-testid={`order-row-${order.number}`}>
-                  <td className="px-3 py-2 font-mono text-xs">{order.number}</td>
-                  <td className="px-3 py-2">
-                    {order.storeId === companyId ? order.supplier.name : order.store.name}
-                  </td>
-                  <td className="px-3 py-2" data-testid={`order-status-${order.number}`}>
-                    {t(`status.${order.status}`)}
-                  </td>
-                  <td className="px-3 py-2 text-right tabular-nums">
-                    {order.totalWithVat.toFixed(2)}
-                  </td>
-                  <td className="px-3 py-2 text-right">
-                    <Link
-                      href={`/orders/${order.id}`}
-                      className={buttonVariants({ variant: 'outline', size: 'sm' })}
-                      data-testid={`order-open-${order.number}`}
-                    >
-                      {t('open')}
-                    </Link>
-                  </td>
+        <Card className="overflow-hidden p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[640px] text-sm">
+              <thead className="text-muted-foreground border-border bg-muted/50 border-b text-left">
+                <tr>
+                  <th className="px-4 py-2.5 font-medium">{t('number')}</th>
+                  <th className="px-4 py-2.5 font-medium">{t('counterparty')}</th>
+                  <th className="px-4 py-2.5 font-medium">{t('statusLabel')}</th>
+                  <th className="px-4 py-2.5 text-right font-medium">{t('total')}</th>
+                  <th className="px-4 py-2.5" />
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-border divide-y" data-testid="orders-table">
+                {orders.map((order) => (
+                  <tr
+                    key={order.id}
+                    className="hover:bg-muted/40"
+                    data-testid={`order-row-${order.number}`}
+                  >
+                    <td className="px-4 py-2.5 font-mono text-xs whitespace-nowrap">
+                      {order.number}
+                    </td>
+                    <td className="px-4 py-2.5 break-words">
+                      {order.storeId === companyId ? order.supplier.name : order.store.name}
+                    </td>
+                    <td className="px-4 py-2.5">
+                      <OrderStatusBadge
+                        status={order.status}
+                        testId={`order-status-${order.number}`}
+                      />
+                    </td>
+                    <td className="px-4 py-2.5 text-right whitespace-nowrap">
+                      {order.totalWithVat.toFixed(2)} ₸
+                    </td>
+                    <td className="px-4 py-2.5 text-right">
+                      <Link
+                        href={`/orders/${order.id}`}
+                        className={buttonVariants({ variant: 'outline', size: 'sm' })}
+                        data-testid={`order-open-${order.number}`}
+                      >
+                        {t('open')}
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
       )}
 
       <NotificationList
@@ -91,6 +100,6 @@ export default async function OrdersPage({ params }: { params: Promise<{ locale:
           payload: item.payload as Record<string, string>,
         }))}
       />
-    </main>
+    </Page>
   );
 }

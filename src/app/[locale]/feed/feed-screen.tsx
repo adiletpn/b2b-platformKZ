@@ -2,12 +2,12 @@
 
 import { useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Button, buttonVariants } from '@/components/ui/button';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Field } from '@/components/ui/field';
-import { Link } from '@/i18n/navigation';
 import { SwipeDeck } from './swipe-deck';
 import type { FeedOffer, Option } from './types';
+import { Page } from '@/components/ui/page';
 
 type Mode = 'auto' | 'swipe' | 'list';
 
@@ -150,7 +150,7 @@ export function FeedScreen({
   }
 
   return (
-    <main className="mx-auto w-full max-w-5xl px-4 py-6">
+    <Page width="lg">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
           <h1 className="text-2xl font-semibold">{t('title')}</h1>
@@ -175,9 +175,6 @@ export function FeedScreen({
           >
             {t('modeList')}
           </Button>
-          <Link href="/cart" className={buttonVariants({ size: 'sm' })} data-testid="go-cart">
-            {t('goToCart')}
-          </Link>
         </div>
       </header>
 
@@ -299,7 +296,7 @@ export function FeedScreen({
             {t('emptyFeed')}
           </p>
         ) : (
-          <div className="border-border bg-card mt-4 overflow-x-auto rounded-lg border">
+          <div className="border-border bg-card shadow-card mt-4 overflow-x-auto rounded-xl border">
             <table className="w-full min-w-[720px] text-sm">
               <thead className="text-muted-foreground text-left">
                 <tr>
@@ -349,6 +346,6 @@ export function FeedScreen({
           </div>
         )}
       </section>
-    </main>
+    </Page>
   );
 }

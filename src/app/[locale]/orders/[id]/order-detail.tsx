@@ -6,6 +6,8 @@ import { useRouter, Link } from '@/i18n/navigation';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Field } from '@/components/ui/field';
+import { Page, PageHeader } from '@/components/ui/page';
+import { OrderStatusBadge } from '@/components/order-status-badge';
 
 type Status =
   | 'DRAFT'
@@ -239,25 +241,23 @@ export function OrderDetail({
   const canRespond = side === 'store' && order.status === 'CHANGED_BY_SUPPLIER';
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-4 py-6">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="font-mono text-xl font-semibold" data-testid="order-number">
+    <Page>
+      <PageHeader
+        title={
+          <span className="font-mono" data-testid="order-number">
             {order.number}
-          </h1>
-          <p className="text-muted-foreground text-sm break-words">{order.counterparty}</p>
-        </div>
-        <Link href="/orders" className={buttonVariants({ variant: 'outline', size: 'sm' })}>
-          {t('back')}
-        </Link>
-      </header>
-
-      <p className="border-border bg-card mt-4 inline-flex rounded-lg border px-3 py-2 text-sm">
-        {t('statusLabel')}:{' '}
-        <span className="ml-1 font-medium" data-testid="order-status">
-          {t(`status.${order.status}`)}
-        </span>
-      </p>
+          </span>
+        }
+        description={order.counterparty}
+        actions={
+          <>
+            <OrderStatusBadge status={order.status} testId="order-status" />
+            <Link href="/orders" className={buttonVariants({ variant: 'outline', size: 'sm' })}>
+              {t('back')}
+            </Link>
+          </>
+        }
+      />
 
       {order.status === 'CHANGED_BY_SUPPLIER' && side === 'store' ? (
         <p className="mt-3 text-sm text-amber-700" data-testid="order-changed-notice">
@@ -270,7 +270,7 @@ export function OrderDetail({
         </p>
       ) : null}
 
-      <section className="border-border bg-card mt-5 overflow-x-auto rounded-lg border">
+      <section className="border-border bg-card shadow-card mt-5 overflow-x-auto rounded-xl border">
         <table className="w-full min-w-[560px] text-sm">
           <thead className="text-muted-foreground text-left">
             <tr>
@@ -434,7 +434,7 @@ export function OrderDetail({
       ) : null}
 
       {order.documents.length > 0 ? (
-        <section className="border-border bg-card mt-5 rounded-lg border p-4">
+        <section className="border-border bg-card shadow-card mt-5 rounded-xl border p-4 sm:p-5">
           <h2 className="text-muted-foreground text-sm font-medium">{tDocuments('title')}</h2>
           <ul className="mt-2 space-y-2 text-sm" data-testid="order-documents">
             {order.documents.map((document) => (
@@ -465,7 +465,7 @@ export function OrderDetail({
       ) : null}
 
       {canAccept ? (
-        <section className="border-border bg-card mt-5 rounded-lg border p-4">
+        <section className="border-border bg-card shadow-card mt-5 rounded-xl border p-4 sm:p-5">
           <h2 className="text-lg font-medium">{tAcceptance('title')}</h2>
           <p className="text-muted-foreground mt-1 text-xs">{tAcceptance('hint')}</p>
 
@@ -573,7 +573,7 @@ export function OrderDetail({
       ) : null}
 
       {canPay ? (
-        <section className="border-border bg-card mt-5 rounded-lg border p-4">
+        <section className="border-border bg-card shadow-card mt-5 rounded-xl border p-4 sm:p-5">
           <h2 className="text-lg font-medium">{tPayment('title')}</h2>
 
           <dl className="mt-3 space-y-1 text-sm" data-testid="payment-requisites">
@@ -671,7 +671,7 @@ export function OrderDetail({
       ) : null}
 
       {order.payments.length > 0 ? (
-        <section className="border-border bg-card mt-5 rounded-lg border p-4">
+        <section className="border-border bg-card shadow-card mt-5 rounded-xl border p-4 sm:p-5">
           <h2 className="text-muted-foreground text-sm font-medium">{tPayment('title')}</h2>
           <ul className="mt-2 space-y-1 text-sm" data-testid="order-payments">
             {order.payments.map((item) => (
@@ -684,7 +684,7 @@ export function OrderDetail({
         </section>
       ) : null}
       {canRate ? (
-        <section className="border-border bg-card mt-5 rounded-lg border p-4">
+        <section className="border-border bg-card shadow-card mt-5 rounded-xl border p-4 sm:p-5">
           <h2 className="text-lg font-medium">{tRatings('rateOrder')}</h2>
           <p className="text-muted-foreground mt-1 text-xs">{tRatings('rateHint')}</p>
 
@@ -750,6 +750,6 @@ export function OrderDetail({
           ))}
         </ol>
       </section>
-    </main>
+    </Page>
   );
 }

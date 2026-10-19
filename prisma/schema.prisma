@@ -742,6 +742,8 @@ model StockMovement {
 /// Остаток по точке и товару. Пересчитывается только вместе с движением.
 model StockBalance {
   id          String   @id @default(cuid())
+  /// Минимальный остаток: ниже него товар попадает в автозаказ (раздел 4.1 ТЗ).
+  minQuantity Decimal? @db.Decimal(12, 3)
   locationId  String
   location    Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
   productId   String

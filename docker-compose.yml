@@ -1,0 +1,23 @@
+# Локальный PostgreSQL для разработки без Railway.
+# На текущей машине Docker не установлен — рабочая БД задаётся через DATABASE_URL.
+services:
+  postgres:
+    image: postgres:18-alpine
+    container_name: b2b-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: b2b_demo
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres-data:

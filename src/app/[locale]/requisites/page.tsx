@@ -21,6 +21,7 @@ export default async function RequisitesPage({ params }: { params: Promise<{ loc
         bankName: company.bankName ?? '',
       }}
       initialChannels={company.notificationChannels}
+      initialCostMethod={company.costMethod}
     />
   );
 }

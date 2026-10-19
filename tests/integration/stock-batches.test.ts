@@ -207,3 +207,47 @@ describe('партии и сроки годности', () => {
     );
   });
 });
+
+describe('себестоимость по FIFO', () => {
+  it('write_off_takes_cost_of_the_oldest_batch', async () => {
+    const store = await storeWithProduct(8);
+    await prisma.company.update({
+      where: { id: store.companyId },
+      data: { costMethod: 'FIFO' },
+    });
+    // Две партии разной цены: ближний срок — дешёвая.
+    await stock(store, '5', '2026-11-01', '80.00');
+    await stock(store, '5', '2026-12-01', '120.00');
+
+    const result = await writeOffStock(store.companyId, store.userId, {
+      locationId: store.locationId,
+      reason: 'DAMAGE',
+      lines: [{ productId: store.productId, quantity: '5' }],
+    });
+    if (result.status !== 'ok') throw new Error(result.status);
+
+    const movement = await prisma.stockMovement.findFirstOrThrow({
+      where: { stockDocumentId: result.documentId },
+    });
+    // FIFO: ушла партия по 80, а не средневзвешенные 100.
+    expect(movement.costPrice.toFixed(2)).toBe('80.00');
+  });
+
+  it('average_method_keeps_weighted_cost', async () => {
+    const store = await storeWithProduct(9);
+    await stock(store, '5', '2026-11-01', '80.00');
+    await stock(store, '5', '2026-12-01', '120.00');
+
+    const result = await writeOffStock(store.companyId, store.userId, {
+      locationId: store.locationId,
+      reason: 'DAMAGE',
+      lines: [{ productId: store.productId, quantity: '5' }],
+    });
+    if (result.status !== 'ok') throw new Error(result.status);
+
+    const movement = await prisma.stockMovement.findFirstOrThrow({
+      where: { stockDocumentId: result.documentId },
+    });
+    expect(movement.costPrice.toFixed(2)).toBe('100.00');
+  });
+});

@@ -52,18 +52,24 @@ export default async function StockPage({ params }: { params: Promise<{ locale: 
   const ordered = await prisma.orderItem.findMany({
     where: { order: { storeId: access!.companyId } },
     select: {
-      offer: { select: { product: { select: { id: true, nameRu: true, nameKk: true } } } },
+      offer: {
+        select: { product: { select: { id: true, nameRu: true, nameKk: true, barcode: true } } },
+      },
     },
     distinct: ['offerId'],
     take: 200,
   });
 
-  const products = new Map<string, { productId: string; name: string; quantity: string }>();
+  const products = new Map<
+    string,
+    { productId: string; name: string; quantity: string; barcode: string }
+  >();
   for (const balance of balances) {
     products.set(balance.productId, {
       productId: balance.productId,
       name: locale === 'kk' ? balance.product.nameKk : balance.product.nameRu,
       quantity: balance.quantity.toFixed(3),
+      barcode: balance.product.barcode,
     });
   }
   for (const item of ordered) {
@@ -73,6 +79,7 @@ export default async function StockPage({ params }: { params: Promise<{ locale: 
       productId: product.id,
       name: locale === 'kk' ? product.nameKk : product.nameRu,
       quantity: '0.000',
+      barcode: product.barcode,
     });
   }
 

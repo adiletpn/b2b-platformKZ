@@ -13,15 +13,19 @@ const CHANNELS = ['whatsapp', 'telegram', 'email'] as const;
 export function RequisitesForm({
   initial,
   initialChannels,
+  initialCostMethod,
 }: {
   initial: { iik: string; bik: string; bankName: string };
   initialChannels: string[];
+  initialCostMethod: 'AVERAGE' | 'FIFO';
 }) {
   const t = useTranslations('requisites');
   const tDashboard = useTranslations('dashboard');
   const [values, setValues] = useState(initial);
   const [channels, setChannels] = useState<string[]>(initialChannels);
   const [channelsSaved, setChannelsSaved] = useState(false);
+  const [costMethod, setCostMethod] = useState(initialCostMethod);
+  const [costSaved, setCostSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [pending, setPending] = useState(false);
@@ -70,6 +74,25 @@ export function RequisitesForm({
     setChannelsSaved(true);
   }
 
+  /** Раздел 4.1 ТЗ: себестоимость средневзвешенная или FIFO. */
+  async function saveCostMethod(next: 'AVERAGE' | 'FIFO') {
+    setCostMethod(next);
+    setCostSaved(false);
+    setError(null);
+
+    const response = await fetch('/api/company/cost-method', {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ costMethod: next }),
+    });
+    const data = (await response.json()) as { status?: string };
+    if (data.status !== 'ok') {
+      setError(data.status ?? 'unknown');
+      return;
+    }
+    setCostSaved(true);
+  }
+
   return (
     <Page width="sm">
       <header className="flex flex-wrap items-center justify-between gap-3">
@@ -111,6 +134,28 @@ export function RequisitesForm({
           {t('save')}
         </Button>
       </form>
+
+      <section className="border-border mt-6 rounded-lg border border-dashed p-4">
+        <h2 className="text-muted-foreground text-sm font-medium">{t('costMethodTitle')}</h2>
+        <p className="text-muted-foreground mt-1 text-xs">{t('costMethodHint')}</p>
+        <select
+          className="border-border bg-card mt-2 h-11 rounded-lg border px-3"
+          value={costMethod}
+          data-testid="cost-method"
+          onChange={(event) => void saveCostMethod(event.target.value as 'AVERAGE' | 'FIFO')}
+        >
+          {(['AVERAGE', 'FIFO'] as const).map((value) => (
+            <option key={value} value={value}>
+              {t(`costMethods.${value}`)}
+            </option>
+          ))}
+        </select>
+        {costSaved ? (
+          <p className="text-muted-foreground mt-2 text-sm" data-testid="cost-method-saved">
+            {t('costMethodSaved')}
+          </p>
+        ) : null}
+      </section>
 
       <section className="border-border mt-6 rounded-lg border border-dashed p-4">
         <h2 className="text-muted-foreground text-sm font-medium">{t('channelsTitle')}</h2>

@@ -9,7 +9,7 @@ import { Field } from '@/components/ui/field';
 import { Card, CardTitle } from '@/components/ui/card';
 
 type Location = { id: string; address: string };
-type Balance = { productId: string; name: string; quantity: string };
+type Balance = { productId: string; name: string; quantity: string; barcode: string };
 type DocumentRow = {
   id: string;
   type: 'TRANSFER' | 'WRITE_OFF' | 'STOCKTAKE';
@@ -57,6 +57,19 @@ export function StockDocuments({
   const [pending, setPending] = useState(false);
 
   const [ledger, setLedger] = useState<LedgerEntry[] | null>(null);
+  const [scan, setScan] = useState('');
+  const [scanError, setScanError] = useState(false);
+
+  /**
+   * Сканер (USB или Bluetooth) печатает штрихкод как клавиатура и жмёт Enter:
+   * находим позицию и подставляем её в документ (раздел 4.1 ТЗ).
+   */
+  function applyScan(code: string) {
+    const found = balances.find((balance) => balance.barcode === code.trim());
+    setScanError(!found);
+    if (found) setProductId(found.productId);
+    setScan('');
+  }
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
@@ -181,6 +194,21 @@ export function StockDocuments({
             </Field>
           ) : null}
 
+          <Field label={t('scan')}>
+            <Input
+              className="w-44"
+              value={scan}
+              placeholder={t('scanPlaceholder')}
+              data-testid="document-scan"
+              onChange={(event) => setScan(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key !== 'Enter') return;
+                event.preventDefault();
+                applyScan(scan);
+              }}
+            />
+          </Field>
+
           <Field label={t('product')}>
             <select
               className="border-border bg-card h-11 rounded-lg border px-3"
@@ -221,6 +249,11 @@ export function StockDocuments({
           </Button>
         </div>
 
+        {scanError ? (
+          <p className="mt-2 text-sm text-red-600" role="alert" data-testid="scan-error">
+            {t('scanNotFound')}
+          </p>
+        ) : null}
         {created ? (
           <p className="text-muted-foreground mt-2 text-sm" data-testid="document-created">
             {t('created', { number: created })}

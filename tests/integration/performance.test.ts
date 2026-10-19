@@ -99,6 +99,9 @@ beforeAll(async () => {
       stock: '100',
     })),
   });
+  // После массовых удалений и вставок статистика планировщика устаревает,
+  // и запрос идёт перебором: обновляем её, иначе замер меряет не запрос, а bloat.
+  await prisma.$executeRawUnsafe('ANALYZE supplier_offers, products, delivery_zones');
 }, 300_000);
 
 afterAll(async () => {

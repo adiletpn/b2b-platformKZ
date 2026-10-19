@@ -55,6 +55,7 @@ type Order = {
   documents: DocumentRow[];
   payments: { id: string; amount: string; reference: string | null }[];
   myRatingScore: string | null;
+  counterpartyId: string;
   supplierRequisites: { iik: string | null; bik: string | null; bankName: string | null };
 };
 
@@ -80,6 +81,7 @@ export function OrderDetail({
   const tAcceptance = useTranslations('acceptance');
   const tPayment = useTranslations('payment');
   const tRatings = useTranslations('ratings');
+  const tChat = useTranslations('chat');
   const router = useRouter();
   const [quantities, setQuantities] = useState<Record<string, string>>(
     Object.fromEntries(
@@ -177,6 +179,26 @@ export function OrderDetail({
     router.refresh();
   }
 
+  /** Раздел 3.7 ТЗ: чат внутри заявки, с привязкой к ней. */
+  async function openOrderChat() {
+    setPending(true);
+    setError(null);
+
+    const response = await fetch('/api/chats', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ counterpartyId: order.counterpartyId, orderId: order.id }),
+    });
+    const data = (await response.json()) as { status: string; chatId?: string };
+    setPending(false);
+
+    if (data.status !== 'ok' || !data.chatId) {
+      setError(data.status);
+      return;
+    }
+    router.push(`/chat?chat=${data.chatId}`);
+  }
+
   /** Раздел 3.8 ТЗ: оценка по закрытой заявке, один раз от каждой стороны. */
   async function submitRating() {
     setPending(true);
@@ -252,6 +274,15 @@ export function OrderDetail({
         actions={
           <>
             <OrderStatusBadge status={order.status} testId="order-status" />
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={pending}
+              data-testid="open-order-chat"
+              onClick={() => void openOrderChat()}
+            >
+              {tChat('openFromOrder')}
+            </Button>
             <Link href="/orders" className={buttonVariants({ variant: 'outline', size: 'sm' })}>
               {t('back')}
             </Link>

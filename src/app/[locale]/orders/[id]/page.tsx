@@ -60,6 +60,7 @@ export default async function OrderPage({
           toStatus: log.toStatus,
           createdAt: log.createdAt.toISOString(),
         })),
+        counterpartyId: side === 'store' ? order.supplierId : order.storeId,
         myRatingScore:
           order.ratings
             .find((rating) => rating.authorCompanyId === active!.companyId)

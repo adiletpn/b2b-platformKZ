@@ -98,7 +98,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
         ) : null}
       </div>
 
-      <nav className="mt-6 flex flex-wrap gap-2" data-testid="mockup-links">
+      <nav className="mt-6 flex flex-wrap gap-2" data-testid="extra-links">
         <Link
           href="/chat"
           className={buttonVariants({ variant: 'ghost', size: 'sm' })}

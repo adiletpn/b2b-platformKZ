@@ -1,39 +1,38 @@
-import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { Link } from '@/i18n/navigation';
-import { Button, buttonVariants } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { MockupNotice } from '@/components/mockup-notice';
-import { Page } from '@/components/ui/page';
+import { setRequestLocale } from 'next-intl/server';
+import { redirect } from '@/i18n/navigation';
+import { getActiveCompany } from '@/lib/auth/active-company';
+import { getMessages, listChats, markRead } from '@/lib/chat/chat';
+import { ChatScreen } from './chat-screen';
 
-export default async function ChatPage({ params }: { params: Promise<{ locale: string }> }) {
+export default async function ChatPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ locale: string }>;
+  searchParams: Promise<{ chat?: string }>;
+}) {
   const { locale } = await params;
   setRequestLocale(locale);
 
-  const t = await getTranslations('mockups.chat');
-  const tDashboard = await getTranslations('dashboard');
+  const active = await getActiveCompany();
+  if (!active) redirect({ href: '/login', locale });
+
+  const companyId = active!.companyId;
+  const [chats, query] = await Promise.all([listChats(companyId), searchParams]);
+  const openId = query.chat ?? chats[0]?.id ?? null;
+
+  const opened = openId ? await getMessages(openId, companyId) : null;
+  // Открытие переписки помечает сообщения собеседника прочитанными (раздел 3.7 ТЗ).
+  if (opened) await markRead(openId!, companyId);
 
   return (
-    <Page width="sm">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold">{t('title')}</h1>
-        <Link href="/dashboard" className={buttonVariants({ variant: 'outline', size: 'sm' })}>
-          {tDashboard('title')}
-        </Link>
-      </header>
-      <MockupNotice />
-
-      <section className="border-border bg-card shadow-card mt-5 space-y-3 rounded-xl border p-4 sm:p-5">
-        <p className="bg-muted max-w-[80%] rounded-lg px-3 py-2 text-sm">{t('message1')}</p>
-        <p className="bg-primary text-primary-foreground ml-auto max-w-[80%] rounded-lg px-3 py-2 text-sm">
-          {t('message2')}
-        </p>
-      </section>
-
-      <div className="mt-4 flex gap-2">
-        <Input placeholder={t('placeholder')} disabled />
-        <Button disabled>{t('send')}</Button>
-      </div>
-      <p className="text-muted-foreground mt-2 text-xs">{t('templates')}</p>
-    </Page>
+    <ChatScreen
+      chats={chats.map((chat) => ({
+        ...chat,
+        unread: chat.id === openId ? 0 : chat.unread,
+      }))}
+      initialChatId={openId}
+      initialMessages={opened?.messages ?? []}
+    />
   );
 }

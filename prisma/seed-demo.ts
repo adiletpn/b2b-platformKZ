@@ -14,6 +14,10 @@ import { createWaybillAndInvoice } from '../src/lib/documents/create';
 import { acceptDelivery } from '../src/lib/acceptance/accept';
 import { recordPayment } from '../src/lib/payments/record';
 import { saveRequisites } from '../src/lib/payments/requisites';
+import { inviteEmployee, acceptPendingInvitations } from '../src/lib/employees/invitations';
+import { createCustomRole, updateEmployeeAccess } from '../src/lib/employees/roles';
+import { decideDiscrepancyAct } from '../src/lib/documents/returns';
+import { assignPlan } from '../src/lib/admin/tariffs';
 
 type ProductSeed = {
   barcode: string;
@@ -355,6 +359,23 @@ async function makeOrder(
   return result.orders[0]!.id;
 }
 
+/** Сотрудник магазина с ролью менеджера по закупкам и лимитом заявки. */
+async function addPurchasingManager(companyId: string, ownerId: string, phone: string) {
+  const invited = await inviteEmployee(companyId, ownerId, phone, 'PURCHASING_MANAGER');
+  if (invited.status !== 'ok') throw new Error(`приглашение: ${invited.status}`);
+
+  const user = await prisma.user.upsert({
+    where: { phone },
+    update: {},
+    create: { phone },
+  });
+  await acceptPendingInvitations(user.id, phone);
+  const membership = await prisma.membership.findUniqueOrThrow({
+    where: { userId_companyId: { userId: user.id, companyId } },
+  });
+  return { userId: user.id, membershipId: membership.id };
+}
+
 async function main() {
   // `truncate ... cascade` вычищает и справочники: без ролей матрица прав пуста и всё отдаёт 403.
   const roles = await prisma.role.count();
@@ -506,6 +527,94 @@ async function main() {
   });
   await changeStatus(closed, store.companyId, store.userId, 'CLOSED');
 
+  // Сотрудник с лимитом: его заявка выше лимита встаёт на согласование Владельцу.
+  const manager = await addPurchasingManager(store.companyId, store.userId, '+77020000011');
+  await updateEmployeeAccess(store.companyId, store.userId, manager.membershipId, {
+    allowedLocationIds: [store.locationId],
+    orderLimit: '5000.00',
+    maxDiscount: '10.00',
+  });
+  await createCustomRole(store.companyId, store.userId, {
+    nameRu: 'Старший кассир',
+    nameKk: 'Аға кассир',
+    permissions: [
+      { section: 'POS', action: 'VIEW' },
+      { section: 'POS', action: 'CREATE' },
+      { section: 'STOCK', action: 'VIEW' },
+    ],
+  });
+
+  const awaitingApproval = await makeOrder(
+    { ...store, userId: manager.userId },
+    grocery.companyId,
+    4,
+  );
+  console.log(`Заявка на согласовании: ${awaitingApproval.slice(0, 8)}…`);
+
+  // Избранное: свайп вверх по первой карточке молочного поставщика.
+  const favorite = await prisma.supplierOffer.findFirstOrThrow({
+    where: { supplierId: dairy.companyId },
+    orderBy: { id: 'asc' },
+  });
+  await prisma.swipeAction.create({
+    data: { storeId: store.companyId, offerId: favorite.id, action: 'FAV' },
+  });
+
+  // Спор по акту расхождений на отдельной заявке: его разбирает администратор.
+  // Позиций хватает на минимальную сумму заказа этого поставщика.
+  const disputed = await makeOrder(store, drinks.companyId, 4);
+  const disputedOrder = await prisma.order.findUniqueOrThrow({
+    where: { id: disputed },
+    include: { items: true },
+  });
+  await confirmOrder(
+    disputed,
+    drinks.companyId,
+    drinks.userId,
+    disputedOrder.items.map((item) => ({
+      orderItemId: item.id,
+      quantityConfirmed: item.quantityOrdered.toFixed(3),
+    })),
+  );
+  await createWaybillAndInvoice(disputed, drinks.companyId);
+  for (const status of ['PICKING', 'SHIPPED', 'DELIVERED'] as const) {
+    await changeStatus(disputed, drinks.companyId, drinks.userId, status);
+  }
+  await acceptDelivery(
+    disputed,
+    store.companyId,
+    store.userId,
+    disputedOrder.items.map((item, index) => {
+      const ordered = new Decimal(item.quantityOrdered.toString());
+      return {
+        orderItemId: item.id,
+        quantityAccepted: index === 0 ? ordered.minus(2).toFixed(3) : ordered.toFixed(3),
+        quantityDefective: index === 0 ? '2.000' : '0.000',
+      };
+    }),
+  );
+  const act = await prisma.document.findFirstOrThrow({
+    where: { orderId: disputed, type: 'DISCREPANCY_ACT' },
+  });
+  await decideDiscrepancyAct(
+    act.id,
+    drinks.companyId,
+    drinks.userId,
+    false,
+    'брак получен по вине перевозчика',
+  );
+
+  // Подписки: пробный период у магазина, оплаченный тариф у поставщика.
+  const admin = await prisma.adminUser.findFirstOrThrow({ where: { role: 'SUPERADMIN' } });
+  await assignPlan(admin.id, store.companyId, 'START', 0);
+  await assignPlan(admin.id, grocery.companyId, 'BUSINESS', 3);
+
+  // Каналы уведомлений: у молочного поставщика только мессенджеры.
+  await prisma.company.update({
+    where: { id: dairy.companyId },
+    data: { notificationChannels: ['whatsapp', 'telegram'] },
+  });
+
   const [companies, offers, orders] = await Promise.all([
     prisma.company.count(),
     prisma.supplierOffer.count(),
@@ -515,6 +624,8 @@ async function main() {
     `Демо-данные готовы: компаний ${companies}, предложений ${offers}, заявок ${orders}.`,
   );
   console.log('Вход: +7 701 000 00 01 (поставщик бакалеи), +7 702 000 00 01 (магазин в Таразе).');
+  console.log('Сотрудник с лимитом заявки: +7 702 000 00 11 (менеджер по закупкам).');
+  console.log('Админка: /ru/admin, +7 700 900 00 01 (суперадмин) — там спор и подписки.');
 }
 
 main()

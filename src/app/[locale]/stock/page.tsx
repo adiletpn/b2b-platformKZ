@@ -6,6 +6,8 @@ import { buttonVariants } from '@/components/ui/button';
 import { Page } from '@/components/ui/page';
 import { getAccess } from '@/lib/auth/permissions';
 import { StockDocuments } from './stock-documents';
+import { ReplenishmentPanel } from './replenishment-panel';
+import { getReplenishment } from '@/lib/stock/replenishment';
 
 export default async function StockPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -33,6 +35,8 @@ export default async function StockPage({ params }: { params: Promise<{ locale: 
       take: 10,
     }),
   ]);
+
+  const replenishment = await getReplenishment(access!.companyId, store!.locationId);
 
   // В опись можно внести и то, чего сейчас нет на остатке: товары из принятых заявок.
   const ordered = await prisma.orderItem.findMany({
@@ -108,6 +112,22 @@ export default async function StockPage({ params }: { params: Promise<{ locale: 
           </table>
         </div>
       )}
+
+      <ReplenishmentPanel
+        rows={replenishment.map((row) => ({
+          productId: row.productId,
+          name: locale === 'kk' ? row.nameKk : row.nameRu,
+          quantity: row.quantity,
+          minQuantity: row.minQuantity,
+          suggested: row.suggested,
+          supplierName: row.supplierName,
+        }))}
+        minimums={balances.map((balance) => ({
+          productId: balance.productId,
+          name: locale === 'kk' ? balance.product.nameKk : balance.product.nameRu,
+          minQuantity: balance.minQuantity?.toFixed(3) ?? '',
+        }))}
+      />
 
       <StockDocuments
         locations={locations.map((location) => ({

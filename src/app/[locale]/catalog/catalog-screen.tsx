@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Field } from '@/components/ui/field';
 import { Link } from '@/i18n/navigation';
 import { Page } from '@/components/ui/page';
+import { ManualOfferForm } from './manual-offer-form';
 
 type City = { id: string; name: string };
 type Zone = { cityId: string; minOrderAmount: string; leadTimeDays: number };
@@ -23,6 +24,7 @@ type Offer = {
   stock: string;
   minBatch: string;
 };
+type Reference = { code: string; name: string };
 type ImportError = { row: number; column: string; code: string; hint?: string };
 type ImportResult = { created: number; updated: number; errors: ImportError[] };
 
@@ -32,12 +34,20 @@ export function CatalogScreen({
   selectedZones,
   initialOffers,
   initialTotal,
+  units,
+  categories,
+  vatRates,
+  defaultVatCode,
 }: {
   locale: 'ru' | 'kk';
   cities: City[];
   selectedZones: Zone[];
   initialOffers: Offer[];
   initialTotal: number;
+  units: Reference[];
+  categories: Reference[];
+  vatRates: Reference[];
+  defaultVatCode: string;
 }) {
   const t = useTranslations('catalog');
   const tDashboard = useTranslations('dashboard');
@@ -187,6 +197,14 @@ export function CatalogScreen({
           </div>
         ) : null}
       </section>
+
+      <ManualOfferForm
+        units={units}
+        categories={categories}
+        vatRates={vatRates}
+        defaultVatCode={defaultVatCode}
+        onSaved={() => void loadOffers(search)}
+      />
 
       <section className="border-border bg-card shadow-card mt-6 rounded-xl border p-4 sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">

@@ -103,3 +103,42 @@ test('supplier_saves_delivery_zones', async () => {
 
   await expect(page.getByTestId('zones-saved')).toHaveText('Сохранено городов: 2');
 });
+
+test('supplier_adds_product_by_hand_and_lookup_fills_card', async ({}, testInfo) => {
+  // Штрихкод свой на проект: база общая для прогонов обеих ширин.
+  const seed = testInfo.project.name === 'phone-375' ? '487000100001' : '487000100002';
+  const digits = seed.split('').map(Number);
+  const sum = digits.reduce((acc, digit, index) => acc + digit * (index % 2 === 0 ? 1 : 3), 0);
+  const barcode = `${seed}${(10 - (sum % 10)) % 10}`;
+
+  await page.goto('/ru/catalog');
+  await page.getByTestId('manual-barcode').fill(barcode);
+  await page.getByTestId('manual-name-ru').fill('Товар вручную');
+  await page.getByTestId('manual-name-kk').fill('Қолмен тауар');
+  await page.getByTestId('manual-price').fill('500');
+  await page.getByTestId('manual-pack-size').fill('1');
+  await page.getByTestId('manual-min-batch').fill('1');
+  await page.getByTestId('manual-stock').fill('10');
+  await page.getByTestId('manual-save').click();
+
+  await expect(page.getByTestId('manual-saved')).toBeVisible();
+  await page.getByTestId('catalog-search').fill('Товар вручную');
+  await expect(page.getByTestId('offers-table')).toContainText('Товар вручную');
+
+  // Автозаполнение по штрихкоду из общего справочника платформы (раздел 3.2 ТЗ).
+  await page.getByTestId('manual-barcode').fill(barcode);
+  await page.getByTestId('manual-lookup').click();
+  await expect(page.getByTestId('manual-lookup-notice')).toContainText('найден');
+  await expect(page.getByTestId('manual-name-kk')).toHaveValue('Қолмен тауар');
+});
+
+test('manual_entry_rejects_wrong_barcode', async () => {
+  await page.goto('/ru/catalog');
+  await page.getByTestId('manual-barcode').fill('1234567890123');
+  await page.getByTestId('manual-name-ru').fill('Неверный штрихкод');
+  await page.getByTestId('manual-name-kk').fill('Дұрыс емес штрихкод');
+  await page.getByTestId('manual-price').fill('100');
+  await page.getByTestId('manual-save').click();
+
+  await expect(page.getByTestId('manual-error')).toContainText('EAN-13');
+});

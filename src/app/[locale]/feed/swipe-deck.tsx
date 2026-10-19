@@ -8,43 +8,63 @@ import { ProductPhoto } from '@/components/product-photo';
 import type { FeedOffer } from './types';
 
 const SWIPE_THRESHOLD = 80;
+/** Перемещение меньше этого считается тапом по карточке, а не свайпом. */
+const TAP_THRESHOLD = 8;
 
-/** Свайп-колода (раздел 3.3 ТЗ): вправо — беру, влево — пропустить. */
+/** Свайп-колода (раздел 3.3 ТЗ): вправо — беру, влево — пропустить, вверх — в избранное. */
 export function SwipeDeck({
   offers,
   locale,
   onDecision,
   onUndo,
+  onOpenDetails,
   canUndo,
 }: {
   offers: FeedOffer[];
   locale: 'ru' | 'kk';
-  onDecision: (offer: FeedOffer, action: 'LIKE' | 'SKIP') => void;
+  onDecision: (offer: FeedOffer, action: 'LIKE' | 'SKIP' | 'FAV') => void;
   onUndo: () => void;
+  onOpenDetails: (offer: FeedOffer) => void;
   canUndo: boolean;
 }) {
   const t = useTranslations('feed');
   const [dragX, setDragX] = useState(0);
-  const pointerStart = useRef<number | null>(null);
+  const [dragY, setDragY] = useState(0);
+  const pointerStart = useRef<{ x: number; y: number } | null>(null);
   const current = offers[0];
 
   function onPointerDown(event: React.PointerEvent) {
-    pointerStart.current = event.clientX;
+    pointerStart.current = { x: event.clientX, y: event.clientY };
     event.currentTarget.setPointerCapture(event.pointerId);
   }
 
   function onPointerMove(event: React.PointerEvent) {
     if (pointerStart.current === null) return;
-    setDragX(event.clientX - pointerStart.current);
+    setDragX(event.clientX - pointerStart.current.x);
+    setDragY(event.clientY - pointerStart.current.y);
   }
 
   function onPointerUp() {
     if (pointerStart.current === null) return;
-    const offset = dragX;
+    const offsetX = dragX;
+    const offsetY = dragY;
     pointerStart.current = null;
     setDragX(0);
-    if (!current || Math.abs(offset) < SWIPE_THRESHOLD) return;
-    onDecision(current, offset > 0 ? 'LIKE' : 'SKIP');
+    setDragY(0);
+    if (!current) return;
+
+    // Свайп вверх сильнее горизонтального — избранное (раздел 3.3 ТЗ).
+    if (-offsetY > SWIPE_THRESHOLD && -offsetY > Math.abs(offsetX)) {
+      onDecision(current, 'FAV');
+      return;
+    }
+    // Короткое нажатие без перемещения — подробности и сравнение цен.
+    if (Math.abs(offsetX) < TAP_THRESHOLD && Math.abs(offsetY) < TAP_THRESHOLD) {
+      onOpenDetails(current);
+      return;
+    }
+    if (Math.abs(offsetX) < SWIPE_THRESHOLD) return;
+    onDecision(current, offsetX > 0 ? 'LIKE' : 'SKIP');
   }
 
   if (!current) {
@@ -64,7 +84,7 @@ export function SwipeDeck({
     <div className="space-y-4">
       <div
         className="border-border bg-card touch-none rounded-xl border p-5 shadow-sm select-none"
-        style={{ transform: `translateX(${dragX}px) rotate(${dragX / 40}deg)` }}
+        style={{ transform: `translate(${dragX}px, ${dragY}px) rotate(${dragX / 40}deg)` }}
         data-testid="swipe-card"
         data-offer-id={current.id}
         onPointerDown={onPointerDown}
@@ -112,6 +132,11 @@ export function SwipeDeck({
               {t('cheapest')}
             </Badge>
           ) : null}
+          {current.isFavorite ? (
+            <Badge tone="warning" data-testid="badge-favorite">
+              {t('favorite')}
+            </Badge>
+          ) : null}
         </div>
 
         <p className="mt-3 text-3xl font-semibold tabular-nums">
@@ -131,6 +156,7 @@ export function SwipeDeck({
             {t('comparePrices', { count: current.supplierCount })}
           </p>
         ) : null}
+        <p className="text-muted-foreground mt-1 text-xs">{t('tapForDetails')}</p>
 
         <dl className="mt-3 space-y-1 text-sm">
           <div className="flex justify-between gap-3">
@@ -167,6 +193,22 @@ export function SwipeDeck({
           data-testid="swipe-take"
         >
           {t('take')}
+        </Button>
+        <Button
+          variant="outline"
+          className="h-12 flex-1"
+          onClick={() => onDecision(current, 'FAV')}
+          data-testid="swipe-favorite"
+        >
+          {t('toFavorites')}
+        </Button>
+        <Button
+          variant="ghost"
+          className="w-full"
+          onClick={() => onOpenDetails(current)}
+          data-testid="swipe-details"
+        >
+          {t('detailsButton')}
         </Button>
         <Button
           variant="ghost"

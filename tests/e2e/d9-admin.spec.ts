@@ -102,6 +102,36 @@ test('moderation_queue_and_settings_are_available_to_admins', async ({}, testInf
   expect(refused.status()).toBe(403);
 });
 
+test('superadmin_manages_tariffs_and_reference', async ({}, testInfo) => {
+  test.skip(testInfo.project.name !== ONLY_PROJECT, 'админ-панель');
+
+  await adminLogin(adminPage, SUPERADMIN_PHONE);
+
+  // Тарифы из справочника БД (правило 5).
+  await expect(adminPage.getByTestId('plan-START')).toContainText('0.00');
+  await expect(adminPage.getByTestId('plan-PRO')).toContainText('∞');
+
+  // Пробный период назначается компании без счёта.
+  await adminPage.getByTestId('subscription-plan').selectOption('START');
+  await adminPage.getByTestId('subscription-months').fill('0');
+  await adminPage.getByTestId('subscription-save').click();
+  await expect(adminPage.getByTestId('subscriptions')).toContainText('Пробный период');
+
+  // Справочник единиц измерения правится из админки. Запись перезаписывается по коду,
+  // поэтому проверяем её содержимое, а не прирост счётчика: база общая для прогонов.
+  await adminPage.getByTestId('reference-kind').selectOption('unit');
+  await adminPage.getByTestId('reference-code').fill('e2e-box');
+  await adminPage.getByTestId('reference-name-ru').fill('Ящик (e2e)');
+  await adminPage.getByTestId('reference-name-kk').fill('Жәшік (e2e)');
+  await adminPage.getByTestId('reference-save').click();
+
+  const reference = await adminPage.request.get('/api/admin/reference');
+  const data = (await reference.json()) as { units: { code: string; nameRu: string }[] };
+  expect(data.units).toEqual(
+    expect.arrayContaining([expect.objectContaining({ code: 'e2e-box', nameRu: 'Ящик (e2e)' })]),
+  );
+});
+
 test('superadmin_enters_company_on_behalf_with_reason', async ({}, testInfo) => {
   test.skip(testInfo.project.name !== ONLY_PROJECT, 'админ-панель');
 

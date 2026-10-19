@@ -99,6 +99,22 @@ model OtpCode {
   @@map("otp_codes")
 }
 
+/// Передача прав Владельца другому сотруднику: подтверждается кодом (раздел 3.11 ТЗ).
+model OwnerTransfer {
+  id             String    @id @default(cuid())
+  companyId      String
+  company        Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  fromMembership String
+  toMembership   String
+  code           String
+  expiresAt      DateTime
+  confirmedAt    DateTime?
+  createdAt      DateTime  @default(now())
+
+  @@index([companyId, createdAt])
+  @@map("owner_transfers")
+}
+
 /// Сессия в cookie. Хранит активную компанию: один пользователь может работать в нескольких.
 model Session {
   id              String   @id @default(cuid())
@@ -161,6 +177,7 @@ model Company {
   createdAt          DateTime           @default(now())
 
   memberships          Membership[]
+  ownerTransfers       OwnerTransfer[]
   locations            Location[]
   deliveryZones        DeliveryZone[]
   sessions             Session[]
@@ -174,6 +191,7 @@ model Company {
   issuedDocuments      Document[]             @relation("IssuedDocuments")
   receivedDocuments    Document[]             @relation("ReceivedDocuments")
   roles                Role[]
+  subscriptions        Subscription[]
   invitations          Invitation[]
   auditLogs            AuditLog[]
   verificationRequests VerificationRequest[]
@@ -792,6 +810,51 @@ model AuditLog {
 }
 
 // ---------- Админ-панель платформы (раздел 3.13 ТЗ) ----------
+
+/// Тарифный план платформы: лимиты и цена. Правило 5 — тарифы в справочнике БД.
+model TariffPlan {
+  id           String   @id @default(cuid())
+  code         String   @unique
+  nameRu       String
+  nameKk       String
+  priceMonthly Decimal  @default(0) @db.Decimal(14, 2)
+  maxLocations Int?
+  maxEmployees Int?
+  maxProducts  Int?
+  trialDays    Int      @default(0)
+  isDefault    Boolean  @default(false)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  subscriptions Subscription[]
+
+  @@map("tariff_plans")
+}
+
+enum SubscriptionStatus {
+  TRIAL
+  ACTIVE
+  EXPIRED
+}
+
+/// Подписка компании на тариф: пробный период, продление, история оплат (раздел 3.13 ТЗ).
+model Subscription {
+  id        String             @id @default(cuid())
+  companyId String
+  company   Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  planId    String
+  plan      TariffPlan         @relation(fields: [planId], references: [id])
+  status    SubscriptionStatus @default(TRIAL)
+  startedAt DateTime           @default(now())
+  expiresAt DateTime
+  /// Сумма выставленного счёта платформы за период.
+  amount    Decimal            @default(0) @db.Decimal(14, 2)
+  paidAt    DateTime?
+  createdAt DateTime           @default(now())
+
+  @@index([companyId, createdAt])
+  @@map("subscriptions")
+}
 
 enum AdminRole {
   SUPERADMIN

@@ -28,6 +28,7 @@ export async function GET(request: Request) {
       onlyPromo: params.get('onlyPromo') === 'true',
       onlyNew: params.get('onlyNew') === 'true',
       onlyTomorrow: params.get('onlyTomorrow') === 'true',
+      onlyFavorites: params.get('onlyFavorites') === 'true',
       minRating: params.get('minRating') ?? undefined,
     },
   });

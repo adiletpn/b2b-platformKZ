@@ -143,3 +143,30 @@ test('owner_sets_order_limit_for_employee', async ({}, testInfo) => {
   // Лимит виден в таблице сотрудников (раздел 3.12 ТЗ).
   await expect(ownerPage.getByTestId('employees-table')).toContainText('50000.00');
 });
+
+test('owner_transfers_rights_with_code_confirmation', async ({}, testInfo) => {
+  test.skip(testInfo.project.name !== ONLY_PROJECT, 'проверка уровня прав');
+
+  // Для передачи нужен активный сотрудник: кассира мог заблокировать прошлый тест.
+  await ownerPage.goto('/ru/employees');
+  const row = ownerPage.getByTestId('employees-table').getByRole('row').nth(1);
+  const unblock = row.getByRole('button', { name: 'Разблокировать' });
+  if ((await unblock.count()) > 0) await unblock.click();
+  await expect(ownerPage.getByTestId('employees-table')).toContainText('Активен');
+
+  await ownerPage.getByTestId('transfer-employee').selectOption({ index: 1 });
+  await ownerPage.getByTestId('transfer-request').click();
+
+  // Код в демо показывается на экране, реальной отправки SMS нет.
+  const code = await ownerPage.getByTestId('transfer-demo-code').textContent();
+  expect(code).toMatch(/^\d{6}$/);
+  await ownerPage.getByTestId('transfer-code').fill(code!);
+  await ownerPage.getByTestId('transfer-confirm').click();
+
+  await expect(ownerPage.getByTestId('transfer-done')).toBeVisible();
+
+  // Права ушли вместе с ролью: прежний Владелец больше не управляет сотрудниками.
+  // Запись в журнале проверяется интеграционным тестом onboarding.test.ts.
+  await ownerPage.goto('/ru/employees');
+  await ownerPage.waitForURL(/\/dashboard$/);
+});

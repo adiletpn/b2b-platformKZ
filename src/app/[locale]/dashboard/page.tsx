@@ -6,6 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { buttonVariants } from '@/components/ui/button';
 import { Card, CardTitle } from '@/components/ui/card';
 import { Page, PageHeader } from '@/components/ui/page';
+import { getOnboardingProgress } from '@/lib/registration/onboarding';
+import { OnboardingWizard } from './onboarding-progress';
 
 export default async function DashboardPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -21,6 +23,8 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
       deliveryZones: { include: { city: true } },
     },
   });
+
+  const progress = await getOnboardingProgress(company.id);
 
   const t = await getTranslations('dashboard');
   const tType = await getTranslations('companyType');
@@ -69,6 +73,8 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
           </div>
         </dl>
       </Card>
+
+      <OnboardingWizard progress={progress} />
 
       <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
         {company.locations.length > 0 ? (

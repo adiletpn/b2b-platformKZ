@@ -15,6 +15,7 @@ export type FeedFilters = {
   onlyPromo?: boolean;
   onlyNew?: boolean;
   onlyTomorrow?: boolean;
+  onlyFavorites?: boolean;
   minRating?: string;
 };
 
@@ -48,6 +49,8 @@ export type FeedOffer = {
   isCheapest: boolean;
   /** Сколько поставщиков возят этот товар в город. */
   supplierCount: number;
+  /** Свайп вверх: товар в избранном магазина (раздел 3.3 ТЗ). */
+  isFavorite: boolean;
 };
 
 /**
@@ -67,6 +70,7 @@ export async function getFeed(
   const filters = options.filters ?? {};
 
   const hiddenOfferIds = options.forSwipe ? await getHiddenOfferIds(storeId) : [];
+  const favoriteOfferIds = await getFavoriteOfferIds(storeId);
 
   const offers = await prisma.supplierOffer.findMany({
     where: {
@@ -76,6 +80,7 @@ export async function getFeed(
       isActive: true,
       ...(options.forSwipe ? { stock: { gt: 0 } } : {}),
       ...(hiddenOfferIds.length > 0 ? { id: { notIn: hiddenOfferIds } } : {}),
+      ...(filters.onlyFavorites ? { id: { in: [...favoriteOfferIds] } } : {}),
       ...(filters.priceMax ? { priceWithVat: { lte: filters.priceMax } } : {}),
       product: {
         ...(filters.categoryId ? { categoryId: filters.categoryId } : {}),
@@ -177,6 +182,7 @@ export async function getFeed(
     supplierCount: byProduct.get(offer.productId)?.count ?? 1,
     supplierRating: ratingBySupplier.get(offer.supplierId)?.score ?? null,
     supplierRatingCount: ratingBySupplier.get(offer.supplierId)?.count ?? 0,
+    isFavorite: favoriteOfferIds.has(offer.id),
   }));
 
   const filtered = mapped.filter((item) => {
@@ -196,6 +202,15 @@ export async function getFeed(
     const byWeight = weight(left) - weight(right);
     return byWeight !== 0 ? byWeight : left.nameRu.localeCompare(right.nameRu, 'ru');
   });
+}
+
+/** Избранное магазина: свайп вверх по карточке (раздел 3.3 ТЗ). */
+export async function getFavoriteOfferIds(storeId: string) {
+  const actions = await prisma.swipeAction.findMany({
+    where: { storeId, action: 'FAV' },
+    select: { offerId: true },
+  });
+  return new Set(actions.map((action) => action.offerId));
 }
 
 /** Что не показываем в свайпе: уже взятое и пропущенное за последние 14 дней. */

@@ -1,6 +1,7 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { redirect } from '@/i18n/navigation';
 import { getAccess, hasPermission } from '@/lib/auth/permissions';
+import { getSession } from '@/lib/auth/session';
 import { prisma } from '@/lib/prisma';
 import { maskPhone } from '@/lib/phone';
 import { EmployeesScreen } from './employees-screen';
@@ -17,6 +18,7 @@ export default async function EmployeesPage({ params }: { params: Promise<{ loca
   if (!allowed) redirect({ href: '/dashboard', locale });
 
   const companyId = access!.companyId;
+  const session = await getSession();
   const t = await getTranslations({ locale, namespace: 'employees' });
   const [memberships, invitations, audit, roles, locations] = await Promise.all([
     prisma.membership.findMany({
@@ -66,6 +68,14 @@ export default async function EmployeesPage({ params }: { params: Promise<{ loca
         orderLimit: membership.orderLimit?.toFixed(2) ?? '',
         maxDiscount: membership.maxDiscount?.toFixed(2) ?? '',
       }))}
+      companies={(session?.user.memberships ?? [])
+        .filter((membership) => membership.status === 'ACTIVE')
+        .map((membership) => ({
+          id: membership.companyId,
+          name: membership.company.name,
+          active: membership.companyId === companyId,
+        }))}
+      isOwner={access!.roleCode === 'OWNER'}
       invitations={invitations.map((invitation) => ({
         id: invitation.id,
         phone: maskPhone(invitation.phone),

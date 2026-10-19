@@ -24,6 +24,8 @@ export type FeedOffer = {
   isNew: boolean;
   isCheapest: boolean;
   supplierCount: number;
+  /** Свайп вверх: товар в избранном магазина (раздел 3.3 ТЗ). */
+  isFavorite: boolean;
 };
 
 export type Option = { id: string; name: string };

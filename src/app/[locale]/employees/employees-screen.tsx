@@ -22,6 +22,7 @@ type Employee = {
   maxDiscount: string;
 };
 type Invitation = { id: string; phone: string; role: string; expiresAt: string };
+type Company = { id: string; name: string; active: boolean };
 type AuditEntry = { id: string; action: string; actorPhone: string; createdAt: string };
 
 type Cell = { section: string; action: string };
@@ -32,12 +33,16 @@ export function EmployeesScreen({
   employees,
   invitations,
   audit,
+  companies,
+  isOwner,
 }: {
   roles: Role[];
   locations: Location[];
   employees: Employee[];
   invitations: Invitation[];
   audit: AuditEntry[];
+  companies: Company[];
+  isOwner: boolean;
 }) {
   const t = useTranslations('employees');
   const tDashboard = useTranslations('dashboard');
@@ -55,6 +60,11 @@ export function EmployeesScreen({
   const [roleNameKk, setRoleNameKk] = useState('');
   const [cells, setCells] = useState<Cell[]>([]);
   const [roleCreated, setRoleCreated] = useState(false);
+
+  const [transfer, setTransfer] = useState<{ id: string; code: string } | null>(null);
+  const [transferTo, setTransferTo] = useState('');
+  const [transferCode, setTransferCode] = useState('');
+  const [transferred, setTransferred] = useState(false);
 
   const [editing, setEditing] = useState<string | null>(null);
   const [accessSaved, setAccessSaved] = useState(false);
@@ -115,6 +125,40 @@ export function EmployeesScreen({
         ? current.filter((cell) => !(cell.section === section && cell.action === action))
         : [...current, { section, action }],
     );
+  }
+
+  async function requestTransfer() {
+    setTransferred(false);
+    setError(null);
+    const response = await fetch('/api/company/owner', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ membershipId: transferTo }),
+    });
+    const data = (await response.json()) as { status?: string; transferId?: string; code?: string };
+    if (data.status !== 'ok' || !data.transferId) {
+      setError(data.status ?? 'unknown');
+      return;
+    }
+    // Код в демо показывается на экране: реальной отправки SMS нет.
+    setTransfer({ id: data.transferId, code: data.code ?? '' });
+  }
+
+  async function confirmTransfer() {
+    if (!transfer) return;
+    const ok = await send('/api/company/owner', {
+      transferId: transfer.id,
+      code: transferCode,
+    });
+    if (ok) {
+      setTransfer(null);
+      setTransferCode('');
+      setTransferred(true);
+    }
+  }
+
+  async function switchCompany(companyId: string) {
+    if (await send('/api/company/switch', { companyId })) router.refresh();
   }
 
   async function toggleBlock(employee: Employee) {
@@ -190,6 +234,11 @@ export function EmployeesScreen({
       {invited ? (
         <p className="text-muted-foreground mt-2 text-sm" data-testid="invite-sent">
           {t('invited')}
+        </p>
+      ) : null}
+      {transferred ? (
+        <p className="text-muted-foreground mt-2 text-sm" data-testid="transfer-done">
+          {t('ownerTransferDone')}
         </p>
       ) : null}
       {accessSaved ? (
@@ -339,6 +388,95 @@ export function EmployeesScreen({
             </Button>
           </form>
         ))}
+
+      {isOwner && employees.some((employee) => employee.role !== 'OWNER') ? (
+        <section
+          className="border-border bg-card shadow-card mt-4 rounded-xl border p-4 sm:p-5"
+          data-testid="owner-transfer"
+        >
+          <h2 className="text-lg font-medium">{t('ownerTransferTitle')}</h2>
+          <p className="text-muted-foreground mt-1 text-sm">{t('ownerTransferHint')}</p>
+
+          <div className="mt-3 flex flex-wrap items-end gap-3">
+            <Field label={t('employee')}>
+              <select
+                className="border-border bg-card h-11 rounded-lg border px-3"
+                value={transferTo}
+                data-testid="transfer-employee"
+                onChange={(event) => setTransferTo(event.target.value)}
+              >
+                <option value="">—</option>
+                {employees
+                  .filter((employee) => employee.role !== 'OWNER' && employee.status === 'ACTIVE')
+                  .map((employee) => (
+                    <option key={employee.id} value={employee.id}>
+                      {employee.phone}
+                    </option>
+                  ))}
+              </select>
+            </Field>
+            <Button
+              variant="outline"
+              disabled={pending || !transferTo}
+              data-testid="transfer-request"
+              onClick={() => void requestTransfer()}
+            >
+              {t('ownerTransferRequest')}
+            </Button>
+          </div>
+
+          {transfer ? (
+            <div className="mt-3 flex flex-wrap items-end gap-3">
+              <p className="text-muted-foreground text-sm">
+                {t('ownerTransferDemoCode')}:{' '}
+                <span className="font-mono" data-testid="transfer-demo-code">
+                  {transfer.code}
+                </span>
+              </p>
+              <Field label={t('ownerTransferCode')}>
+                <Input
+                  inputMode="numeric"
+                  value={transferCode}
+                  data-testid="transfer-code"
+                  onChange={(event) => setTransferCode(event.target.value)}
+                />
+              </Field>
+              <Button
+                disabled={pending}
+                data-testid="transfer-confirm"
+                onClick={() => void confirmTransfer()}
+              >
+                {t('ownerTransferConfirm')}
+              </Button>
+            </div>
+          ) : null}
+        </section>
+      ) : null}
+
+      {companies.length > 1 ? (
+        <section className="border-border mt-4 rounded-lg border border-dashed p-4">
+          <h2 className="text-muted-foreground text-sm font-medium">{t('companySwitchTitle')}</h2>
+          <ul className="mt-2 space-y-1 text-sm" data-testid="my-companies">
+            {companies.map((company) => (
+              <li key={company.id} className="flex flex-wrap items-center justify-between gap-2">
+                <span className="break-words">{company.name}</span>
+                {company.active ? (
+                  <span className="text-muted-foreground text-xs">{t('companyActive')}</span>
+                ) : (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    data-testid={`switch-company-${company.id}`}
+                    onClick={() => void switchCompany(company.id)}
+                  >
+                    {t('companySwitch')}
+                  </Button>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       <form
         className="border-border bg-card shadow-card mt-4 rounded-xl border p-4 sm:p-5"

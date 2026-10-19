@@ -270,6 +270,43 @@ const ADMINS = [
   { phone: '+77009000002', name: 'Модератор платформы (тест)', role: 'MODERATOR' as const },
 ];
 
+/** Тарифные планы платформы (раздел 3.13 ТЗ). Правило 5: лимиты в справочнике БД. */
+const TARIFF_PLANS = [
+  {
+    code: 'START',
+    nameRu: 'Старт',
+    nameKk: 'Бастау',
+    priceMonthly: '0.00',
+    maxLocations: 1,
+    maxEmployees: 3,
+    maxProducts: 100,
+    trialDays: 14,
+    isDefault: true,
+  },
+  {
+    code: 'BUSINESS',
+    nameRu: 'Бизнес',
+    nameKk: 'Бизнес',
+    priceMonthly: '19900.00',
+    maxLocations: 5,
+    maxEmployees: 15,
+    maxProducts: 5000,
+    trialDays: 14,
+    isDefault: false,
+  },
+  {
+    code: 'PRO',
+    nameRu: 'Профи',
+    nameKk: 'Кәсіби',
+    priceMonthly: '49900.00',
+    maxLocations: null,
+    maxEmployees: null,
+    maxProducts: null,
+    trialDays: 0,
+    isDefault: false,
+  },
+];
+
 const SETTINGS = [
   // В демо компании подтверждаются автоматически, иначе показ упирается в модерацию.
   { key: 'auto_verify_companies', value: 'true' },
@@ -348,11 +385,17 @@ async function main() {
     await prisma.permission.createMany({ data: rows });
   }
 
-  const [cities, rates, unitCount, categoryCount] = await Promise.all([
+  for (const plan of TARIFF_PLANS) {
+    const { code, ...data } = plan;
+    await prisma.tariffPlan.upsert({ where: { code }, update: data, create: { code, ...data } });
+  }
+
+  const [cities, rates, unitCount, categoryCount, planCount] = await Promise.all([
     prisma.city.count(),
     prisma.vatRate.count(),
     prisma.unit.count(),
     prisma.category.count(),
+    prisma.tariffPlan.count(),
   ]);
   for (const admin of ADMINS) {
     await prisma.adminUser.upsert({
@@ -376,7 +419,7 @@ async function main() {
   ]);
   console.log(
     `Справочники загружены: городов ${cities}, ставок НДС ${rates}, ` +
-      `единиц ${unitCount}, категорий ${categoryCount}, ролей ${roleCount}, прав ${permissionCount}, ` +
+      `единиц ${unitCount}, категорий ${categoryCount}, тарифов ${planCount}, ролей ${roleCount}, прав ${permissionCount}, ` +
       `администраторов ${await prisma.adminUser.count()}`,
   );
 }

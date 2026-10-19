@@ -7,6 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Field } from '@/components/ui/field';
 import { ProductPhoto } from '@/components/product-photo';
 import { SwipeDeck } from './swipe-deck';
+import { OfferDetailsPanel } from './offer-details-panel';
+import type { OfferDetails } from '@/lib/feed/offer-details';
 import type { FeedOffer, Option } from './types';
 import { Page } from '@/components/ui/page';
 
@@ -46,7 +48,13 @@ export function FeedScreen({
   const [supplierId, setSupplierId] = useState('');
   const [brand, setBrand] = useState('');
   const [priceMax, setPriceMax] = useState('');
-  const [flags, setFlags] = useState({ onlyPromo: false, onlyNew: false, onlyTomorrow: false });
+  const [flags, setFlags] = useState({
+    onlyPromo: false,
+    onlyNew: false,
+    onlyTomorrow: false,
+    onlyFavorites: false,
+  });
+  const [details, setDetails] = useState<OfferDetails | null>(null);
 
   const searchTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
@@ -68,6 +76,7 @@ export function FeedScreen({
       ...(active.onlyPromo ? { onlyPromo: 'true' } : {}),
       ...(active.onlyNew ? { onlyNew: 'true' } : {}),
       ...(active.onlyTomorrow ? { onlyTomorrow: 'true' } : {}),
+      ...(active.onlyFavorites ? { onlyFavorites: 'true' } : {}),
     });
     for (const [key, value] of [...params.entries()]) if (!value) params.delete(key);
 
@@ -93,10 +102,10 @@ export function FeedScreen({
     );
   }
 
-  async function decide(offer: FeedOffer, action: 'LIKE' | 'SKIP') {
+  async function decide(offer: FeedOffer, action: 'LIKE' | 'SKIP' | 'FAV') {
     setSwipeOffers((current) => current.filter((item) => item.id !== offer.id));
     setSwipeCount((count) => count + 1);
-    setNotice(action === 'LIKE' ? 'added' : null);
+    setNotice(action === 'LIKE' ? 'added' : action === 'FAV' ? 'favorited' : null);
 
     // Карточка уходит сразу, но «отменить» должно ждать записи свайпа, иначе отменять нечего.
     const saving = fetch('/api/feed/swipe', {
@@ -127,6 +136,34 @@ export function FeedScreen({
       return next;
     });
     await reloadSwipe(data.undone.offerId);
+  }
+
+  /** Тап по карточке: подробности товара и сравнение цен (раздел 3.3 ТЗ). */
+  async function openDetails(offer: FeedOffer) {
+    const response = await fetch(`/api/feed/${offer.id}`);
+    if (!response.ok) return;
+    setDetails((await response.json()) as OfferDetails);
+  }
+
+  /** Из сравнения можно взять товар у того поставщика, у кого дешевле. */
+  async function takeFromDetails(offerId: string) {
+    const chosen =
+      swipeOffers.find((offer) => offer.id === offerId) ??
+      listOffers.find((offer) => offer.id === offerId);
+    setDetails(null);
+    if (chosen) {
+      await decide(chosen, 'LIKE');
+      return;
+    }
+
+    // Карточка другого поставщика может быть вне текущей выборки — кладём напрямую.
+    await fetch('/api/feed/swipe', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ offerId, action: 'LIKE' }),
+    });
+    setNotice('added');
+    await Promise.all([reloadSwipe(), reloadList()]);
   }
 
   async function setQuantity(offer: FeedOffer, value: string) {
@@ -161,7 +198,12 @@ export function FeedScreen({
     setSupplierId('');
     setBrand('');
     setPriceMax('');
-    const cleared = { onlyPromo: false, onlyNew: false, onlyTomorrow: false };
+    const cleared = {
+      onlyPromo: false,
+      onlyNew: false,
+      onlyTomorrow: false,
+      onlyFavorites: false,
+    };
     setFlags(cleared);
     void reloadList(
       { search: '', categoryId: '', supplierId: '', brand: '', priceMax: '' },
@@ -223,8 +265,18 @@ export function FeedScreen({
           locale={locale}
           onDecision={decide}
           onUndo={undo}
+          onOpenDetails={openDetails}
           canUndo={swipeCount > 0}
         />
+
+        {details ? (
+          <OfferDetailsPanel
+            details={details}
+            locale={locale}
+            onClose={() => setDetails(null)}
+            onTake={takeFromDetails}
+          />
+        ) : null}
       </section>
 
       <section className={`mt-5 ${listClass}`} data-testid="list-mode">
@@ -304,7 +356,7 @@ export function FeedScreen({
               />
             </Field>
             <div className="flex flex-wrap items-end gap-3 sm:col-span-2 lg:col-span-3">
-              {(['onlyPromo', 'onlyNew', 'onlyTomorrow'] as const).map((flag) => (
+              {(['onlyPromo', 'onlyNew', 'onlyTomorrow', 'onlyFavorites'] as const).map((flag) => (
                 <label key={flag} className="flex items-center gap-2 text-sm">
                   <input
                     type="checkbox"

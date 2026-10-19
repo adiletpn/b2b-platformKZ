@@ -23,6 +23,8 @@ let page: Page;
 let seed: number;
 /** Названия товаров уникальны на проект: база общая для всех спек. */
 let tarazProduct: string;
+/** Товар второго поставщика: корзина должна делиться на две заявки. */
+let tarazProductSecond: string;
 let astanaProduct: string;
 
 async function login(target: Page, phone: string) {
@@ -84,6 +86,7 @@ test.beforeAll(async ({ browser }, testInfo) => {
     await context.close();
   }
   tarazProduct = `Тестовый товар ${7000 + seed}`;
+  tarazProductSecond = `Тестовый товар ${7100 + seed}`;
 
   // Поставщик, который возит только в Астану: его товар не должен попасть в ленту Тараза.
   const otherContext = await browser.newContext();
@@ -176,16 +179,21 @@ test('swipe_left_skips_card_and_undo_returns_it', async () => {
 
 test('store_sets_quantity_in_list_mode', async () => {
   await page.getByTestId('mode-list').click();
-  // Берём свой товар: у чужих фикстур кратность 12 и количество округлится.
-  await page.getByTestId('feed-search').fill(tarazProduct);
-  // Ждём, пока список перезагрузится под фильтр, иначе строка подменится под руками.
-  await expect(page.getByTestId('list-table').getByRole('row')).toHaveCount(1);
 
-  const input = page.getByTestId('list-table').getByRole('row').first().getByRole('textbox');
-  await input.fill('5');
-  await input.blur();
+  // Берём по позиции у каждого поставщика: корзина делится на две заявки
+  // независимо от того, чью карточку выдал свайп. У чужих фикстур кратность 12.
+  for (const product of [tarazProduct, tarazProductSecond]) {
+    await page.getByTestId('feed-search').fill(product);
+    // Строку ищем по названию: счётчик строк совпадает и до перезагрузки списка.
+    const row = page.getByTestId('list-table').getByRole('row').filter({ hasText: product });
+    await expect(row).toHaveCount(1);
 
-  await expect(input).toHaveValue('5.000');
+    const input = row.getByRole('textbox');
+    await input.fill('5');
+    await input.blur();
+    await expect(input).toHaveValue('5.000');
+  }
+
   await page.getByTestId('filter-reset').click();
 });
 
@@ -193,9 +201,14 @@ test('cart_is_split_by_supplier_with_totals_and_minimum', async () => {
   await page.getByTestId('go-cart').click();
   await page.waitForURL(/\/cart$/);
 
-  await expect(page.getByTestId('cart-suppliers-count')).toHaveText('Поставщиков в корзине: 2');
+  // Свайп мог взять карточку любого поставщика города, поэтому сверяем деление
+  // корзины, а не точное число: ровно три заявки проверяет критерий 4 в d7.
+  const counter = await page.getByTestId('cart-suppliers-count').textContent();
+  const suppliers = Number(counter!.match(/\d+/)![0]);
+  expect(suppliers).toBeGreaterThanOrEqual(2);
+
   const totals = page.locator('[data-testid^="cart-total-"]');
-  await expect(totals).toHaveCount(2);
+  await expect(totals).toHaveCount(suppliers);
   for (const total of await totals.all()) {
     await expect(total).toContainText('₸');
   }
@@ -205,4 +218,41 @@ test('repeat_last_order_reports_no_history_before_first_order', async () => {
   await page.goto('/ru/feed');
   await page.getByTestId('repeat-last-order').click();
   await expect(page.getByTestId('feed-notice')).toHaveText('Прошлых заказов пока нет');
+});
+
+test('swipe_up_sends_card_to_favorites', async () => {
+  await page.goto('/ru/feed');
+  await page.getByTestId('mode-swipe').click();
+  const card = page.getByTestId('swipe-card');
+  await expect(card).toBeVisible();
+  const favorite = await card.getAttribute('data-offer-id');
+
+  // Свайп вверх жестом: карточка уходит в избранное, а не в корзину.
+  const box = (await card.boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2 - 220, { steps: 12 });
+  await page.mouse.up();
+  await expect(page.getByTestId('feed-notice')).toHaveText('Добавлено в избранное');
+
+  // Фильтр «только избранное» показывает именно её.
+  await page.getByTestId('mode-list').click();
+  await page.getByTestId('filter-onlyFavorites').check();
+  const rows = page.getByTestId('list-table').getByRole('row');
+  await expect(rows).toHaveCount(1);
+  await expect(rows.first()).toHaveAttribute('data-testid', `list-row-${favorite}`);
+  await page.getByTestId('filter-reset').click();
+});
+
+test('tap_on_card_opens_details_with_price_comparison', async () => {
+  await page.goto('/ru/feed');
+  await page.getByTestId('mode-swipe').click();
+  await expect(page.getByTestId('swipe-card')).toBeVisible();
+
+  await page.getByTestId('swipe-details').click();
+  await expect(page.getByTestId('offer-details')).toBeVisible();
+  // Сравнение цен: в таблице минимум одно предложение города.
+  await expect(page.getByTestId('details-offers').getByRole('row')).not.toHaveCount(0);
+  await page.getByTestId('details-close').click();
+  await expect(page.getByTestId('offer-details')).toBeHidden();
 });

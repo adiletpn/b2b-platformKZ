@@ -2,6 +2,8 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { getAdminSession } from '@/lib/admin/session';
 import { prisma } from '@/lib/prisma';
 import { getDashboard, listDisputes } from '@/lib/admin/dashboard';
+import { listPlans, listSubscriptions } from '@/lib/admin/tariffs';
+import { getReferenceData } from '@/lib/admin/reference';
 import { AdminLogin } from './admin-login';
 import { AdminPanel } from './admin-panel';
 
@@ -21,33 +23,40 @@ export default async function AdminPage({ params }: { params: Promise<{ locale: 
     );
   }
 
-  const [metrics, disputes, queue, audit, impersonations] = await Promise.all([
-    getDashboard(),
-    listDisputes(),
-    prisma.verificationRequest.findMany({
-      where: { status: 'PENDING' },
-      include: { company: true },
-      orderBy: { createdAt: 'asc' },
-      take: 20,
-    }),
-    prisma.adminAuditLog.findMany({
-      include: { admin: true },
-      orderBy: { createdAt: 'desc' },
-      take: 20,
-    }),
-    prisma.impersonationLog.findMany({
-      where: { adminId: session.adminId, endedAt: null },
-      include: { company: true },
-      orderBy: { startedAt: 'desc' },
-      take: 1,
-    }),
-  ]);
+  const [metrics, disputes, plans, subscriptions, reference, queue, audit, impersonations] =
+    await Promise.all([
+      getDashboard(),
+      listDisputes(),
+      listPlans(),
+      listSubscriptions(),
+      getReferenceData(),
+      prisma.verificationRequest.findMany({
+        where: { status: 'PENDING' },
+        include: { company: true },
+        orderBy: { createdAt: 'asc' },
+        take: 20,
+      }),
+      prisma.adminAuditLog.findMany({
+        include: { admin: true },
+        orderBy: { createdAt: 'desc' },
+        take: 20,
+      }),
+      prisma.impersonationLog.findMany({
+        where: { adminId: session.adminId, endedAt: null },
+        include: { company: true },
+        orderBy: { startedAt: 'desc' },
+        take: 1,
+      }),
+    ]);
 
   return (
     <AdminPanel
       role={session.admin.role}
       metrics={metrics}
       disputes={disputes}
+      plans={plans}
+      subscriptions={subscriptions}
+      reference={reference}
       queue={queue.map((request) => ({
         id: request.id,
         companyName: request.company.name,

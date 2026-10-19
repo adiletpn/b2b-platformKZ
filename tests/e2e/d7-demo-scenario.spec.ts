@@ -170,9 +170,13 @@ test('criterion_3_store_picks_products_by_swipe_and_in_list', async ({}, testInf
   await storePage.getByTestId('mode-list').click();
   for (const supplier of suppliers) {
     await storePage.getByTestId('feed-search').fill(supplier.product);
-    await expect(storePage.getByTestId('list-table')).toContainText(supplier.product);
-    await expect(storePage.getByTestId('list-table').getByRole('row')).toHaveCount(1);
-    const input = storePage.getByTestId('list-table').getByRole('row').first().getByRole('textbox');
+    // Строку ищем по названию: счётчик строк совпадает и до перезагрузки списка.
+    const row = storePage
+      .getByTestId('list-table')
+      .getByRole('row')
+      .filter({ hasText: supplier.product });
+    await expect(row).toHaveCount(1);
+    const input = row.getByRole('textbox');
     await input.fill('5');
     await input.blur();
     await expect(input).toHaveValue('5.000');

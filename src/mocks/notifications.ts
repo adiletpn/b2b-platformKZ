@@ -17,7 +17,8 @@ export type NotificationEvent =
   | 'company_approved'
   | 'company_rejected'
   | 'rating_received'
-  | 'message_received';
+  | 'message_received'
+  | 'owner_transferred';
 
 export async function notify(
   companyId: string,

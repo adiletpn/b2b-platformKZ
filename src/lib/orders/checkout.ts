@@ -2,6 +2,7 @@ import Decimal from 'decimal.js';
 import { prisma } from '@/lib/prisma';
 import { notify } from '@/mocks/notifications';
 import { nextDocumentNumber } from './numbering';
+import { LONG_TRANSACTION } from '@/lib/db-tx';
 
 export type CheckoutInput = {
   storeId: string;
@@ -121,7 +122,7 @@ export async function checkout(input: CheckoutInput): Promise<CheckoutResult> {
 
     await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
     return orders;
-  });
+  }, LONG_TRANSACTION);
 
   for (const order of created) {
     const supplierId = [...bySupplier.keys()].find(

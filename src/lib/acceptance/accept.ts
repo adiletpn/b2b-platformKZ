@@ -5,6 +5,7 @@ import { documentTotals, lineTotals } from '@/lib/documents/totals';
 import { formatDate } from '@/lib/documents/create';
 import type { DocumentLine, DocumentPayload } from '@/lib/documents/payload';
 import { notify } from '@/mocks/notifications';
+import { LONG_TRANSACTION } from '@/lib/db-tx';
 
 export type AcceptanceLine = {
   orderItemId: string;
@@ -275,7 +276,7 @@ export async function acceptDelivery(
     });
 
     return { nextStatus, discrepancyActId };
-  });
+  }, LONG_TRANSACTION);
 
   await notify(
     order.supplierId,

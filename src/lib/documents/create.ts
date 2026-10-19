@@ -5,6 +5,7 @@ import { nextDocumentNumber } from '@/lib/orders/numbering';
 import { notify } from '@/mocks/notifications';
 import { documentTotals, lineTotals } from './totals';
 import type { DocumentLine, DocumentParty, DocumentPayload } from './payload';
+import { LONG_TRANSACTION } from '@/lib/db-tx';
 
 function toParty(company: {
   name: string;
@@ -145,7 +146,7 @@ export async function createWaybillAndInvoice(
     }
 
     return result;
-  });
+  }, LONG_TRANSACTION);
 
   await notify(
     order.storeId,

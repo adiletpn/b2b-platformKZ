@@ -2,6 +2,7 @@ import Decimal from 'decimal.js';
 import type { OrderStatus } from '@/generated/prisma/enums';
 import { prisma } from '@/lib/prisma';
 import { notify } from '@/mocks/notifications';
+import { LONG_TRANSACTION } from '@/lib/db-tx';
 
 /** Допустимые переходы статусов. Раздел 5.2 ТЗ. */
 export const TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
@@ -166,7 +167,7 @@ export async function confirmOrder(
     await tx.orderStatusLog.create({
       data: { orderId, fromStatus: order.status, toStatus: nextStatus, userId },
     });
-  });
+  }, LONG_TRANSACTION);
 
   await notify(
     order.storeId,

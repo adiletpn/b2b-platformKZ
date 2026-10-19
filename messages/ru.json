@@ -519,7 +519,10 @@
     "nothingBelowMinimum": "Ниже минимума ничего нет",
     "suggested": "заказать {quantity}",
     "draftOrder": "Добавить в корзину",
-    "drafted": "Добавлено позиций: {count}"
+    "drafted": "Добавлено позиций: {count}",
+    "expiringTitle": "Скоро истекает срок",
+    "expired": "просрочен",
+    "daysLeft": "осталось {days} дн."
   },
   "payment": {
     "title": "Оплата",

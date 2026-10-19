@@ -8,6 +8,8 @@ import { getAccess } from '@/lib/auth/permissions';
 import { StockDocuments } from './stock-documents';
 import { ReplenishmentPanel } from './replenishment-panel';
 import { getReplenishment } from '@/lib/stock/replenishment';
+import { getExpiring } from '@/lib/stock/batches';
+import { Card, CardTitle } from '@/components/ui/card';
 
 export default async function StockPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -36,7 +38,10 @@ export default async function StockPage({ params }: { params: Promise<{ locale: 
     }),
   ]);
 
-  const replenishment = await getReplenishment(access!.companyId, store!.locationId);
+  const [replenishment, expiring] = await Promise.all([
+    getReplenishment(access!.companyId, store!.locationId),
+    getExpiring(access!.companyId),
+  ]);
 
   // В опись можно внести и то, чего сейчас нет на остатке: товары из принятых заявок.
   const ordered = await prisma.orderItem.findMany({
@@ -112,6 +117,32 @@ export default async function StockPage({ params }: { params: Promise<{ locale: 
           </table>
         </div>
       )}
+
+      {expiring.length > 0 ? (
+        <Card className="mt-4" data-testid="expiring">
+          <CardTitle className="text-sm">{t('expiringTitle')}</CardTitle>
+          <ul className="mt-2 space-y-1 text-sm" data-testid="expiring-list">
+            {expiring.map((row) => (
+              <li
+                key={`${row.productId}-${row.expiresAt}`}
+                className="flex flex-wrap items-baseline justify-between gap-2"
+              >
+                <span className="break-words">
+                  {locale === 'kk' ? row.nameKk : row.nameRu}
+                  <span className="text-muted-foreground">
+                    {' '}
+                    · {row.quantity} · {row.locationAddress}
+                  </span>
+                </span>
+                <span className={row.daysLeft < 0 ? 'text-red-600' : 'text-muted-foreground'}>
+                  {row.expiresAt} ·{' '}
+                  {row.daysLeft < 0 ? t('expired') : t('daysLeft', { days: row.daysLeft })}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ) : null}
 
       <ReplenishmentPanel
         rows={replenishment.map((row) => ({

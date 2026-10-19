@@ -519,7 +519,10 @@
     "nothingBelowMinimum": "Шектен төмен ештеңе жоқ",
     "suggested": "{quantity} тапсырыс беру",
     "draftOrder": "Себетке қосу",
-    "drafted": "Қосылған позиция: {count}"
+    "drafted": "Қосылған позиция: {count}",
+    "expiringTitle": "Мерзімі жақында бітеді",
+    "expired": "мерзімі өткен",
+    "daysLeft": "{days} күн қалды"
   },
   "payment": {
     "title": "Төлем",

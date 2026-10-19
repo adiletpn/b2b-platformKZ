@@ -19,6 +19,8 @@
     "db:seed": "tsx --env-file-if-exists=.env prisma/seed.ts",
     "db:seed:demo": "tsx --env-file-if-exists=.env prisma/seed-demo.ts",
     "db:deploy": "prisma migrate deploy",
+    "perf:feed": "tsx --env-file-if-exists=.env scripts/perf-feed.ts",
+    "db:backup": "tsx --env-file-if-exists=.env scripts/db-backup.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {

@@ -13,6 +13,7 @@ import { changeStatus, confirmOrder } from '../src/lib/orders/workflow';
 import { createWaybillAndInvoice } from '../src/lib/documents/create';
 import { acceptDelivery } from '../src/lib/acceptance/accept';
 import { recordPayment } from '../src/lib/payments/record';
+import { markOverdueOrders } from '../src/lib/settlements/receivables';
 import { saveRequisites } from '../src/lib/payments/requisites';
 import { inviteEmployee, acceptPendingInvitations } from '../src/lib/employees/invitations';
 import { createCustomRole, updateEmployeeAccess } from '../src/lib/employees/roles';
@@ -478,7 +479,7 @@ async function main() {
     cityCodes: ['taraz'],
     address: 'ул. Толе би, 45',
   });
-  await createCompany({
+  const almatyStoreCompany = await createCompany({
     phone: '+77020000002',
     bin: '170840006546',
     type: 'STORE',
@@ -638,6 +639,51 @@ async function main() {
     false,
     'брак получен по вине перевозчика',
   );
+
+  // Просроченная оплата у магазина в Алматы: дебиторка поставщика на показе не пустая.
+  const almatyLocation = await prisma.location.findFirstOrThrow({
+    where: { companyId: almatyStoreCompany.companyId },
+  });
+  const almatyStore = {
+    ...almatyStoreCompany,
+    locationId: almatyLocation.id,
+    cityId: almatyCity.id,
+  };
+  const overdue = await makeOrder(almatyStore, grocery.companyId, 4);
+  const overdueOrder = await prisma.order.findUniqueOrThrow({
+    where: { id: overdue },
+    include: { items: true },
+  });
+  await confirmOrder(
+    overdue,
+    grocery.companyId,
+    grocery.userId,
+    overdueOrder.items.map((item) => ({
+      orderItemId: item.id,
+      quantityConfirmed: item.quantityOrdered.toFixed(3),
+    })),
+  );
+  await createWaybillAndInvoice(overdue, grocery.companyId);
+  for (const status of ['PICKING', 'SHIPPED', 'DELIVERED'] as const) {
+    await changeStatus(overdue, grocery.companyId, grocery.userId, status);
+  }
+  await acceptDelivery(
+    overdue,
+    almatyStore.companyId,
+    almatyStore.userId,
+    overdueOrder.items.map((item) => ({
+      orderItemId: item.id,
+      quantityAccepted: item.quantityOrdered.toFixed(3),
+      quantityDefective: '0.000',
+    })),
+  );
+  await changeStatus(overdue, almatyStore.companyId, almatyStore.userId, 'AWAITING_PAYMENT');
+  // Срок оплаты прошёл неделю назад — заявка уходит в просрочку (раздел 3.6 ТЗ).
+  await prisma.order.update({
+    where: { id: overdue },
+    data: { paymentDueDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
+  });
+  await markOverdueOrders();
 
   // Подписки: пробный период у магазина, оплаченный тариф у поставщика.
   const admin = await prisma.adminUser.findFirstOrThrow({ where: { role: 'SUPERADMIN' } });

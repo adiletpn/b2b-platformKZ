@@ -179,3 +179,17 @@ test('admin_panel_is_closed_without_session', async ({ browser }, testInfo) => {
 
   await anonymous.close();
 });
+
+test('admin_panel_fits_phone_width', async ({}, testInfo) => {
+  test.skip(testInfo.project.name !== ONLY_PROJECT, 'проверка вёрстки');
+
+  await adminLogin(adminPage, SUPERADMIN_PHONE);
+  for (const width of [375, 1280]) {
+    await adminPage.setViewportSize({ width, height: 800 });
+    const overflow = await adminPage.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    );
+    expect(overflow, `ширина ${width} px`).toBeLessThanOrEqual(0);
+  }
+  await adminPage.setViewportSize({ width: 1280, height: 800 });
+});

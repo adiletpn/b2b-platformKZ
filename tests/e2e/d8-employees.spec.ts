@@ -170,3 +170,18 @@ test('owner_transfers_rights_with_code_confirmation', async ({}, testInfo) => {
   await ownerPage.goto('/ru/employees');
   await ownerPage.waitForURL(/\/dashboard$/);
 });
+
+test('employees_and_matrix_fit_phone_width', async ({}, testInfo) => {
+  test.skip(testInfo.project.name !== ONLY_PROJECT, 'проверка вёрстки');
+
+  await ownerPage.goto('/ru/employees');
+  for (const width of [375, 1280]) {
+    await ownerPage.setViewportSize({ width, height: 800 });
+    // Широкие таблицы прокручиваются внутри своего блока, а не ломают страницу.
+    const overflow = await ownerPage.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    );
+    expect(overflow, `ширина ${width} px`).toBeLessThanOrEqual(0);
+  }
+  await ownerPage.setViewportSize({ width: 1280, height: 800 });
+});

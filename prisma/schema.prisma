@@ -1,0 +1,873 @@
+// Модель данных следует разделу 5.1 ТЗ: имена сущностей и ключевые поля берутся оттуда.
+// Правило 1: деньги — только Decimal. Правило 2: количества — 3 знака.
+// Правило 5: ставки НДС и перечни живут в справочниках БД, не в коде.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------- Справочники (D0) ----------
+
+/// Область РК. Справочник из раздела 3.9 ТЗ.
+model Region {
+  id     String @id @default(cuid())
+  code   String @unique
+  nameRu String
+  nameKk String
+  cities City[]
+
+  @@map("regions")
+}
+
+/// Город или районный центр. Магазин видит только поставщиков, которые возят в его город.
+model City {
+  id                    String         @id @default(cuid())
+  code                  String         @unique
+  nameRu                String
+  nameKk                String
+  isRepublicSignificant Boolean        @default(false)
+  regionId              String?
+  region                Region?        @relation(fields: [regionId], references: [id])
+  locations             Location[]
+  deliveryZones         DeliveryZone[]
+
+  @@index([regionId])
+  @@map("cities")
+}
+
+/// Ставка НДС. Раздел 2 ТЗ: ставки меняются, поэтому хранятся с периодом действия.
+model VatRate {
+  id        String    @id @default(cuid())
+  code      String    @unique
+  nameRu    String
+  nameKk    String
+  rate      Decimal   @db.Decimal(5, 2)
+  validFrom DateTime  @db.Date
+  validTo   DateTime? @db.Date
+  isDefault Boolean   @default(false)
+
+  offers SupplierOffer[]
+
+  @@map("vat_rates")
+}
+
+// ---------- Пользователи и вход (D1) ----------
+
+enum Locale {
+  ru
+  kk
+}
+
+/// Пользователь платформы. Вход по номеру телефона, ЭЦП в демо нет.
+model User {
+  id                String    @id @default(cuid())
+  phone             String    @unique
+  name              String?
+  locale            Locale    @default(ru)
+  createdAt         DateTime  @default(now())
+  /// Закон РК №94-V: согласие на обработку персональных данных (раздел 3.11 ТЗ).
+  consentAcceptedAt DateTime?
+
+  memberships     Membership[]
+  sessions        Session[]
+  accessRequests  CompanyAccessRequest[]
+  orderStatusLogs OrderStatusLog[]
+  auditLogs       AuditLog[]
+
+  @@map("users")
+}
+
+/// Код из мок-SMS. В демо показывается в интерфейсе, реальной отправки нет.
+model OtpCode {
+  id         String    @id @default(cuid())
+  phone      String
+  code       String
+  expiresAt  DateTime
+  consumedAt DateTime?
+  attempts   Int       @default(0)
+  createdAt  DateTime  @default(now())
+
+  @@index([phone, createdAt])
+  @@map("otp_codes")
+}
+
+/// Сессия в cookie. Хранит активную компанию: один пользователь может работать в нескольких.
+model Session {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activeCompanyId String?
+  activeCompany   Company? @relation(fields: [activeCompanyId], references: [id])
+  expiresAt       DateTime
+  createdAt       DateTime @default(now())
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+// ---------- Компании (D1) ----------
+
+enum CompanyType {
+  STORE
+  SUPPLIER
+  BOTH
+}
+
+enum LegalForm {
+  IP
+  TOO
+  AO
+}
+
+/// Статус верификации из раздела 3.11 ТЗ. ЭЦП в демо нет, дальше BIN_CONFIRMED не идём.
+enum VerificationStatus {
+  NOT_VERIFIED
+  /// На проверке у модератора платформы (раздел 3.11 ТЗ).
+  PENDING_REVIEW
+  BIN_CONFIRMED
+  /// Проверена администратором платформы.
+  VERIFIED
+  SIGNED
+}
+
+/// Компания: магазин, поставщик или оба сразу. БИН уникален — повторная регистрация невозможна.
+model Company {
+  id                 String             @id @default(cuid())
+  type               CompanyType
+  bin                String             @unique
+  name               String
+  legalForm          LegalForm
+  isVatPayer         Boolean            @default(false)
+  legalAddress       String
+  iik                String?
+  bik                String?
+  bankName           String?
+  contactPhone       String?
+  verificationStatus VerificationStatus @default(NOT_VERIFIED)
+  /// Принятие оферты платформы при регистрации (раздел 3.11 ТЗ).
+  offerAcceptedAt    DateTime?
+  createdAt          DateTime           @default(now())
+
+  memberships          Membership[]
+  locations            Location[]
+  deliveryZones        DeliveryZone[]
+  sessions             Session[]
+  accessRequests       CompanyAccessRequest[]
+  offers               SupplierOffer[]
+  swipeActions         SwipeAction[]
+  storeOrders          Order[]                @relation("StoreOrders")
+  supplierOrders       Order[]                @relation("SupplierOrders")
+  numberSequences      NumberSequence[]
+  notifications        Notification[]
+  issuedDocuments      Document[]             @relation("IssuedDocuments")
+  receivedDocuments    Document[]             @relation("ReceivedDocuments")
+  roles                Role[]
+  invitations          Invitation[]
+  auditLogs            AuditLog[]
+  verificationRequests VerificationRequest[]
+  impersonations       ImpersonationLog[]
+  ratingsGiven         Rating[]               @relation("RatingsGiven")
+  ratingsReceived      Rating[]               @relation("RatingsReceived")
+
+  @@map("companies")
+}
+
+/// Роли-шаблоны из раздела 1.2 ТЗ. В демо используется только OWNER: полная матрица прав вне демо.
+enum MembershipRole {
+  OWNER
+  PURCHASING_MANAGER
+  SALES_MANAGER
+  STOREKEEPER
+  ACCOUNTANT
+  CASHIER
+  DRIVER
+}
+
+enum MembershipStatus {
+  ACTIVE
+  BLOCKED
+}
+
+/// Связь пользователя с компанией. Проверка доступа к данным компании идёт через неё (правило 4).
+model Membership {
+  id                 String           @id @default(cuid())
+  userId             String
+  user               User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyId          String
+  company            Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  role               MembershipRole   @default(OWNER)
+  /// Своя роль компании; если не задана, права берутся из системного шаблона по `role`.
+  roleId             String?
+  customRole         Role?            @relation(fields: [roleId], references: [id])
+  status             MembershipStatus @default(ACTIVE)
+  /// Ограничение по точкам: пусто — доступны все точки компании (раздел 3.12 ТЗ).
+  allowedLocationIds String[]         @default([])
+  /// Лимит суммы заявки без согласования и максимальная скидка.
+  orderLimit         Decimal?         @db.Decimal(14, 2)
+  maxDiscount        Decimal?         @db.Decimal(5, 2)
+  createdAt          DateTime         @default(now())
+
+  @@unique([userId, companyId])
+  @@index([companyId])
+  @@map("memberships")
+}
+
+enum LocationType {
+  STORE
+  WAREHOUSE
+}
+
+/// Торговая точка магазина или склад поставщика.
+model Location {
+  id             String          @id @default(cuid())
+  companyId      String
+  company        Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  type           LocationType
+  cityId         String
+  city           City            @relation(fields: [cityId], references: [id])
+  address        String
+  format         String?
+  createdAt      DateTime        @default(now())
+  cart           Cart?
+  orders         Order[]
+  stockMovements StockMovement[]
+  stockBalances  StockBalance[]
+
+  @@index([companyId])
+  @@index([cityId])
+  @@map("locations")
+}
+
+/// Город доставки поставщика. Магазин видит только тех, кто возит в его город (раздел 3.9 ТЗ).
+model DeliveryZone {
+  id             String   @id @default(cuid())
+  supplierId     String
+  supplier       Company  @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  cityId         String
+  city           City     @relation(fields: [cityId], references: [id])
+  minOrderAmount Decimal  @default(0) @db.Decimal(14, 2)
+  leadTimeDays   Int      @default(1)
+  createdAt      DateTime @default(now())
+
+  @@unique([supplierId, cityId])
+  @@index([cityId])
+  @@map("delivery_zones")
+}
+
+enum AccessRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+/// Раздел 3.11 ТЗ: если компания с таким БИН уже есть, вместо дубля уходит запрос Владельцу.
+model CompanyAccessRequest {
+  id        String              @id @default(cuid())
+  companyId String
+  company   Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status    AccessRequestStatus @default(PENDING)
+  createdAt DateTime            @default(now())
+
+  @@unique([companyId, userId])
+  @@map("company_access_requests")
+}
+
+// ---------- Каталог (D2) ----------
+
+/// Единица измерения. Правило 5: перечень в справочнике, не в коде.
+model Unit {
+  id       String    @id @default(cuid())
+  code     String    @unique
+  nameRu   String
+  nameKk   String
+  products Product[]
+
+  @@map("units")
+}
+
+/// Категория товара. Дерево из раздела 3.13 ТЗ, в демо используется один уровень.
+model Category {
+  id       String     @id @default(cuid())
+  code     String     @unique
+  nameRu   String
+  nameKk   String
+  parentId String?
+  parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryTree")
+  products Product[]
+
+  @@map("categories")
+}
+
+/// Единый справочник товаров платформы (раздел 3.2 ТЗ):
+/// один и тот же штрихкод у разных поставщиков — это один товар.
+model Product {
+  id           String    @id @default(cuid())
+  barcode      String    @unique
+  nameRu       String
+  nameKk       String
+  brand        String?
+  manufacturer String?
+  country      String?
+  categoryId   String?
+  category     Category? @relation(fields: [categoryId], references: [id])
+  unitId       String
+  unit         Unit      @relation(fields: [unitId], references: [id])
+  tnvedCode    String?
+  photoUrls    String[]  @default([])
+  isMarked     Boolean   @default(false)
+  isExcise     Boolean   @default(false)
+  requiresSnt  Boolean   @default(false)
+  isLicensed   Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+
+  offers         SupplierOffer[]
+  stockMovements StockMovement[]
+  stockBalances  StockBalance[]
+
+  @@index([categoryId])
+  @@map("products")
+}
+
+/// Предложение поставщика по товару: цена, кратность, остаток.
+/// Правило 1: деньги Decimal(2). Правило 2: количества Decimal(3).
+model SupplierOffer {
+  id              String        @id @default(cuid())
+  supplierId      String
+  supplier        Company       @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  productId       String
+  product         Product       @relation(fields: [productId], references: [id])
+  sku             String?
+  priceWithoutVat Decimal       @db.Decimal(14, 2)
+  priceWithVat    Decimal       @db.Decimal(14, 2)
+  vatRateId       String
+  vatRate         VatRate       @relation(fields: [vatRateId], references: [id])
+  packSize        Decimal       @default(1) @db.Decimal(12, 3)
+  minBatch        Decimal       @default(1) @db.Decimal(12, 3)
+  stock           Decimal       @default(0) @db.Decimal(12, 3)
+  expiresAt       DateTime?     @db.Date
+  isActive        Boolean       @default(true)
+  updatedAt       DateTime      @updatedAt
+  swipeActions    SwipeAction[]
+  cartItems       CartItem[]
+  orderItems      OrderItem[]
+
+  @@unique([supplierId, productId])
+  @@index([supplierId])
+  @@map("supplier_offers")
+}
+
+// ---------- Выбор товаров магазином (D3) ----------
+
+/// Действие в свайп-ленте (раздел 3.3 ТЗ). FAV заведён по модели 5.1, экрана избранного в демо нет.
+enum SwipeActionType {
+  LIKE
+  SKIP
+  FAV
+}
+
+model SwipeAction {
+  id        String          @id @default(cuid())
+  storeId   String
+  store     Company         @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  offerId   String
+  offer     SupplierOffer   @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  action    SwipeActionType
+  createdAt DateTime        @default(now())
+
+  @@index([storeId, createdAt])
+  @@index([storeId, offerId])
+  @@map("swipe_actions")
+}
+
+/// Корзина торговой точки. Делится на заявки по поставщикам при отправке (раздел 3.4 ТЗ).
+model Cart {
+  id         String     @id @default(cuid())
+  locationId String     @unique
+  location   Location   @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  updatedAt  DateTime   @updatedAt
+  items      CartItem[]
+
+  @@map("carts")
+}
+
+model CartItem {
+  id        String        @id @default(cuid())
+  cartId    String
+  cart      Cart          @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  offerId   String
+  offer     SupplierOffer @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  quantity  Decimal       @db.Decimal(12, 3)
+  createdAt DateTime      @default(now())
+
+  @@unique([cartId, offerId])
+  @@map("cart_items")
+}
+
+/// Статусы заявки — раздел 5.2 ТЗ. Переходы появляются в D4.
+enum OrderStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  CHANGED_BY_SUPPLIER
+  REJECTED
+  PICKING
+  SHIPPED
+  DELIVERED
+  ACCEPTED_BY_STORE
+  ACCEPTED_WITH_DISCREPANCY
+  AWAITING_PAYMENT
+  PAID
+  CLOSED
+  CANCELLED
+}
+
+model Order {
+  id              String        @id @default(cuid())
+  number          String
+  storeId         String
+  store           Company       @relation("StoreOrders", fields: [storeId], references: [id])
+  supplierId      String
+  supplier        Company       @relation("SupplierOrders", fields: [supplierId], references: [id])
+  locationId      String
+  location        Location      @relation(fields: [locationId], references: [id])
+  status          OrderStatus   @default(DRAFT)
+  deliveryDate    DateTime?     @db.Date
+  comment         String?
+  paymentMethod   PaymentMethod @default(ON_DELIVERY)
+  rejectionReason String?
+  totalWithVat    Decimal       @default(0) @db.Decimal(14, 2)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  items         OrderItem[]
+  statusLogs    OrderStatusLog[]
+  notifications Notification[]
+  documents     Document[]
+  payments      Payment[]
+  ratings       Rating[]
+
+  // Раздел 3.5 ТЗ: нумерация отдельная у каждой компании, поэтому номер уникален в пределах магазина.
+  @@unique([storeId, number])
+  @@index([storeId, createdAt])
+  @@index([supplierId, createdAt])
+  @@map("orders")
+}
+
+model OrderItem {
+  id                String        @id @default(cuid())
+  orderId           String
+  order             Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  offerId           String
+  offer             SupplierOffer @relation(fields: [offerId], references: [id])
+  quantityOrdered   Decimal       @db.Decimal(12, 3)
+  quantityConfirmed Decimal?      @db.Decimal(12, 3)
+  /// Приёмка магазином: фактически принято, брак и пересорт (раздел 6.2 демо-ТЗ).
+  quantityAccepted  Decimal?      @db.Decimal(12, 3)
+  quantityDefective Decimal?      @db.Decimal(12, 3)
+  quantityMismatch  Decimal?      @db.Decimal(12, 3)
+  priceWithoutVat   Decimal       @db.Decimal(14, 2)
+  priceWithVat      Decimal       @db.Decimal(14, 2)
+  vatRateValue      Decimal       @db.Decimal(5, 2)
+
+  @@unique([orderId, offerId])
+  @@map("order_items")
+}
+
+// ---------- Заявки (D4) ----------
+
+/// Нумерация документов отдельная у каждой компании (раздел 3.5 ТЗ).
+model NumberSequence {
+  id         String  @id @default(cuid())
+  companyId  String
+  company    Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  kind       String
+  year       Int
+  lastNumber Int     @default(0)
+
+  @@unique([companyId, kind, year])
+  @@map("number_sequences")
+}
+
+/// Правило 10: защита от двойного нажатия при создании документов и приёмке.
+model IdempotencyKey {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  companyId String
+  operation String
+  result    Json
+  createdAt DateTime @default(now())
+
+  @@map("idempotency_keys")
+}
+
+/// Условия оплаты из раздела 3.1 ТЗ.
+enum PaymentMethod {
+  PREPAY
+  ON_DELIVERY
+  DEFERRED
+}
+
+/// Уведомление. В демо каналы замоканы: запись в лог и показ в интерфейсе.
+model Notification {
+  id        String   @id @default(cuid())
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  event     String
+  orderId   String?
+  order     Order?   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  channels  String[] @default([])
+  payload   Json
+  createdAt DateTime @default(now())
+
+  @@index([companyId, createdAt])
+  @@map("notifications")
+}
+
+/// Каждый переход статуса пишется в журнал с автором и временем (раздел 5.2 ТЗ).
+model OrderStatusLog {
+  id         String       @id @default(cuid())
+  orderId    String
+  order      Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  fromStatus OrderStatus?
+  toStatus   OrderStatus
+  userId     String?
+  user       User?        @relation(fields: [userId], references: [id])
+  comment    String?
+  createdAt  DateTime     @default(now())
+
+  @@index([orderId, createdAt])
+  @@map("order_status_logs")
+}
+
+// ---------- Документы, приёмка, остатки (D5) ----------
+
+/// Типы документов из раздела 4.3 ТЗ. В демо формируются три первых.
+enum DocumentType {
+  WAYBILL
+  INVOICE
+  DISCREPANCY_ACT
+}
+
+/// Первичный документ. Снимок данных хранится в payload: печатная форма не должна
+/// меняться задним числом вслед за каталогом.
+model Document {
+  id              String       @id @default(cuid())
+  type            DocumentType
+  number          String
+  issuedAt        DateTime     @default(now())
+  orderId         String
+  order           Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  issuerId        String
+  issuer          Company      @relation("IssuedDocuments", fields: [issuerId], references: [id])
+  recipientId     String
+  recipient       Company      @relation("ReceivedDocuments", fields: [recipientId], references: [id])
+  version         Int          @default(1)
+  totalWithoutVat Decimal      @db.Decimal(14, 2)
+  vatAmount       Decimal      @db.Decimal(14, 2)
+  totalWithVat    Decimal      @db.Decimal(14, 2)
+  payload         Json
+
+  movements StockMovement[]
+  payments  Payment[]
+
+  @@unique([issuerId, type, number])
+  @@index([orderId])
+  @@map("documents")
+}
+
+/// Типы движений из раздела 4.1 ТЗ. В демо используется только приход по накладной.
+enum StockMovementType {
+  RECEIPT
+  ISSUE
+  WRITE_OFF
+  TRANSFER
+  INVENTORY
+}
+
+/// Правило 3: остаток меняется только документом движения и только в транзакции.
+model StockMovement {
+  id         String            @id @default(cuid())
+  locationId String
+  location   Location          @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product           @relation(fields: [productId], references: [id])
+  quantity   Decimal           @db.Decimal(12, 3)
+  costPrice  Decimal           @db.Decimal(14, 2)
+  type       StockMovementType
+  documentId String?
+  document   Document?         @relation(fields: [documentId], references: [id])
+  expiresAt  DateTime?         @db.Date
+  createdAt  DateTime          @default(now())
+
+  @@index([locationId, productId])
+  @@map("stock_movements")
+}
+
+/// Остаток по точке и товару. Пересчитывается только вместе с движением.
+model StockBalance {
+  id          String   @id @default(cuid())
+  locationId  String
+  location    Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id])
+  quantity    Decimal  @default(0) @db.Decimal(12, 3)
+  averageCost Decimal  @default(0) @db.Decimal(14, 2)
+  updatedAt   DateTime @updatedAt
+
+  @@unique([locationId, productId])
+  @@map("stock_balances")
+}
+
+// ---------- Оплата (D6) ----------
+
+enum PaymentStatus {
+  PENDING
+  PAID
+}
+
+/// Платёж по заявке (раздел 3.6 ТЗ). В демо отметка ручная, платёжного шлюза нет.
+model Payment {
+  id         String        @id @default(cuid())
+  orderId    String
+  order      Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  documentId String?
+  document   Document?     @relation(fields: [documentId], references: [id])
+  amount     Decimal       @db.Decimal(14, 2)
+  method     PaymentMethod
+  status     PaymentStatus @default(PAID)
+  /// Номер платёжного поручения, который магазин вводит вручную.
+  reference  String?
+  paidAt     DateTime      @db.Date
+  dueDate    DateTime?     @db.Date
+  createdAt  DateTime      @default(now())
+
+  @@index([orderId])
+  @@map("payments")
+}
+
+// ---------- Сотрудники и права (раздел 3.12 ТЗ) ----------
+
+/// Разделы матрицы прав. Правило 5: перечень живёт в справочнике ролей в БД.
+enum PermissionSection {
+  CATALOG
+  SWIPE_ORDERS
+  ACCEPTANCE
+  POS
+  STOCK
+  PURCHASE_PRICES
+  DOCUMENTS_PAYMENTS
+  EMPLOYEES_REQUISITES
+  DELIVERIES
+}
+
+enum PermissionAction {
+  VIEW
+  CREATE
+  UPDATE
+  DELETE
+  SIGN
+  EXPORT
+}
+
+/// Роль: системный шаблон (companyId = null) или своя роль компании.
+model Role {
+  id          String       @id @default(cuid())
+  companyId   String?
+  company     Company?     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  code        String
+  nameRu      String
+  nameKk      String
+  isTemplate  Boolean      @default(false)
+  permissions Permission[]
+  memberships Membership[]
+  invitations Invitation[]
+
+  @@unique([companyId, code])
+  @@map("roles")
+}
+
+model Permission {
+  id      String            @id @default(cuid())
+  roleId  String
+  role    Role              @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  section PermissionSection
+  action  PermissionAction
+
+  @@unique([roleId, section, action])
+  @@map("permissions")
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  REVOKED
+}
+
+/// Приглашение сотрудника по телефону. Ссылка действует 7 дней (раздел 3.12 ТЗ).
+model Invitation {
+  id         String           @id @default(cuid())
+  companyId  String
+  company    Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  phone      String
+  roleId     String
+  role       Role             @relation(fields: [roleId], references: [id])
+  token      String           @unique
+  status     InvitationStatus @default(PENDING)
+  expiresAt  DateTime
+  acceptedAt DateTime?
+  createdAt  DateTime         @default(now())
+
+  @@index([phone, status])
+  @@map("invitations")
+}
+
+/// Журнал действий: кто, что и когда сделал (раздел 3.12 ТЗ).
+model AuditLog {
+  id        String   @id @default(cuid())
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  action    String
+  entity    String?
+  entityId  String?
+  payload   Json?
+  createdAt DateTime @default(now())
+
+  @@index([companyId, createdAt])
+  @@map("audit_logs")
+}
+
+// ---------- Админ-панель платформы (раздел 3.13 ТЗ) ----------
+
+enum AdminRole {
+  SUPERADMIN
+  MODERATOR
+  SUPPORT
+  FINANCE
+  CONTENT_MANAGER
+}
+
+/// Сотрудник платформы. Вход отдельный от кабинетов компаний, с 2FA (в демо — мок-код).
+model AdminUser {
+  id             String    @id @default(cuid())
+  phone          String    @unique
+  name           String
+  role           AdminRole
+  twoFactorReady Boolean   @default(true)
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+
+  sessions       AdminSession[]
+  decisions      VerificationRequest[]
+  auditEntries   AdminAuditLog[]
+  impersonations ImpersonationLog[]
+
+  @@map("admin_users")
+}
+
+model AdminSession {
+  id        String    @id @default(cuid())
+  adminId   String
+  admin     AdminUser @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+
+  @@index([adminId])
+  @@map("admin_sessions")
+}
+
+enum VerificationDecision {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+/// Очередь проверки компаний (раздел 3.11 п.6–7 и 3.13 ТЗ).
+model VerificationRequest {
+  id          String               @id @default(cuid())
+  companyId   String
+  company     Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  status      VerificationDecision @default(PENDING)
+  reason      String?
+  decidedById String?
+  decidedBy   AdminUser?           @relation(fields: [decidedById], references: [id])
+  decidedAt   DateTime?
+  createdAt   DateTime             @default(now())
+
+  @@index([status, createdAt])
+  @@map("verification_requests")
+}
+
+/// Журнал аудита администраторов. Раздел 3.13 ТЗ: удаление записей не предусмотрено.
+model AdminAuditLog {
+  id        String    @id @default(cuid())
+  adminId   String
+  admin     AdminUser @relation(fields: [adminId], references: [id])
+  action    String
+  entity    String?
+  entityId  String?
+  reason    String?
+  createdAt DateTime  @default(now())
+
+  @@index([createdAt])
+  @@map("admin_audit_logs")
+}
+
+/// Вход от имени компании: только с причиной и записью в журнал (раздел 3.13 ТЗ).
+model ImpersonationLog {
+  id        String    @id @default(cuid())
+  adminId   String
+  admin     AdminUser @relation(fields: [adminId], references: [id])
+  companyId String
+  company   Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  reason    String
+  startedAt DateTime  @default(now())
+  endedAt   DateTime?
+
+  @@index([companyId, startedAt])
+  @@map("impersonation_logs")
+}
+
+/// Настройки платформы и флаги функций (раздел 3.13 ТЗ). Правило 5: перечень в БД.
+model PlatformSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+
+  @@map("platform_settings")
+}
+
+// ---------- Рейтинги и отзывы (раздел 3.8 ТЗ) ----------
+
+/// Оценка по закрытой заявке: одна от каждой стороны (раздел 3.8 ТЗ).
+model Rating {
+  id              String    @id @default(cuid())
+  orderId         String
+  order           Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  authorCompanyId String
+  authorCompany   Company   @relation("RatingsGiven", fields: [authorCompanyId], references: [id], onDelete: Cascade)
+  targetCompanyId String
+  targetCompany   Company   @relation("RatingsReceived", fields: [targetCompanyId], references: [id], onDelete: Cascade)
+  /// Оценки по критериям 1–5, состав зависит от стороны.
+  criteria        Json
+  /// Средняя ручная оценка.
+  score           Decimal   @db.Decimal(3, 2)
+  comment         String?
+  reply           String?
+  repliedAt       DateTime?
+  createdAt       DateTime  @default(now())
+
+  @@unique([orderId, authorCompanyId])
+  @@index([targetCompanyId, createdAt])
+  @@map("ratings")
+}

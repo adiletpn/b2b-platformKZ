@@ -77,6 +77,8 @@ model User {
   sessions        Session[]
   accessRequests  CompanyAccessRequest[]
   orderStatusLogs OrderStatusLog[]
+  approvedOrders  Order[]                @relation("ApprovedOrders")
+  createdOrders   Order[]                @relation("CreatedOrders")
   auditLogs       AuditLog[]
   messages        Message[]
 
@@ -464,6 +466,13 @@ model Order {
   /// Причина спора по расхождениям или оплате (раздел 5.2 ТЗ).
   disputeReason   String?
   totalWithVat    Decimal       @default(0) @db.Decimal(14, 2)
+  /// Заявка выше лимита сотрудника ждёт согласования Владельца (раздел 3.12 ТЗ).
+  needsApproval   Boolean       @default(false)
+  approvedById    String?
+  approvedBy      User?         @relation("ApprovedOrders", fields: [approvedById], references: [id])
+  approvedAt      DateTime?
+  createdById     String?
+  createdBy       User?         @relation("CreatedOrders", fields: [createdById], references: [id])
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 

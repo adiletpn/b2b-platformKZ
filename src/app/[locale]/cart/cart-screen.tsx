@@ -59,7 +59,7 @@ export function CartScreen({
 
     type SendResponse = {
       status: string;
-      orders?: { number: string }[];
+      orders?: { number: string; needsApproval: boolean }[];
       suppliers?: { supplierName: string; missing: string }[];
     };
 
@@ -86,6 +86,11 @@ export function CartScreen({
 
     if (data.status === 'created') {
       setGroups([]);
+      // Раздел 3.12 ТЗ: заявка выше лимита сотрудника поставщику пока не ушла.
+      if ((data.orders ?? []).some((order) => order.needsApproval)) {
+        setSendResult('approval');
+        return;
+      }
       setSendResult(`created:${data.orders?.length ?? 0}`);
       router.push('/orders');
       return;
@@ -171,9 +176,11 @@ export function CartScreen({
               <p className="text-sm" data-testid="send-result">
                 {sendResult.startsWith('created:')
                   ? tOrders('sent', { count: Number(sendResult.split(':')[1]) })
-                  : sendResult.startsWith('below:')
-                    ? tOrders('belowMinimum', { suppliers: sendResult.slice(6) })
-                    : tOrders('emptyCart')}
+                  : sendResult === 'approval'
+                    ? tOrders('awaitingApproval')
+                    : sendResult.startsWith('below:')
+                      ? tOrders('belowMinimum', { suppliers: sendResult.slice(6) })
+                      : tOrders('emptyCart')}
               </p>
             ) : null}
           </div>

@@ -294,7 +294,8 @@
       "forbidden_transition": "Мәртебенің мұндай ауысуы рұқсат етілмейді",
       "wrong_side": "Бұл әрекет екінші тарапқа қолжетімді",
       "invalid_quantity": "Саны тапсырыстан көп немесе қате берілген",
-      "unknown": "Әрекетті орындау мүмкін болмады"
+      "unknown": "Әрекетті орындау мүмкін болмады",
+      "reason_required": "Қабылдамау себебін көрсетіңіз"
     },
     "status": {
       "DRAFT": "Жоба",
@@ -331,7 +332,15 @@
     "cancelReason": "Болдырмау себебі",
     "deliveryDate": "Қалаған жеткізу күні",
     "comment": "Пікір",
-    "paymentMethod": "Төлем тәсілі"
+    "paymentMethod": "Төлем тәсілі",
+    "approvalsTitle": "Келісуде",
+    "approvalsHint": "Қызметкер шегінен асқан өтінім келісілгеннен кейін ғана жеткізушіге барады",
+    "approvalsEmpty": "Келісуде өтінім жоқ",
+    "approvalAuthor": "Авторы",
+    "approve": "Келісу",
+    "rejectApproval": "Қабылдамау",
+    "approvalReason": "Қабылдамау себебі",
+    "awaitingApproval": "Өтінім Иесінің келісуіне кетті"
   },
   "documents": {
     "title": "Құжаттар",
@@ -459,7 +468,11 @@
       "employee_invited": "Қызметкер шақырылды",
       "employee_joined": "Қызметкер компанияға кірді",
       "employee_blocked": "Қызметкер бұғатталды",
-      "employee_unblocked": "Қызметкер бұғаттан шығарылды"
+      "employee_unblocked": "Қызметкер бұғаттан шығарылды",
+      "role_created": "Өз рөлі құрылды",
+      "employee_access_changed": "Қызметкер шектеулері өзгертілді",
+      "order_approved": "Өтінім келісілді",
+      "order_approval_rejected": "Өтінім келісу кезінде қабылданбады"
     },
     "errors": {
       "invalid_phone": "Нөмірді +7 форматында, 10 санмен енгізіңіз",
@@ -468,7 +481,48 @@
       "cannot_block_owner": "Компания иесін бұғаттау мүмкін емес",
       "not_found": "Қызметкер табылмады",
       "forbidden": "Құқық жеткіліксіз",
-      "unknown": "Әрекетті орындау мүмкін болмады"
+      "unknown": "Әрекетті орындау мүмкін болмады",
+      "name_required": "Рөл атауын екі тілде енгізіңіз",
+      "permissions_required": "Кемінде бір құқықты белгілеңіз",
+      "duplicate_code": "Осындай атаумен рөл бар",
+      "owner_not_limited": "Компания иесін шектеуге болмайды",
+      "invalid_amount": "Сома мен жеңілдік пайызын тексеріңіз"
+    },
+    "customRoleTitle": "Өз рөлдері",
+    "customRoleHint": "«Бөлім × әрекет» матрицасында құқықтарды белгілеңіз",
+    "roleNameRu": "Орысша атауы",
+    "roleNameKk": "Қазақша атауы",
+    "createRole": "Рөл құру",
+    "creatingRole": "Құрылуда",
+    "roleCreated": "Рөл құрылды",
+    "accessTitle": "Қызметкер шектеулері",
+    "accessHint": "Нүктелер, келісімсіз өтінім шегі және ең жоғары жеңілдік",
+    "allowedLocations": "Қолжетімді нүктелер",
+    "allLocations": "Компанияның барлық нүктесі",
+    "orderLimit": "Өтінім шегі, ₸",
+    "maxDiscount": "Ең жоғары жеңілдік, %",
+    "noLimit": "Шексіз",
+    "saveAccess": "Сақтау",
+    "accessSaved": "Шектеулер сақталды",
+    "employee": "Қызметкер",
+    "sections": {
+      "CATALOG": "Каталог",
+      "SWIPE_ORDERS": "Свайп-каталог және өтінімдер",
+      "ACCEPTANCE": "Тауарды қабылдау",
+      "POS": "Касса",
+      "STOCK": "Қалдықтар мен қозғалыс",
+      "PURCHASE_PRICES": "Сатып алу бағасы мен пайда",
+      "DOCUMENTS_PAYMENTS": "Құжаттар мен төлемдер",
+      "EMPLOYEES_REQUISITES": "Қызметкерлер мен деректемелер",
+      "DELIVERIES": "Жеткізулер"
+    },
+    "permissionActions": {
+      "VIEW": "Қарау",
+      "CREATE": "Құру",
+      "UPDATE": "Өзгерту",
+      "DELETE": "Жою",
+      "SIGN": "Қол қою",
+      "EXPORT": "Экспорт"
     }
   },
   "admin": {
@@ -503,7 +557,8 @@
       "company_rejected": "Компаниядан бас тартылды",
       "impersonation_started": "Компания атынан кіру",
       "impersonation_stopped": "Қолдау режимінен шығу",
-      "setting_changed": "Платформа параметрі өзгертілді"
+      "setting_changed": "Платформа параметрі өзгертілді",
+      "dispute_resolved": "Дау жабылды"
     },
     "errors": {
       "invalid_phone": "Нөмірді +7 форматында, 10 санмен енгізіңіз",
@@ -513,7 +568,33 @@
       "forbidden": "Құқық жеткіліксіз",
       "reason_required": "Бас тарту үшін себеп қажет",
       "already_decided": "Шешім қабылданған",
-      "unknown": "Әрекетті орындау мүмкін болмады"
+      "unknown": "Әрекетті орындау мүмкін болмады",
+      "comment_required": "Екі тарапқа түсініктеме қажет"
+    },
+    "dashboardTitle": "Бақылау тақтасы",
+    "newCompanies": "Күніне жаңа компаниялар",
+    "activeStores": "Дүкендер",
+    "activeSuppliers": "Жеткізушілер",
+    "ordersToday": "Күніне өтінімдер",
+    "gmvToday": "Күндік айналым",
+    "gmvMonth": "Айлық айналым",
+    "conversion": "Бірінші өтінімге конверсия",
+    "openDisputes": "Ашық даулар",
+    "pendingVerifications": "Тексерудегі компаниялар",
+    "byCity": "Қалалар бойынша айналым",
+    "city": "Қала",
+    "orders": "Өтінімдер",
+    "gmv": "Айналым",
+    "disputesTitle": "Даулар",
+    "disputesEmpty": "Дау жоқ",
+    "disputeReason": "Дау себебі",
+    "resolution": "Шешім",
+    "resolutionComment": "Тараптарға түсініктеме",
+    "resolve": "Дауды жабу",
+    "resolutions": {
+      "AWAITING_PAYMENT": "Төлемге қайтару",
+      "PAID": "Төленген деп санау",
+      "CANCELLED": "Өтінімді болдырмау"
     }
   },
   "ratings": {

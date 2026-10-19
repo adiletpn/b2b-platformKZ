@@ -99,7 +99,8 @@ test('blocked_cashier_loses_access_immediately', async ({}, testInfo) => {
 
   await ownerPage.goto('/ru/employees');
   const row = ownerPage.getByTestId('employees-table').getByRole('row').nth(1);
-  await row.getByRole('button').click();
+  // В строке две кнопки: ограничения и блокировка.
+  await row.getByRole('button', { name: 'Заблокировать' }).click();
 
   await expect(ownerPage.getByTestId('employees-table')).toContainText('Заблокирован');
 
@@ -110,4 +111,35 @@ test('blocked_cashier_loses_access_immediately', async ({}, testInfo) => {
   // Запись о сотруднике остаётся в компании: владелец и заблокированный кассир.
   await expect(ownerPage.getByTestId('employees-table').getByRole('row')).toHaveCount(2);
   await expect(ownerPage.getByTestId('audit-log')).toContainText('Сотрудник заблокирован');
+});
+
+test('owner_builds_custom_role_in_permission_matrix', async ({}, testInfo) => {
+  test.skip(testInfo.project.name !== ONLY_PROJECT, 'проверка уровня прав');
+
+  await ownerPage.goto('/ru/employees');
+  await ownerPage.getByTestId('role-name-ru').fill('Старший кассир');
+  await ownerPage.getByTestId('role-name-kk').fill('Аға кассир');
+  await ownerPage.getByTestId('cell-POS-VIEW').check();
+  await ownerPage.getByTestId('cell-STOCK-VIEW').check();
+  await ownerPage.getByTestId('create-role').click();
+
+  await expect(ownerPage.getByTestId('role-created')).toBeVisible();
+  // Своя роль появляется в выборе при приглашении.
+  await expect(ownerPage.getByTestId('invite-role')).toContainText('Старший кассир');
+});
+
+test('owner_sets_order_limit_for_employee', async ({}, testInfo) => {
+  test.skip(testInfo.project.name !== ONLY_PROJECT, 'проверка уровня прав');
+
+  await ownerPage.goto('/ru/employees');
+  const employee = ownerPage.getByTestId('employees-table').getByRole('row').nth(1);
+  await employee.getByRole('button', { name: 'Ограничения сотрудника' }).click();
+
+  await ownerPage.getByTestId('access-order-limit').fill('50000');
+  await ownerPage.getByTestId('access-max-discount').fill('5');
+  await ownerPage.getByTestId('access-save').click();
+
+  await expect(ownerPage.getByTestId('access-saved')).toBeVisible();
+  // Лимит виден в таблице сотрудников (раздел 3.12 ТЗ).
+  await expect(ownerPage.getByTestId('employees-table')).toContainText('50000.00');
 });

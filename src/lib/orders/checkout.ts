@@ -2,6 +2,7 @@ import Decimal from 'decimal.js';
 import { prisma } from '@/lib/prisma';
 import { notify } from '@/mocks/notifications';
 import { nextDocumentNumber } from './numbering';
+import { orderLimitFor } from './approval';
 import { LONG_TRANSACTION } from '@/lib/db-tx';
 
 export type CheckoutInput = {
@@ -14,11 +15,17 @@ export type CheckoutInput = {
   paymentMethod?: 'PREPAY' | 'ON_DELIVERY' | 'DEFERRED';
 };
 
+export type CreatedOrder = {
+  id: string;
+  number: string;
+  supplierName: string;
+  total: string;
+  /** Заявка ждёт согласования Владельца и поставщику ещё не ушла (раздел 3.12 ТЗ). */
+  needsApproval: boolean;
+};
+
 export type CheckoutResult =
-  | {
-      status: 'created';
-      orders: { id: string; number: string; supplierName: string; total: string }[];
-    }
+  | { status: 'created'; orders: CreatedOrder[] }
   | { status: 'empty_cart' }
   | { status: 'below_minimum'; suppliers: { supplierName: string; missing: string }[] };
 
@@ -78,12 +85,17 @@ export async function checkout(input: CheckoutInput): Promise<CheckoutResult> {
 
   if (below.length > 0) return { status: 'below_minimum', suppliers: below };
 
+  // Раздел 3.12 ТЗ: заявка выше лимита сотрудника уходит на согласование, а не поставщику.
+  const limit = await orderLimitFor(input.storeId, input.userId);
+
   const created = await prisma.$transaction(async (tx) => {
-    const orders: { id: string; number: string; supplierName: string; total: string }[] = [];
+    const orders: CreatedOrder[] = [];
 
     for (const [supplierId, items] of bySupplier) {
       const number = await nextDocumentNumber(tx, input.storeId, 'order');
       const total = totals.get(supplierId)!;
+      const needsApproval = limit !== null && total.greaterThan(limit);
+      const status = needsApproval ? 'DRAFT' : 'SENT';
 
       const order = await tx.order.create({
         data: {
@@ -91,7 +103,9 @@ export async function checkout(input: CheckoutInput): Promise<CheckoutResult> {
           storeId: input.storeId,
           supplierId,
           locationId: input.locationId,
-          status: 'SENT',
+          status,
+          needsApproval,
+          createdById: input.userId,
           deliveryDate: input.deliveryDate ? new Date(input.deliveryDate) : null,
           comment: input.comment ?? null,
           paymentMethod: input.paymentMethod ?? 'ON_DELIVERY',
@@ -109,7 +123,7 @@ export async function checkout(input: CheckoutInput): Promise<CheckoutResult> {
       });
 
       await tx.orderStatusLog.create({
-        data: { orderId: order.id, toStatus: 'SENT', userId: input.userId },
+        data: { orderId: order.id, toStatus: status, userId: input.userId },
       });
 
       orders.push({
@@ -117,6 +131,7 @@ export async function checkout(input: CheckoutInput): Promise<CheckoutResult> {
         number,
         supplierName: items[0]!.offer.supplier.name,
         total: total.toFixed(2),
+        needsApproval,
       });
     }
 
@@ -124,7 +139,7 @@ export async function checkout(input: CheckoutInput): Promise<CheckoutResult> {
     return orders;
   }, LONG_TRANSACTION);
 
-  for (const order of created) {
+  for (const order of created.filter((row) => !row.needsApproval)) {
     const supplierId = [...bySupplier.keys()].find(
       (id) => bySupplier.get(id)![0]!.offer.supplier.name === order.supplierName,
     );

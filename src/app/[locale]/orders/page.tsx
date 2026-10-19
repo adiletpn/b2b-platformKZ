@@ -1,12 +1,15 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Link, redirect } from '@/i18n/navigation';
 import { getActiveCompany } from '@/lib/auth/active-company';
+import { getAccess, hasPermission } from '@/lib/auth/permissions';
+import { listPendingApprovals } from '@/lib/orders/approval';
 import { prisma } from '@/lib/prisma';
 import { buttonVariants } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { EmptyState, Page, PageHeader } from '@/components/ui/page';
 import { OrderStatusBadge } from '@/components/order-status-badge';
 import { NotificationList } from './notification-list';
+import { ApprovalList } from './approval-list';
 
 export default async function OrdersPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -30,11 +33,18 @@ export default async function OrdersPage({ params }: { params: Promise<{ locale:
     }),
   ]);
 
+  // Раздел 3.12 ТЗ: список на согласовании виден только тем, кто может менять заявки.
+  const access = await getAccess();
+  const canApprove = access ? await hasPermission(access, 'SWIPE_ORDERS', 'UPDATE') : false;
+  const approvals = canApprove ? await listPendingApprovals(companyId) : [];
+
   const t = await getTranslations('orders');
 
   return (
     <Page width="lg">
       <PageHeader title={t('title')} />
+
+      <ApprovalList approvals={approvals} />
 
       {orders.length === 0 ? (
         <EmptyState>

@@ -109,6 +109,11 @@ npm run db:seed:demo # демо-данные для показа: компани
 - Сотрудники и права добавили `Role`, `Permission`, `Invitation`, `AuditLog` и поля
   `roleId`, `allowedLocationIds`, `orderLimit`, `maxDiscount` у `Membership`.
   Матрица прав живёт в справочнике БД (правило 5), доступ к API — через `requirePermission`.
+  Свои роли компании создаются в матрице «раздел × действие»; список разделов и действий —
+  в `src/lib/employees/permission-matrix.ts` (без prisma, его берёт и клиент).
+- Согласование заявок выше лимита добавило у `Order` поля `needsApproval`, `createdById`,
+  `approvedById`, `approvedAt`. Заявка сверх лимита сотрудника остаётся `DRAFT` и поставщику
+  не уходит; Владелец согласует её или отклоняет с причиной. Новых статусов не вводили.
 - D6 добавил `Payment` и реквизиты компании (ИИК, БИК, банк) с проверкой IBAN.
 - D5 добавил `Document`, `StockMovement`, `StockBalance` и поля приёмки у `OrderItem`.
 - D4 добавил `NumberSequence`, `IdempotencyKey`, `Notification`, `OrderStatusLog`.

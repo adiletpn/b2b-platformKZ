@@ -7,18 +7,34 @@ import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Field } from '@/components/ui/field';
 import { Page } from '@/components/ui/page';
+import { PERMISSION_ACTIONS, PERMISSION_SECTIONS } from '@/lib/employees/permission-matrix';
 
-type Employee = { id: string; phone: string; role: string; status: 'ACTIVE' | 'BLOCKED' };
+type Role = { id: string; code: string; name: string; isTemplate: boolean };
+type Location = { id: string; address: string };
+type Employee = {
+  id: string;
+  phone: string;
+  role: string;
+  roleId: string | null;
+  status: 'ACTIVE' | 'BLOCKED';
+  allowedLocationIds: string[];
+  orderLimit: string;
+  maxDiscount: string;
+};
 type Invitation = { id: string; phone: string; role: string; expiresAt: string };
-type AuditEntry = { id: string; action: string; createdAt: string };
+type AuditEntry = { id: string; action: string; actorPhone: string; createdAt: string };
+
+type Cell = { section: string; action: string };
 
 export function EmployeesScreen({
   roles,
+  locations,
   employees,
   invitations,
   audit,
 }: {
-  roles: string[];
+  roles: Role[];
+  locations: Location[];
   employees: Employee[];
   invitations: Invitation[];
   audit: AuditEntry[];
@@ -28,47 +44,106 @@ export function EmployeesScreen({
   const router = useRouter();
 
   const [phone, setPhone] = useState('+7');
-  const [role, setRole] = useState(roles.find((code) => code !== 'OWNER') ?? 'CASHIER');
+  const [role, setRole] = useState(
+    roles.find((item) => item.isTemplate && item.code !== 'OWNER')?.code ?? 'CASHIER',
+  );
   const [error, setError] = useState<string | null>(null);
   const [invited, setInvited] = useState(false);
   const [pending, setPending] = useState(false);
 
-  async function invite(event: React.FormEvent) {
-    event.preventDefault();
+  const [roleNameRu, setRoleNameRu] = useState('');
+  const [roleNameKk, setRoleNameKk] = useState('');
+  const [cells, setCells] = useState<Cell[]>([]);
+  const [roleCreated, setRoleCreated] = useState(false);
+
+  const [editing, setEditing] = useState<string | null>(null);
+  const [accessSaved, setAccessSaved] = useState(false);
+  const [actor, setActor] = useState('');
+
+  function roleLabel(code: string) {
+    const found = roles.find((item) => item.code === code);
+    if (found) return found.name;
+    return t(`roles.${code}` as 'roles.CASHIER');
+  }
+
+  async function send(url: string, body: unknown, method = 'POST') {
     setPending(true);
     setError(null);
-    setInvited(false);
-
-    const response = await fetch('/api/employees', {
-      method: 'POST',
+    const response = await fetch(url, {
+      method,
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ phone, role }),
+      body: JSON.stringify(body),
     });
     const data = (await response.json()) as { status?: string; error?: string };
     setPending(false);
-
     if (data.status !== 'ok') {
       setError(data.status ?? data.error ?? 'unknown');
-      return;
+      return false;
     }
-    setInvited(true);
-    setPhone('+7');
     router.refresh();
+    return true;
+  }
+
+  async function invite(event: React.FormEvent) {
+    event.preventDefault();
+    setInvited(false);
+    if (await send('/api/employees', { phone, role })) {
+      setInvited(true);
+      setPhone('+7');
+    }
+  }
+
+  async function createRole(event: React.FormEvent) {
+    event.preventDefault();
+    setRoleCreated(false);
+    const ok = await send('/api/employees/roles', {
+      nameRu: roleNameRu,
+      nameKk: roleNameKk,
+      permissions: cells,
+    });
+    if (ok) {
+      setRoleCreated(true);
+      setRoleNameRu('');
+      setRoleNameKk('');
+      setCells([]);
+    }
+  }
+
+  function toggleCell(section: string, action: string) {
+    setCells((current) =>
+      current.some((cell) => cell.section === section && cell.action === action)
+        ? current.filter((cell) => !(cell.section === section && cell.action === action))
+        : [...current, { section, action }],
+    );
   }
 
   async function toggleBlock(employee: Employee) {
-    const response = await fetch(`/api/employees/${employee.id}/block`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ blocked: employee.status === 'ACTIVE' }),
-    });
-    const data = (await response.json()) as { status?: string };
-    if (data.status !== 'ok') {
-      setError(data.status ?? 'unknown');
-      return;
-    }
-    router.refresh();
+    await send(`/api/employees/${employee.id}/block`, { blocked: employee.status === 'ACTIVE' });
   }
+
+  async function saveAccess(employee: Employee, form: FormData) {
+    setAccessSaved(false);
+    const ok = await send(
+      `/api/employees/${employee.id}/access`,
+      {
+        roleId: String(form.get('roleId') ?? '') || null,
+        allowedLocationIds: locations
+          .map((location) => location.id)
+          .filter((id) => form.get(`location-${id}`) === 'on'),
+        orderLimit: String(form.get('orderLimit') ?? ''),
+        maxDiscount: String(form.get('maxDiscount') ?? ''),
+      },
+      'PUT',
+    );
+    if (ok) {
+      setAccessSaved(true);
+      setEditing(null);
+    }
+  }
+
+  const visibleAudit = actor
+    ? audit.filter((entry) => entry.actorPhone.includes(actor))
+    : audit.slice(0, 20);
 
   return (
     <Page width="md">
@@ -99,10 +174,10 @@ export function EmployeesScreen({
             onChange={(event) => setRole(event.target.value)}
           >
             {roles
-              .filter((code) => code !== 'OWNER')
-              .map((code) => (
-                <option key={code} value={code}>
-                  {t(`roles.${code}` as 'roles.CASHIER')}
+              .filter((item) => item.code !== 'OWNER')
+              .map((item) => (
+                <option key={item.id} value={item.code}>
+                  {item.name}
                 </option>
               ))}
           </select>
@@ -117,6 +192,16 @@ export function EmployeesScreen({
           {t('invited')}
         </p>
       ) : null}
+      {accessSaved ? (
+        <p className="text-muted-foreground mt-2 text-sm" data-testid="access-saved">
+          {t('accessSaved')}
+        </p>
+      ) : null}
+      {roleCreated ? (
+        <p className="text-muted-foreground mt-2 text-sm" data-testid="role-created">
+          {t('roleCreated')}
+        </p>
+      ) : null}
       {error ? (
         <p className="mt-2 text-sm text-red-600" role="alert" data-testid="employees-error">
           {t(`errors.${error}` as 'errors.unknown')}
@@ -129,6 +214,7 @@ export function EmployeesScreen({
             <tr>
               <th className="px-3 py-2 font-medium">{t('phone')}</th>
               <th className="px-3 py-2 font-medium">{t('role')}</th>
+              <th className="px-3 py-2 font-medium">{t('orderLimit')}</th>
               <th className="px-3 py-2 font-medium">{t('statusLabel')}</th>
               <th className="px-3 py-2" />
             </tr>
@@ -137,20 +223,36 @@ export function EmployeesScreen({
             {employees.map((employee) => (
               <tr key={employee.id} data-testid={`employee-${employee.id}`}>
                 <td className="px-3 py-2 font-mono text-xs">{employee.phone}</td>
-                <td className="px-3 py-2">{t(`roles.${employee.role}` as 'roles.CASHIER')}</td>
+                <td className="px-3 py-2">{roleLabel(employee.role)}</td>
+                <td
+                  className="px-3 py-2 tabular-nums"
+                  data-testid={`employee-limit-${employee.id}`}
+                >
+                  {employee.orderLimit || t('noLimit')}
+                </td>
                 <td className="px-3 py-2" data-testid={`employee-status-${employee.id}`}>
                   {t(`statuses.${employee.status}`)}
                 </td>
-                <td className="px-3 py-2 text-right">
+                <td className="px-3 py-2 text-right whitespace-nowrap">
                   {employee.role === 'OWNER' ? null : (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      data-testid={`employee-toggle-${employee.id}`}
-                      onClick={() => void toggleBlock(employee)}
-                    >
-                      {employee.status === 'ACTIVE' ? t('block') : t('unblock')}
-                    </Button>
+                    <>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        data-testid={`employee-access-${employee.id}`}
+                        onClick={() => setEditing(editing === employee.id ? null : employee.id)}
+                      >
+                        {t('accessTitle')}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        data-testid={`employee-toggle-${employee.id}`}
+                        onClick={() => void toggleBlock(employee)}
+                      >
+                        {employee.status === 'ACTIVE' ? t('block') : t('unblock')}
+                      </Button>
+                    </>
                   )}
                 </td>
               </tr>
@@ -159,6 +261,153 @@ export function EmployeesScreen({
         </table>
       </section>
 
+      {employees
+        .filter((employee) => employee.id === editing)
+        .map((employee) => (
+          <form
+            key={employee.id}
+            className="border-border bg-card shadow-card mt-4 rounded-xl border p-4 sm:p-5"
+            data-testid="access-form"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void saveAccess(employee, new FormData(event.currentTarget));
+            }}
+          >
+            <h2 className="text-lg font-medium">{t('accessTitle')}</h2>
+            <p className="text-muted-foreground mt-1 text-sm">
+              {t('employee')}: {employee.phone} · {t('accessHint')}
+            </p>
+
+            <div className="mt-3 flex flex-wrap items-end gap-3">
+              <Field label={t('role')}>
+                <select
+                  name="roleId"
+                  className="border-border bg-card h-11 rounded-lg border px-3"
+                  defaultValue={employee.roleId ?? ''}
+                  data-testid="access-role"
+                >
+                  <option value="">{roleLabel(employee.role)}</option>
+                  {roles
+                    .filter((item) => !item.isTemplate)
+                    .map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.name}
+                      </option>
+                    ))}
+                </select>
+              </Field>
+              <Field label={t('orderLimit')}>
+                <Input
+                  name="orderLimit"
+                  inputMode="decimal"
+                  defaultValue={employee.orderLimit}
+                  data-testid="access-order-limit"
+                />
+              </Field>
+              <Field label={t('maxDiscount')}>
+                <Input
+                  name="maxDiscount"
+                  inputMode="decimal"
+                  defaultValue={employee.maxDiscount}
+                  data-testid="access-max-discount"
+                />
+              </Field>
+            </div>
+
+            {locations.length > 0 ? (
+              <fieldset className="mt-3">
+                <legend className="text-muted-foreground text-sm">{t('allowedLocations')}</legend>
+                <p className="text-muted-foreground text-xs">{t('allLocations')}</p>
+                <div className="mt-2 space-y-1">
+                  {locations.map((location) => (
+                    <label key={location.id} className="flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        name={`location-${location.id}`}
+                        defaultChecked={employee.allowedLocationIds.includes(location.id)}
+                        data-testid={`access-location-${location.id}`}
+                      />
+                      <span>{location.address}</span>
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+            ) : null}
+
+            <Button type="submit" className="mt-4" disabled={pending} data-testid="access-save">
+              {t('saveAccess')}
+            </Button>
+          </form>
+        ))}
+
+      <form
+        className="border-border bg-card shadow-card mt-4 rounded-xl border p-4 sm:p-5"
+        onSubmit={createRole}
+      >
+        <h2 className="text-lg font-medium">{t('customRoleTitle')}</h2>
+        <p className="text-muted-foreground mt-1 text-sm">{t('customRoleHint')}</p>
+
+        <div className="mt-3 flex flex-wrap items-end gap-3">
+          <div className="min-w-44 flex-1">
+            <Field label={t('roleNameRu')}>
+              <Input
+                value={roleNameRu}
+                data-testid="role-name-ru"
+                onChange={(event) => setRoleNameRu(event.target.value)}
+              />
+            </Field>
+          </div>
+          <div className="min-w-44 flex-1">
+            <Field label={t('roleNameKk')}>
+              <Input
+                value={roleNameKk}
+                data-testid="role-name-kk"
+                onChange={(event) => setRoleNameKk(event.target.value)}
+              />
+            </Field>
+          </div>
+        </div>
+
+        <div className="mt-3 overflow-x-auto">
+          <table className="w-full min-w-[640px] text-sm">
+            <thead className="text-muted-foreground text-left">
+              <tr>
+                <th className="px-2 py-2 font-medium">{t('role')}</th>
+                {PERMISSION_ACTIONS.map((action) => (
+                  <th key={action} className="px-2 py-2 font-medium">
+                    {t(`permissionActions.${action}`)}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-border divide-y" data-testid="permission-matrix">
+              {PERMISSION_SECTIONS.map((section) => (
+                <tr key={section}>
+                  <td className="px-2 py-2">{t(`sections.${section}`)}</td>
+                  {PERMISSION_ACTIONS.map((action) => (
+                    <td key={action} className="px-2 py-2">
+                      <input
+                        type="checkbox"
+                        aria-label={`${t(`sections.${section}`)} ${t(`permissionActions.${action}`)}`}
+                        data-testid={`cell-${section}-${action}`}
+                        checked={cells.some(
+                          (cell) => cell.section === section && cell.action === action,
+                        )}
+                        onChange={() => toggleCell(section, action)}
+                      />
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <Button type="submit" className="mt-4" disabled={pending} data-testid="create-role">
+          {pending ? t('creatingRole') : t('createRole')}
+        </Button>
+      </form>
+
       {invitations.length > 0 ? (
         <section className="border-border mt-4 rounded-lg border border-dashed p-4">
           <h2 className="text-muted-foreground text-sm font-medium">{t('pending')}</h2>
@@ -166,7 +415,7 @@ export function EmployeesScreen({
             {invitations.map((invitation) => (
               <li key={invitation.id} className="flex flex-wrap justify-between gap-2">
                 <span className="font-mono text-xs">{invitation.phone}</span>
-                <span>{t(`roles.${invitation.role}` as 'roles.CASHIER')}</span>
+                <span>{roleLabel(invitation.role)}</span>
                 <span className="text-muted-foreground text-xs">
                   {t('expires')}: {invitation.expiresAt}
                 </span>
@@ -177,14 +426,25 @@ export function EmployeesScreen({
       ) : null}
 
       <section className="mt-6">
-        <h2 className="text-muted-foreground text-sm font-medium">{t('auditTitle')}</h2>
-        {audit.length === 0 ? (
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <h2 className="text-muted-foreground text-sm font-medium">{t('auditTitle')}</h2>
+          <Field label={t('employee')}>
+            <Input
+              value={actor}
+              className="h-9"
+              data-testid="audit-filter"
+              onChange={(event) => setActor(event.target.value)}
+            />
+          </Field>
+        </div>
+        {visibleAudit.length === 0 ? (
           <p className="text-muted-foreground mt-2 text-sm">{t('auditEmpty')}</p>
         ) : (
           <ul className="mt-2 space-y-1 text-sm" data-testid="audit-log">
-            {audit.map((entry) => (
+            {visibleAudit.map((entry) => (
               <li key={entry.id} className="flex flex-wrap justify-between gap-2">
                 <span>{t(`actions.${entry.action}` as 'actions.employee_invited')}</span>
+                <span className="text-muted-foreground font-mono text-xs">{entry.actorPhone}</span>
                 <span className="text-muted-foreground text-xs">{entry.createdAt}</span>
               </li>
             ))}

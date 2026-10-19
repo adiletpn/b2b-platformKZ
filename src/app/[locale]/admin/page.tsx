@@ -1,6 +1,7 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { getAdminSession } from '@/lib/admin/session';
 import { prisma } from '@/lib/prisma';
+import { getDashboard, listDisputes } from '@/lib/admin/dashboard';
 import { AdminLogin } from './admin-login';
 import { AdminPanel } from './admin-panel';
 
@@ -20,7 +21,9 @@ export default async function AdminPage({ params }: { params: Promise<{ locale: 
     );
   }
 
-  const [queue, audit, impersonations] = await Promise.all([
+  const [metrics, disputes, queue, audit, impersonations] = await Promise.all([
+    getDashboard(),
+    listDisputes(),
     prisma.verificationRequest.findMany({
       where: { status: 'PENDING' },
       include: { company: true },
@@ -43,6 +46,8 @@ export default async function AdminPage({ params }: { params: Promise<{ locale: 
   return (
     <AdminPanel
       role={session.admin.role}
+      metrics={metrics}
+      disputes={disputes}
       queue={queue.map((request) => ({
         id: request.id,
         companyName: request.company.name,

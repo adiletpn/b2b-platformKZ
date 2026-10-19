@@ -1,18 +1,22 @@
 import { prisma } from '@/lib/prisma';
-import { getActiveCompany } from './active-company';
+import { getAccess } from './permissions';
+import { locationAllowed } from '@/lib/employees/permission-matrix';
 
 export type StoreContext = { companyId: string; locationId: string; cityId: string };
 
 /** Контекст магазина: точка и её город. Правило 4: всё дальше считается только по ним. */
 export async function getStoreContext(): Promise<StoreContext | null> {
-  const active = await getActiveCompany();
-  if (!active) return null;
+  const access = await getAccess();
+  if (!access) return null;
 
-  const location = await prisma.location.findFirst({
-    where: { companyId: active.companyId, type: 'STORE' },
+  const locations = await prisma.location.findMany({
+    where: { companyId: access.companyId, type: 'STORE' },
     orderBy: { createdAt: 'asc' },
   });
+
+  // Раздел 3.12 ТЗ: сотрудник работает только с назначенными ему точками.
+  const location = locations.find((item) => locationAllowed(access.allowedLocationIds, item.id));
   if (!location) return null;
 
-  return { companyId: active.companyId, locationId: location.id, cityId: location.cityId };
+  return { companyId: access.companyId, locationId: location.id, cityId: location.cityId };
 }

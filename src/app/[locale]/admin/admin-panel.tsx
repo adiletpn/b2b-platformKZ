@@ -6,6 +6,8 @@ import { useRouter } from '@/i18n/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Field } from '@/components/ui/field';
+import { Card, CardTitle } from '@/components/ui/card';
+import type { DashboardMetrics, DisputeRow, DisputeResolution } from '@/lib/admin/dashboard';
 import { Page } from '@/components/ui/page';
 
 type QueueItem = { id: string; companyName: string; bin: string };
@@ -19,12 +21,16 @@ type AuditItem = {
 
 export function AdminPanel({
   role,
+  metrics,
+  disputes,
   queue,
   audit,
   companies,
   activeImpersonation,
 }: {
   role: string;
+  metrics: DashboardMetrics;
+  disputes: DisputeRow[];
   queue: QueueItem[];
   audit: AuditItem[];
   companies: { id: string; name: string }[];
@@ -34,6 +40,9 @@ export function AdminPanel({
   const router = useRouter();
 
   const [reasons, setReasons] = useState<Record<string, string>>({});
+  const [disputeForm, setDisputeForm] = useState<
+    Record<string, { resolution: DisputeResolution; comment: string }>
+  >({});
   const [impersonation, setImpersonation] = useState({
     companyId: companies[0]?.id ?? '',
     reason: '',
@@ -104,7 +113,131 @@ export function AdminPanel({
         </div>
       ) : null}
 
-      <section className="border-border bg-card shadow-card mt-5 rounded-xl border p-4 sm:p-5">
+      <section className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4" data-testid="admin-metrics">
+        {(
+          [
+            ['newCompanies', String(metrics.newCompaniesToday)],
+            ['ordersToday', String(metrics.ordersToday)],
+            ['gmvToday', `${metrics.gmvToday} ₸`],
+            ['gmvMonth', `${metrics.gmvMonth} ₸`],
+            ['activeStores', String(metrics.activeStores)],
+            ['activeSuppliers', String(metrics.activeSuppliers)],
+            ['conversion', `${metrics.conversion}%`],
+            ['openDisputes', String(metrics.openDisputes)],
+          ] as const
+        ).map(([key, value]) => (
+          <Card key={key} className="p-3 sm:p-4">
+            <p className="text-muted-foreground text-xs">{t(key)}</p>
+            <p className="mt-1 text-lg font-semibold tabular-nums" data-testid={`metric-${key}`}>
+              {value}
+            </p>
+          </Card>
+        ))}
+      </section>
+
+      {metrics.byCity.length > 0 ? (
+        <Card className="mt-4">
+          <CardTitle className="text-sm">{t('byCity')}</CardTitle>
+          <ul className="mt-2 space-y-1 text-sm" data-testid="admin-cities">
+            {metrics.byCity.map((row) => (
+              <li key={row.city} className="flex justify-between gap-3">
+                <span>{row.city}</span>
+                <span className="tabular-nums">
+                  {row.orders} · {row.gmv} ₸
+                </span>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ) : null}
+
+      <section className="border-border bg-card shadow-card mt-4 rounded-xl border p-4 sm:p-5">
+        <h2 className="text-lg font-medium">{t('disputesTitle')}</h2>
+
+        {disputes.length === 0 ? (
+          <p className="text-muted-foreground mt-2 text-sm" data-testid="disputes-empty">
+            {t('disputesEmpty')}
+          </p>
+        ) : (
+          <ul className="mt-3 space-y-3" data-testid="admin-disputes">
+            {disputes.map((dispute) => (
+              <li
+                key={dispute.orderId}
+                className="border-border flex flex-wrap items-end gap-3 border-b pb-3 last:border-0"
+                data-testid={`dispute-${dispute.number}`}
+              >
+                <div className="min-w-48 flex-1">
+                  <p className="font-mono text-xs">{dispute.number}</p>
+                  <p className="text-sm break-words">
+                    {dispute.storeName} — {dispute.supplierName}
+                  </p>
+                  <p className="text-muted-foreground text-xs break-words">
+                    {t('disputeReason')}: {dispute.reason ?? '—'}
+                  </p>
+                </div>
+
+                <Field label={t('resolution')}>
+                  <select
+                    className="border-border bg-card h-11 rounded-lg border px-3"
+                    value={disputeForm[dispute.orderId]?.resolution ?? 'AWAITING_PAYMENT'}
+                    data-testid={`dispute-resolution-${dispute.number}`}
+                    onChange={(event) =>
+                      setDisputeForm((current) => ({
+                        ...current,
+                        [dispute.orderId]: {
+                          resolution: event.target.value as DisputeResolution,
+                          comment: current[dispute.orderId]?.comment ?? '',
+                        },
+                      }))
+                    }
+                  >
+                    {(['AWAITING_PAYMENT', 'PAID', 'CANCELLED'] as const).map((value) => (
+                      <option key={value} value={value}>
+                        {t(`resolutions.${value}`)}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+
+                <div className="min-w-40 flex-1">
+                  <Field label={t('resolutionComment')}>
+                    <Input
+                      value={disputeForm[dispute.orderId]?.comment ?? ''}
+                      data-testid={`dispute-comment-${dispute.number}`}
+                      onChange={(event) =>
+                        setDisputeForm((current) => ({
+                          ...current,
+                          [dispute.orderId]: {
+                            resolution: current[dispute.orderId]?.resolution ?? 'AWAITING_PAYMENT',
+                            comment: event.target.value,
+                          },
+                        }))
+                      }
+                    />
+                  </Field>
+                </div>
+
+                <Button
+                  size="sm"
+                  disabled={pending}
+                  data-testid={`dispute-resolve-${dispute.number}`}
+                  onClick={() =>
+                    void post('/api/admin/disputes', {
+                      orderId: dispute.orderId,
+                      resolution: disputeForm[dispute.orderId]?.resolution ?? 'AWAITING_PAYMENT',
+                      comment: disputeForm[dispute.orderId]?.comment ?? '',
+                    })
+                  }
+                >
+                  {t('resolve')}
+                </Button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="border-border bg-card shadow-card mt-4 rounded-xl border p-4 sm:p-5">
         <h2 className="text-lg font-medium">{t('queueTitle')}</h2>
 
         {queue.length === 0 ? (

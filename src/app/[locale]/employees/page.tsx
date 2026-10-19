@@ -1,4 +1,4 @@
-import { setRequestLocale } from 'next-intl/server';
+import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { redirect } from '@/i18n/navigation';
 import { getAccess, hasPermission } from '@/lib/auth/permissions';
 import { prisma } from '@/lib/prisma';
@@ -17,7 +17,8 @@ export default async function EmployeesPage({ params }: { params: Promise<{ loca
   if (!allowed) redirect({ href: '/dashboard', locale });
 
   const companyId = access!.companyId;
-  const [memberships, invitations, audit, roles] = await Promise.all([
+  const t = await getTranslations({ locale, namespace: 'employees' });
+  const [memberships, invitations, audit, roles, locations] = await Promise.all([
     prisma.membership.findMany({
       where: { companyId },
       include: { user: true, customRole: true },
@@ -30,20 +31,40 @@ export default async function EmployeesPage({ params }: { params: Promise<{ loca
     }),
     prisma.auditLog.findMany({
       where: { companyId },
+      include: { user: { select: { phone: true } } },
       orderBy: { createdAt: 'desc' },
-      take: 20,
+      take: 50,
     }),
-    prisma.role.findMany({ where: { companyId: null }, orderBy: { code: 'asc' } }),
+    prisma.role.findMany({
+      where: { OR: [{ companyId: null }, { companyId }] },
+      orderBy: [{ isTemplate: 'desc' }, { code: 'asc' }],
+    }),
+    prisma.location.findMany({ where: { companyId }, orderBy: { createdAt: 'asc' } }),
   ]);
 
   return (
     <EmployeesScreen
-      roles={roles.map((role) => role.code)}
+      roles={roles.map((role) => ({
+        id: role.id,
+        code: role.code,
+        // У шаблонов название берётся из переводов, у своей роли — из справочника компании.
+        name: role.isTemplate
+          ? t(`roles.${role.code}` as 'roles.CASHIER')
+          : locale === 'kk'
+            ? role.nameKk
+            : role.nameRu,
+        isTemplate: role.isTemplate,
+      }))}
+      locations={locations.map((location) => ({ id: location.id, address: location.address }))}
       employees={memberships.map((membership) => ({
         id: membership.id,
         phone: maskPhone(membership.user.phone),
         role: membership.customRole?.code ?? membership.role,
+        roleId: membership.customRole?.id ?? null,
         status: membership.status,
+        allowedLocationIds: membership.allowedLocationIds,
+        orderLimit: membership.orderLimit?.toFixed(2) ?? '',
+        maxDiscount: membership.maxDiscount?.toFixed(2) ?? '',
       }))}
       invitations={invitations.map((invitation) => ({
         id: invitation.id,
@@ -54,6 +75,7 @@ export default async function EmployeesPage({ params }: { params: Promise<{ loca
       audit={audit.map((entry) => ({
         id: entry.id,
         action: entry.action,
+        actorPhone: entry.user ? maskPhone(entry.user.phone) : '—',
         createdAt: entry.createdAt.toLocaleString('ru-RU'),
       }))}
     />

@@ -34,6 +34,8 @@ export function FeedScreen({
   const t = useTranslations('feed');
   const [mode, setMode] = useState<Mode>('auto');
   const [swipeOffers, setSwipeOffers] = useState(initialSwipeOffers);
+  /** Последний отправленный свайп: «отменить» ждёт его, чтобы не обогнать запись. */
+  const lastSwipe = useRef<Promise<unknown> | null>(null);
   const [listOffers, setListOffers] = useState(initialListOffers);
   const [quantities, setQuantities] = useState<Record<string, string>>(cartQuantities);
   const [swipeCount, setSwipeCount] = useState(0);
@@ -96,11 +98,14 @@ export function FeedScreen({
     setSwipeCount((count) => count + 1);
     setNotice(action === 'LIKE' ? 'added' : null);
 
-    await fetch('/api/feed/swipe', {
+    // Карточка уходит сразу, но «отменить» должно ждать записи свайпа, иначе отменять нечего.
+    const saving = fetch('/api/feed/swipe', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ offerId: offer.id, action }),
     });
+    lastSwipe.current = saving;
+    await saving;
 
     if (action === 'LIKE') {
       setQuantities((current) => ({ ...current, [offer.id]: offer.minBatch }));
@@ -108,6 +113,7 @@ export function FeedScreen({
   }
 
   async function undo() {
+    await lastSwipe.current;
     const response = await fetch('/api/feed/undo', { method: 'POST' });
     if (!response.ok) return;
     const data = (await response.json()) as { undone: { offerId: string } | null };

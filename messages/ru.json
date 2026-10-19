@@ -294,7 +294,8 @@
       "forbidden_transition": "Такой переход статуса недопустим",
       "wrong_side": "Это действие доступно другой стороне",
       "invalid_quantity": "Количество больше заказанного или задано неверно",
-      "unknown": "Не удалось выполнить действие"
+      "unknown": "Не удалось выполнить действие",
+      "reason_required": "Укажите причину отклонения"
     },
     "status": {
       "DRAFT": "Черновик",
@@ -331,7 +332,15 @@
     "cancelReason": "Причина отмены",
     "deliveryDate": "Желаемая дата доставки",
     "comment": "Комментарий",
-    "paymentMethod": "Способ оплаты"
+    "paymentMethod": "Способ оплаты",
+    "approvalsTitle": "На согласовании",
+    "approvalsHint": "Заявки выше лимита сотрудника уходят поставщику только после согласования",
+    "approvalsEmpty": "Заявок на согласовании нет",
+    "approvalAuthor": "Автор",
+    "approve": "Согласовать",
+    "rejectApproval": "Отклонить",
+    "approvalReason": "Причина отклонения",
+    "awaitingApproval": "Заявка ушла на согласование Владельцу"
   },
   "documents": {
     "title": "Документы",
@@ -459,7 +468,11 @@
       "employee_invited": "Приглашён сотрудник",
       "employee_joined": "Сотрудник вошёл в компанию",
       "employee_blocked": "Сотрудник заблокирован",
-      "employee_unblocked": "Сотрудник разблокирован"
+      "employee_unblocked": "Сотрудник разблокирован",
+      "role_created": "Создана своя роль",
+      "employee_access_changed": "Изменены ограничения сотрудника",
+      "order_approved": "Заявка согласована",
+      "order_approval_rejected": "Заявка отклонена при согласовании"
     },
     "errors": {
       "invalid_phone": "Введите номер в формате +7 и 10 цифр",
@@ -468,7 +481,48 @@
       "cannot_block_owner": "Владельца компании заблокировать нельзя",
       "not_found": "Сотрудник не найден",
       "forbidden": "Недостаточно прав",
-      "unknown": "Не удалось выполнить действие"
+      "unknown": "Не удалось выполнить действие",
+      "name_required": "Введите название роли на двух языках",
+      "permissions_required": "Отметьте хотя бы одно право",
+      "duplicate_code": "Роль с таким названием уже есть",
+      "owner_not_limited": "Владельца компании ограничить нельзя",
+      "invalid_amount": "Проверьте сумму и процент скидки"
+    },
+    "customRoleTitle": "Свои роли",
+    "customRoleHint": "Отметьте права галочками в матрице «раздел × действие»",
+    "roleNameRu": "Название по-русски",
+    "roleNameKk": "Название по-казахски",
+    "createRole": "Создать роль",
+    "creatingRole": "Создаём",
+    "roleCreated": "Роль создана",
+    "accessTitle": "Ограничения сотрудника",
+    "accessHint": "Точки, лимит заявки без согласования и максимальная скидка",
+    "allowedLocations": "Доступные точки",
+    "allLocations": "Все точки компании",
+    "orderLimit": "Лимит заявки, ₸",
+    "maxDiscount": "Максимальная скидка, %",
+    "noLimit": "Без лимита",
+    "saveAccess": "Сохранить",
+    "accessSaved": "Ограничения сохранены",
+    "employee": "Сотрудник",
+    "sections": {
+      "CATALOG": "Каталог",
+      "SWIPE_ORDERS": "Свайп-каталог и заявки",
+      "ACCEPTANCE": "Приёмка товара",
+      "POS": "Касса",
+      "STOCK": "Остатки и движения",
+      "PURCHASE_PRICES": "Закупочные цены и прибыль",
+      "DOCUMENTS_PAYMENTS": "Документы и оплаты",
+      "EMPLOYEES_REQUISITES": "Сотрудники и реквизиты",
+      "DELIVERIES": "Доставки"
+    },
+    "permissionActions": {
+      "VIEW": "Просмотр",
+      "CREATE": "Создание",
+      "UPDATE": "Изменение",
+      "DELETE": "Удаление",
+      "SIGN": "Подписание",
+      "EXPORT": "Экспорт"
     }
   },
   "admin": {
@@ -503,7 +557,8 @@
       "company_rejected": "Компания отклонена",
       "impersonation_started": "Вход от имени компании",
       "impersonation_stopped": "Выход из режима поддержки",
-      "setting_changed": "Изменена настройка платформы"
+      "setting_changed": "Изменена настройка платформы",
+      "dispute_resolved": "Спор закрыт"
     },
     "errors": {
       "invalid_phone": "Введите номер в формате +7 и 10 цифр",
@@ -513,7 +568,33 @@
       "forbidden": "Недостаточно прав",
       "reason_required": "Для отклонения нужна причина",
       "already_decided": "Решение уже принято",
-      "unknown": "Не удалось выполнить действие"
+      "unknown": "Не удалось выполнить действие",
+      "comment_required": "Нужен комментарий для обеих сторон"
+    },
+    "dashboardTitle": "Дашборд",
+    "newCompanies": "Новые компании за день",
+    "activeStores": "Магазинов",
+    "activeSuppliers": "Поставщиков",
+    "ordersToday": "Заявок за день",
+    "gmvToday": "Оборот за день",
+    "gmvMonth": "Оборот за месяц",
+    "conversion": "Конверсия в первую заявку",
+    "openDisputes": "Открытых споров",
+    "pendingVerifications": "Компаний на проверке",
+    "byCity": "Оборот по городам",
+    "city": "Город",
+    "orders": "Заявок",
+    "gmv": "Оборот",
+    "disputesTitle": "Споры",
+    "disputesEmpty": "Споров нет",
+    "disputeReason": "Причина спора",
+    "resolution": "Решение",
+    "resolutionComment": "Комментарий сторонам",
+    "resolve": "Закрыть спор",
+    "resolutions": {
+      "AWAITING_PAYMENT": "Вернуть к оплате",
+      "PAID": "Считать оплаченной",
+      "CANCELLED": "Отменить заявку"
     }
   },
   "ratings": {

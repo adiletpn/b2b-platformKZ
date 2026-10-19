@@ -65,6 +65,20 @@ test('admin_signs_in_with_second_factor', async ({}, testInfo) => {
   await expect(adminPage.getByTestId('admin-audit')).toContainText('Вход администратора');
 });
 
+test('dashboard_shows_turnover_and_disputes_block', async ({}, testInfo) => {
+  test.skip(testInfo.project.name !== ONLY_PROJECT, 'админ-панель');
+
+  await adminLogin(adminPage, MODERATOR_PHONE);
+
+  // База общая с другими спеками, поэтому проверяем формат, а не конкретные числа.
+  await expect(adminPage.getByTestId('metric-ordersToday')).toHaveText(/^\d+$/);
+  await expect(adminPage.getByTestId('metric-gmvMonth')).toHaveText(/^\d+\.\d{2} ₸$/);
+  await expect(adminPage.getByTestId('metric-conversion')).toHaveText(/^\d+\.\d{2}%$/);
+
+  // Раздел разбора споров виден модератору (раздел 3.13 ТЗ).
+  await expect(adminPage.getByRole('heading', { name: 'Споры' })).toBeVisible();
+});
+
 test('moderation_queue_and_settings_are_available_to_admins', async ({}, testInfo) => {
   test.skip(testInfo.project.name !== ONLY_PROJECT, 'админ-панель');
 

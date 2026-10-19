@@ -9,6 +9,8 @@ import { StockDocuments } from './stock-documents';
 import { ReplenishmentPanel } from './replenishment-panel';
 import { getReplenishment } from '@/lib/stock/replenishment';
 import { getExpiring } from '@/lib/stock/batches';
+import { getLabels } from '@/lib/stock/pricing';
+import { PricingPanel } from './pricing-panel';
 import { Card, CardTitle } from '@/components/ui/card';
 
 export default async function StockPage({ params }: { params: Promise<{ locale: string }> }) {
@@ -38,9 +40,12 @@ export default async function StockPage({ params }: { params: Promise<{ locale: 
     }),
   ]);
 
-  const [replenishment, expiring] = await Promise.all([
+  const [replenishment, expiring, retailPrices, categories, markups] = await Promise.all([
     getReplenishment(access!.companyId, store!.locationId),
     getExpiring(access!.companyId),
+    getLabels(access!.companyId),
+    prisma.category.findMany({ orderBy: { code: 'asc' } }),
+    prisma.markupRule.findMany({ where: { companyId: access!.companyId } }),
   ]);
 
   // В опись можно внести и то, чего сейчас нет на остатке: товары из принятых заявок.
@@ -143,6 +148,23 @@ export default async function StockPage({ params }: { params: Promise<{ locale: 
           </ul>
         </Card>
       ) : null}
+
+      <PricingPanel
+        locale={locale === 'kk' ? 'kk' : 'ru'}
+        categories={categories.map((category) => ({
+          id: category.id,
+          name: locale === 'kk' ? category.nameKk : category.nameRu,
+        }))}
+        prices={retailPrices.map((price) => ({
+          productId: price.productId,
+          name: locale === 'kk' ? price.nameKk : price.nameRu,
+          price: price.price,
+        }))}
+        markups={markups.map((rule) => ({
+          categoryId: rule.categoryId,
+          percent: rule.percent.toFixed(2),
+        }))}
+      />
 
       <ReplenishmentPanel
         rows={replenishment.map((row) => ({

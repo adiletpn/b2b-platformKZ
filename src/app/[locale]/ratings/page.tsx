@@ -5,6 +5,7 @@ import { getCompanyRating } from '@/lib/ratings/metrics';
 import { prisma } from '@/lib/prisma';
 import { buttonVariants } from '@/components/ui/button';
 import { RatingReviews } from './rating-reviews';
+import { Page } from '@/components/ui/page';
 
 export default async function RatingsPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -28,7 +29,7 @@ export default async function RatingsPage({ params }: { params: Promise<{ locale
   const tDashboard = await getTranslations('dashboard');
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-4 py-6">
+    <Page width="md">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold">{t('title')}</h1>
         <Link href="/dashboard" className={buttonVariants({ variant: 'outline', size: 'sm' })}>
@@ -36,7 +37,7 @@ export default async function RatingsPage({ params }: { params: Promise<{ locale
         </Link>
       </header>
 
-      <section className="border-border bg-card mt-5 rounded-lg border p-4">
+      <section className="border-border bg-card shadow-card mt-5 rounded-xl border p-4 sm:p-5">
         <h2 className="text-sm font-medium">{t('myRating')}</h2>
         <p className="mt-2 text-3xl font-semibold tabular-nums" data-testid="manual-score">
           {rating.manualScore ?? t('noScore')}
@@ -54,7 +55,7 @@ export default async function RatingsPage({ params }: { params: Promise<{ locale
         ) : null}
       </section>
 
-      <section className="border-border bg-card mt-4 rounded-lg border p-4">
+      <section className="border-border bg-card shadow-card mt-4 rounded-xl border p-4 sm:p-5">
         <h2 className="text-sm font-medium">{t('autoTitle')}</h2>
         <p className="text-muted-foreground mt-1 text-xs">{t('autoHint')}</p>
 
@@ -108,6 +109,6 @@ export default async function RatingsPage({ params }: { params: Promise<{ locale
           reply: review.reply,
         }))}
       />
-    </main>
+    </Page>
   );
 }

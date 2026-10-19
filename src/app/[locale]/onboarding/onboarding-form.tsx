@@ -6,6 +6,7 @@ import { useRouter } from '@/i18n/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DemoHint, Field } from '@/components/ui/field';
+import { Page } from '@/components/ui/page';
 
 type CompanyType = 'STORE' | 'SUPPLIER' | 'BOTH';
 type City = { id: string; name: string };
@@ -73,6 +74,7 @@ export function OnboardingForm({ cities, demoBins }: { cities: City[]; demoBins:
       return;
     }
     router.push('/dashboard');
+    router.refresh();
   }
 
   function toggleDeliveryCity(id: string) {
@@ -83,17 +85,17 @@ export function OnboardingForm({ cities, demoBins }: { cities: City[]; demoBins:
 
   if (accessRequested) {
     return (
-      <main className="mx-auto w-full max-w-xl px-4 py-10">
+      <Page width="sm">
         <h1 className="text-2xl font-semibold" data-testid="access-requested">
           {t('accessRequested.title')}
         </h1>
         <p className="text-muted-foreground mt-3">{t('accessRequested.text')}</p>
-      </main>
+      </Page>
     );
   }
 
   return (
-    <main className="mx-auto w-full max-w-xl px-4 py-10">
+    <Page width="sm">
       <h1 className="text-2xl font-semibold">{t('title')}</h1>
 
       <form className="mt-6 space-y-8" onSubmit={submit}>
@@ -265,6 +267,6 @@ export function OnboardingForm({ cities, demoBins }: { cities: City[]; demoBins:
           </p>
         ) : null}
       </form>
-    </main>
+    </Page>
   );
 }

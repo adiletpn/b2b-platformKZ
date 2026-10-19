@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DemoHint, Field } from '@/components/ui/field';
 import { formatPhone } from '@/lib/phone';
+import { Page } from '@/components/ui/page';
 
 type Step = { name: 'phone' } | { name: 'code'; phone: string; demoCode: string };
 
@@ -54,10 +55,12 @@ export function LoginForm() {
       return;
     }
     router.push(data.hasCompany ? '/dashboard' : '/onboarding');
+    // Шапка живёт в макете и при клиентском переходе не перерисовывается сама.
+    router.refresh();
   }
 
   return (
-    <main className="mx-auto w-full max-w-md px-4 py-10">
+    <Page width="sm">
       <h1 className="text-2xl font-semibold">{t('title')}</h1>
       <p className="text-muted-foreground mt-2 text-sm">{t('subtitle')}</p>
 
@@ -121,6 +124,6 @@ export function LoginForm() {
           {t(`errors.${error}` as 'errors.unknown')}
         </p>
       ) : null}
-    </main>
+    </Page>
   );
 }

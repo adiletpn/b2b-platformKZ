@@ -6,6 +6,7 @@ import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Field } from '@/components/ui/field';
 import { Link } from '@/i18n/navigation';
+import { Page } from '@/components/ui/page';
 
 type City = { id: string; name: string };
 type Zone = { cityId: string; minOrderAmount: string; leadTimeDays: number };
@@ -116,7 +117,7 @@ export function CatalogScreen({
   }
 
   return (
-    <main className="mx-auto w-full max-w-5xl px-4 py-8">
+    <Page width="lg">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold">{t('title')}</h1>
         <Link href="/dashboard" className={buttonVariants({ variant: 'outline', size: 'sm' })}>
@@ -187,7 +188,7 @@ export function CatalogScreen({
         ) : null}
       </section>
 
-      <section className="border-border bg-card mt-6 rounded-lg border p-4">
+      <section className="border-border bg-card shadow-card mt-6 rounded-xl border p-4 sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-lg font-medium">{t('listTitle')}</h2>
           <p className="text-muted-foreground text-sm" data-testid="offers-total">
@@ -237,7 +238,7 @@ export function CatalogScreen({
         )}
       </section>
 
-      <section className="border-border bg-card mt-6 rounded-lg border p-4">
+      <section className="border-border bg-card shadow-card mt-6 rounded-xl border p-4 sm:p-5">
         <h2 className="text-lg font-medium">{t('zonesTitle')}</h2>
         <p className="text-muted-foreground mt-1 text-xs">{t('zonesHint')}</p>
 
@@ -299,6 +300,6 @@ export function CatalogScreen({
           </p>
         ) : null}
       </section>
-    </main>
+    </Page>
   );
 }

@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Field } from '@/components/ui/field';
 import { Link, useRouter } from '@/i18n/navigation';
 import type { CartSupplierGroup } from '@/lib/cart/cart';
+import { Page } from '@/components/ui/page';
 
 export function CartScreen({
   locale,
@@ -97,7 +98,7 @@ export function CartScreen({
   }
 
   return (
-    <main className="mx-auto w-full max-w-4xl px-4 py-6">
+    <Page width="md">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold">{t('title')}</h1>
         <Link href="/feed" className={buttonVariants({ variant: 'outline', size: 'sm' })}>
@@ -255,6 +256,6 @@ export function CartScreen({
           </div>
         </>
       )}
-    </main>
+    </Page>
   );
 }

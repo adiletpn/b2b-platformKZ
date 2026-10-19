@@ -6,6 +6,7 @@ import { Link, useRouter } from '@/i18n/navigation';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Field } from '@/components/ui/field';
+import { Page } from '@/components/ui/page';
 
 type Employee = { id: string; phone: string; role: string; status: 'ACTIVE' | 'BLOCKED' };
 type Invitation = { id: string; phone: string; role: string; expiresAt: string };
@@ -70,7 +71,7 @@ export function EmployeesScreen({
   }
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-4 py-6">
+    <Page width="md">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold">{t('title')}</h1>
         <Link href="/dashboard" className={buttonVariants({ variant: 'outline', size: 'sm' })}>
@@ -122,7 +123,7 @@ export function EmployeesScreen({
         </p>
       ) : null}
 
-      <section className="border-border bg-card mt-5 overflow-x-auto rounded-lg border">
+      <section className="border-border bg-card shadow-card mt-5 overflow-x-auto rounded-xl border">
         <table className="w-full min-w-[520px] text-sm">
           <thead className="text-muted-foreground text-left">
             <tr>
@@ -190,6 +191,6 @@ export function EmployeesScreen({
           </ul>
         )}
       </section>
-    </main>
+    </Page>
   );
 }

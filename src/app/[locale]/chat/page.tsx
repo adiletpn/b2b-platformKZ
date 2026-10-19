@@ -3,6 +3,7 @@ import { Link } from '@/i18n/navigation';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { MockupNotice } from '@/components/mockup-notice';
+import { Page } from '@/components/ui/page';
 
 export default async function ChatPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -12,7 +13,7 @@ export default async function ChatPage({ params }: { params: Promise<{ locale: s
   const tDashboard = await getTranslations('dashboard');
 
   return (
-    <main className="mx-auto w-full max-w-2xl px-4 py-6">
+    <Page width="sm">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold">{t('title')}</h1>
         <Link href="/dashboard" className={buttonVariants({ variant: 'outline', size: 'sm' })}>
@@ -21,7 +22,7 @@ export default async function ChatPage({ params }: { params: Promise<{ locale: s
       </header>
       <MockupNotice />
 
-      <section className="border-border bg-card mt-5 space-y-3 rounded-lg border p-4">
+      <section className="border-border bg-card shadow-card mt-5 space-y-3 rounded-xl border p-4 sm:p-5">
         <p className="bg-muted max-w-[80%] rounded-lg px-3 py-2 text-sm">{t('message1')}</p>
         <p className="bg-primary text-primary-foreground ml-auto max-w-[80%] rounded-lg px-3 py-2 text-sm">
           {t('message2')}
@@ -33,6 +34,6 @@ export default async function ChatPage({ params }: { params: Promise<{ locale: s
         <Button disabled>{t('send')}</Button>
       </div>
       <p className="text-muted-foreground mt-2 text-xs">{t('templates')}</p>
-    </main>
+    </Page>
   );
 }

@@ -6,6 +6,7 @@ import { Link } from '@/i18n/navigation';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Field } from '@/components/ui/field';
+import { Page } from '@/components/ui/page';
 
 export function RequisitesForm({
   initial,
@@ -41,7 +42,7 @@ export function RequisitesForm({
   }
 
   return (
-    <main className="mx-auto w-full max-w-md px-4 py-8">
+    <Page width="sm">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold">{t('title')}</h1>
         <Link href="/dashboard" className={buttonVariants({ variant: 'outline', size: 'sm' })}>
@@ -92,6 +93,6 @@ export function RequisitesForm({
           {t(`errors.${error}` as 'errors.unknown')}
         </p>
       ) : null}
-    </main>
+    </Page>
   );
 }

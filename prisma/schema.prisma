@@ -156,8 +156,15 @@ enum VerificationStatus {
 }
 
 /// Компания: магазин, поставщик или оба сразу. БИН уникален — повторная регистрация невозможна.
+/// Себестоимость: средневзвешенная по умолчанию или FIFO (раздел 4.1 ТЗ).
+enum CostMethod {
+  AVERAGE
+  FIFO
+}
+
 model Company {
   id                   String             @id @default(cuid())
+  costMethod           CostMethod         @default(AVERAGE)
   /// Каналы уведомлений компании: пользователь выбирает их сам (раздел 3.10 ТЗ).
   notificationChannels String[]           @default(["whatsapp", "telegram", "email"])
   type                 CompanyType

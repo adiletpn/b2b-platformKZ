@@ -5,7 +5,7 @@ import { LONG_TRANSACTION } from '@/lib/db-tx';
 import { nextDocumentNumber } from '@/lib/orders/numbering';
 import { writeAudit } from '@/lib/auth/permissions';
 import { applyBalanceChange, currentBalance } from './balance';
-import { consumeFefo, receiveBatch } from './batches';
+import { consumeFefo, lotsCost, receiveBatch } from './batches';
 
 export type DocumentLineInput = { productId: string; quantity: string };
 
@@ -22,6 +22,15 @@ function parseQuantity(value: string) {
   const parsed = new Decimal(value.replace(',', '.'));
   if (!parsed.isFinite() || parsed.isNegative()) throw new Error('invalid_quantity');
   return parsed.toDecimalPlaces(3, Decimal.ROUND_HALF_UP);
+}
+
+/** Компания может считать себестоимость по FIFO вместо средневзвешенной (раздел 4.1 ТЗ). */
+async function usesFifo(companyId: string) {
+  const company = await prisma.company.findUnique({
+    where: { id: companyId },
+    select: { costMethod: true },
+  });
+  return company?.costMethod === 'FIFO';
 }
 
 async function ownLocation(companyId: string, locationId: string) {
@@ -46,9 +55,10 @@ export async function transferStock(
   if (input.fromLocationId === input.toLocationId) return { status: 'same_location' };
   if (input.lines.length === 0) return { status: 'empty_lines' };
 
-  const [from, to] = await Promise.all([
+  const [from, to, fifo] = await Promise.all([
     ownLocation(companyId, input.fromLocationId),
     ownLocation(companyId, input.toLocationId),
+    usesFifo(companyId),
   ]);
   if (!from || !to) return { status: 'not_found' };
 
@@ -99,6 +109,7 @@ export async function transferStock(
 
       // Партии уезжают по FEFO и встают на приёмной точке с теми же сроками.
       const lots = await consumeFefo(tx, from.id, line.productId, line.quantity);
+      const lineCost = fifo ? lotsCost(lots ?? [], cost) : cost;
       for (const lot of lots ?? []) {
         await receiveBatch(tx, {
           locationId: to.id,
@@ -114,7 +125,7 @@ export async function transferStock(
           locationId: from.id,
           productId: line.productId,
           quantity: line.quantity.negated().toFixed(3),
-          costPrice: cost.toFixed(2),
+          costPrice: lineCost.toFixed(2),
           type: 'TRANSFER',
           stockDocumentId: document.id,
         },
@@ -124,7 +135,7 @@ export async function transferStock(
           locationId: to.id,
           productId: line.productId,
           quantity: line.quantity.toFixed(3),
-          costPrice: cost.toFixed(2),
+          costPrice: lineCost.toFixed(2),
           type: 'TRANSFER',
           stockDocumentId: document.id,
         },
@@ -134,13 +145,13 @@ export async function transferStock(
         locationId: from.id,
         productId: line.productId,
         quantity: line.quantity.negated(),
-        costPrice: cost,
+        costPrice: lineCost,
       });
       await applyBalanceChange(tx, {
         locationId: to.id,
         productId: line.productId,
         quantity: line.quantity,
-        costPrice: cost,
+        costPrice: lineCost,
       });
     }
 
@@ -166,7 +177,10 @@ export async function writeOffStock(
 ): Promise<StockDocumentResult> {
   if (input.lines.length === 0) return { status: 'empty_lines' };
 
-  const location = await ownLocation(companyId, input.locationId);
+  const [location, fifo] = await Promise.all([
+    ownLocation(companyId, input.locationId),
+    usesFifo(companyId),
+  ]);
   if (!location) return { status: 'not_found' };
 
   let lines: { productId: string; quantity: Decimal }[];
@@ -205,31 +219,32 @@ export async function writeOffStock(
       const balance = await currentBalance(tx, location.id, line.productId);
       const cost = balance.averageCost;
 
-      await tx.stockDocumentLine.create({
-        data: {
-          documentId: document.id,
-          productId: line.productId,
-          quantity: line.quantity.toFixed(3),
-          costPrice: cost.toFixed(2),
-        },
-      });
       // Списывается партия с ближайшим сроком (FEFO).
-      await consumeFefo(tx, location.id, line.productId, line.quantity);
+      const lots = await consumeFefo(tx, location.id, line.productId, line.quantity);
+      const lineCost = fifo ? lotsCost(lots ?? [], cost) : cost;
       await tx.stockMovement.create({
         data: {
           locationId: location.id,
           productId: line.productId,
           quantity: line.quantity.negated().toFixed(3),
-          costPrice: cost.toFixed(2),
+          costPrice: lineCost.toFixed(2),
           type: 'WRITE_OFF',
           stockDocumentId: document.id,
+        },
+      });
+      await tx.stockDocumentLine.create({
+        data: {
+          documentId: document.id,
+          productId: line.productId,
+          quantity: line.quantity.toFixed(3),
+          costPrice: lineCost.toFixed(2),
         },
       });
       await applyBalanceChange(tx, {
         locationId: location.id,
         productId: line.productId,
         quantity: line.quantity.negated(),
-        costPrice: cost,
+        costPrice: lineCost,
       });
     }
 

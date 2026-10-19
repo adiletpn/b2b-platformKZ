@@ -134,3 +134,14 @@ export async function getExpiring(
     daysLeft: Math.floor((batch.expiresAt!.getTime() - now.getTime()) / (24 * 60 * 60 * 1000)),
   }));
 }
+
+/** Себестоимость списания по фактически израсходованным партиям (FIFO, раздел 4.1 ТЗ). */
+export function lotsCost(lots: ConsumedLot[], fallback: Decimal): Decimal {
+  const quantity = lots.reduce((sum, lot) => sum.plus(lot.quantity), new Decimal(0));
+  if (quantity.isZero()) return fallback;
+
+  return lots
+    .reduce((sum, lot) => sum.plus(lot.quantity.times(lot.costPrice)), new Decimal(0))
+    .div(quantity)
+    .toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
+}

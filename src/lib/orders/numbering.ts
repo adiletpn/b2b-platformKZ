@@ -7,6 +7,9 @@ const PREFIXES: Record<string, string> = {
   discrepancy: 'АКТ',
   return: 'ВОЗВ',
   settlement: 'СВЕР',
+  transfer: 'ПЕРЕМ',
+  writeoff: 'СПИС',
+  stocktake: 'ИНВ',
 };
 
 /** Нумерация отдельная у каждой компании и года (раздел 3.5 ТЗ). */

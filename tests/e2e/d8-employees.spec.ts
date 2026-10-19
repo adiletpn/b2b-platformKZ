@@ -24,6 +24,8 @@ async function login(page: Page, phone: string) {
 }
 
 test.beforeAll(async ({ browser }, testInfo) => {
+  // Подготовка тяжёлая: регистрации, каталоги и заявки.
+  test.setTimeout(180_000);
   test.skip(testInfo.project.name !== ONLY_PROJECT, 'проверка уровня прав, один прогон');
 
   ownerPage = await browser.newPage();

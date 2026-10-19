@@ -48,6 +48,8 @@ async function checkBothWidths(page: Page) {
 }
 
 test.beforeAll(async ({ browser }, testInfo) => {
+  // Подготовка тяжёлая: регистрации, каталоги и заявки.
+  test.setTimeout(180_000);
   test.skip(testInfo.project.name !== ONLY_PROJECT, 'сквозной сценарий, достаточно одного прогона');
 
   for (let index = 0; index < 3; index += 1) {

@@ -15,6 +15,8 @@ const SUPPLIER_BIN: Record<string, string> = {
 let page: Page;
 
 test.beforeAll(async ({ browser }, testInfo) => {
+  // Подготовка тяжёлая: регистрации, каталоги и заявки.
+  test.setTimeout(180_000);
   page = await browser.newPage();
   const bin = SUPPLIER_BIN[testInfo.project.name]!;
 

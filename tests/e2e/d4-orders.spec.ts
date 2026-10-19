@@ -49,6 +49,8 @@ async function createSupplier(page: Page, phone: string, bin: string, productInd
 }
 
 test.beforeAll(async ({ browser }, testInfo) => {
+  // Подготовка тяжёлая: регистрации, каталоги и заявки.
+  test.setTimeout(180_000);
   base = BASE[testInfo.project.name]!;
 
   // Три поставщика, каждый возит в Тараз и имеет один товар.

@@ -67,6 +67,8 @@ async function createSupplier(
 }
 
 test.beforeAll(async ({ browser }, testInfo) => {
+  // Подготовка тяжёлая: регистрации, каталоги и заявки.
+  test.setTimeout(180_000);
   const fixtures = FIXTURES[testInfo.project.name]!;
   seed = testInfo.project.name.length * 1000;
 

@@ -25,6 +25,8 @@ async function login(page: Page, phone: string) {
 }
 
 test.beforeAll(async ({ browser }, testInfo) => {
+  // Подготовка тяжёлая: регистрации, каталоги и заявки.
+  test.setTimeout(180_000);
   base = BASE[testInfo.project.name]!;
   productName = `Тестовый товар ${70000 + base}`;
 

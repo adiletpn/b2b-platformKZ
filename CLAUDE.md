@@ -59,12 +59,20 @@ npm run test:e2e     # playwright (375 px и 1280 px)
 npm run build
 npx prisma generate  # обязательно после клонирования: src/generated в .gitignore
 npm run db:migrate   # только prisma migrate dev; при предупреждениях нужен TTY (expect)
+npm run db:deploy    # накат готовых миграций на удалённую базу (Railway)
 npm run db:seed
 npm run db:seed:demo # демо-данные для показа: компании, каталоги, заявки
 ```
 
-Локальная БД: PostgreSQL 18 через Homebrew, `brew services start postgresql@18`,
-базы `b2b_demo` (разработка) и `b2b_demo_test` (автотесты).
+База приложения — PostgreSQL на Railway (проект `mellow-unity`, сервис Postgres,
+публичный доступ через TCP-прокси `kodama.proxy.rlwy.net`). Строка подключения в `.env`,
+в репозиторий не попадает. Накат миграций на неё — `npm run db:deploy`.
+
+Автотесты остаются на локальном PostgreSQL 18 через Homebrew (`brew services start postgresql@18`,
+база `b2b_demo_test`): они гоняют сотни транзакций, удалённая база их только замедлит.
+
+`truncate ... cascade` в PostgreSQL чистит не строки, а **все связанные таблицы целиком**,
+включая справочники ролей и прав. После такой чистки обязательно `npm run db:seed`.
 
 `npm test` и `npm run test:e2e` используют одну тестовую базу, поэтому запускать их
 одновременно нельзя: прогоны затрут данные друг друга. Сначала один, потом второй.

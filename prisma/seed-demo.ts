@@ -348,6 +348,12 @@ async function makeOrder(
 }
 
 async function main() {
+  // `truncate ... cascade` вычищает и справочники: без ролей матрица прав пуста и всё отдаёт 403.
+  const roles = await prisma.role.count();
+  if (roles === 0) {
+    throw new Error('Справочники не загружены. Сначала выполните npm run db:seed');
+  }
+
   const existing = await prisma.company.count();
   if (existing > 0) {
     console.log(`Демо-данные уже есть: компаний ${existing}. Пропускаю.`);

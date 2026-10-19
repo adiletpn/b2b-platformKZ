@@ -58,8 +58,10 @@ export default async function OrderPage({
         })),
         statusLogs: order.statusLogs.map((log) => ({
           toStatus: log.toStatus,
-          createdAt: log.createdAt.toISOString(),
+          createdAt: log.createdAt.toLocaleString('ru-RU'),
+          comment: log.comment,
         })),
+        disputeReason: order.disputeReason,
         counterpartyId: side === 'store' ? order.supplierId : order.storeId,
         myRatingScore:
           order.ratings

@@ -148,13 +148,25 @@ export function CatalogScreen({
         <form className="flex flex-wrap items-end gap-3" onSubmit={upload}>
           <div className="min-w-0 flex-1">
             <Field label={t('uploadLabel')}>
-              <input
-                type="file"
-                accept=".xlsx"
-                data-testid="catalog-file"
-                className="w-full text-sm"
-                onChange={(event) => setFile(event.target.files?.[0] ?? null)}
-              />
+              <div className="flex flex-wrap items-center gap-3">
+                <label
+                  className={`${buttonVariants({ variant: 'outline' })} cursor-pointer`}
+                  htmlFor="catalog-file"
+                >
+                  {t('chooseFile')}
+                </label>
+                <input
+                  id="catalog-file"
+                  type="file"
+                  accept=".xlsx"
+                  data-testid="catalog-file"
+                  className="sr-only"
+                  onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+                />
+                <span className="text-muted-foreground min-w-0 truncate text-sm">
+                  {file ? file.name : t('noFileChosen')}
+                </span>
+              </div>
             </Field>
           </div>
           <Button type="submit" disabled={pending} data-testid="upload-catalog">
@@ -198,13 +210,18 @@ export function CatalogScreen({
         ) : null}
       </section>
 
-      <ManualOfferForm
-        units={units}
-        categories={categories}
-        vatRates={vatRates}
-        defaultVatCode={defaultVatCode}
-        onSaved={() => void loadOffers(search)}
-      />
+      <details className="mt-4">
+        <summary className="cursor-pointer text-sm font-medium" data-testid="manual-toggle">
+          {t('manualTitle')}
+        </summary>
+        <ManualOfferForm
+          units={units}
+          categories={categories}
+          vatRates={vatRates}
+          defaultVatCode={defaultVatCode}
+          onSaved={() => void loadOffers(search)}
+        />
+      </details>
 
       <section className="border-border bg-card shadow-card mt-6 rounded-xl border p-4 sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">

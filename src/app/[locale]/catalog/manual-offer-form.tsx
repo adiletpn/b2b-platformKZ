@@ -42,7 +42,10 @@ export function ManualOfferForm({
   const t = useTranslations('catalog');
 
   const [form, setForm] = useState(EMPTY);
-  const [unitCode, setUnitCode] = useState(units[0]?.code ?? '');
+  // «шт» — самая частая единица, остальное выбирается руками.
+  const [unitCode, setUnitCode] = useState(
+    (units.find((unit) => unit.code === 'pcs') ?? units[0])?.code ?? '',
+  );
   const [categoryCode, setCategoryCode] = useState('');
   const [vatCode, setVatCode] = useState(defaultVatCode);
   const [marks, setMarks] = useState({
@@ -129,8 +132,7 @@ export function ManualOfferForm({
       data-testid="manual-offer-form"
       onSubmit={save}
     >
-      <h2 className="text-lg font-medium">{t('manualTitle')}</h2>
-      <p className="text-muted-foreground mt-1 text-sm">{t('manualHint')}</p>
+      <p className="text-muted-foreground text-sm">{t('manualHint')}</p>
 
       <div className="mt-3 flex flex-wrap items-end gap-3">
         <Field label={t('barcode')}>

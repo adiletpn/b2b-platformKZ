@@ -70,8 +70,9 @@ export async function AppHeader() {
           <span className="text-sm font-semibold whitespace-nowrap">{tApp('name')}</span>
         </Link>
 
+        {/* На телефоне разделы прокручиваются вбок: затухание справа подсказывает это. */}
         {items.length > 0 ? (
-          <nav className="order-3 -mx-1 flex w-full gap-1 overflow-x-auto sm:order-none sm:mx-0 sm:w-auto">
+          <nav className="order-3 -mx-1 flex w-full gap-1 overflow-x-auto [mask-image:linear-gradient(to_right,black_85%,transparent)] sm:order-none sm:mx-0 sm:w-auto sm:[mask-image:none]">
             {items.map((item) => (
               <Link
                 key={item.href}

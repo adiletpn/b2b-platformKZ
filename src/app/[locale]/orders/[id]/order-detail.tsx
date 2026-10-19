@@ -37,7 +37,8 @@ type Order = {
   counterparty: string;
   rejectionReason: string | null;
   items: Item[];
-  statusLogs: { toStatus: Status; createdAt: string }[];
+  statusLogs: { toStatus: Status; createdAt: string; comment: string | null }[];
+  disputeReason: string | null;
   documents: DocumentRow[];
   payments: { id: string; amount: string; reference: string | null }[];
   myRatingScore: string | null;
@@ -759,11 +760,29 @@ export function OrderDetail({
           {tRatings('submitted', { score: ratingResult })}
         </p>
       ) : null}
+      {order.disputeReason ? (
+        <p className="mt-4 text-sm" data-testid="dispute-reason">
+          <span className="text-muted-foreground">{t('disputeReason')}: </span>
+          {order.disputeReason}
+        </p>
+      ) : null}
+
       <section className="mt-6">
         <h2 className="text-muted-foreground text-sm font-medium">{t('history')}</h2>
         <ol className="mt-2 space-y-1 text-sm" data-testid="status-history">
           {order.statusLogs.map((log, index) => (
-            <li key={`${log.toStatus}-${index}`}>{t(`status.${log.toStatus}`)}</li>
+            <li
+              key={`${log.toStatus}-${index}`}
+              className="flex flex-wrap items-baseline justify-between gap-2"
+            >
+              <span>
+                {t(`status.${log.toStatus}`)}
+                {log.comment ? (
+                  <span className="text-muted-foreground"> — {log.comment}</span>
+                ) : null}
+              </span>
+              <span className="text-muted-foreground text-xs">{log.createdAt}</span>
+            </li>
           ))}
         </ol>
       </section>

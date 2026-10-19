@@ -128,6 +128,19 @@ test('store_feed_shows_only_suppliers_delivering_to_its_city', async () => {
   await page.getByTestId('filter-reset').click();
 });
 
+test('swipe_card_shows_photo_and_supplier_rating', async () => {
+  await page.getByTestId('mode-swipe').click();
+  await expect(page.getByTestId('swipe-card')).toBeVisible();
+
+  // Фото нет — показывается плитка-заглушка вместо пустого места.
+  await expect(
+    page.getByTestId('product-photo').or(page.getByTestId('product-photo-placeholder')).first(),
+  ).toBeVisible();
+
+  // Оценок у поставщика пока нет.
+  await expect(page.getByTestId('swipe-supplier-few-ratings')).toBeVisible();
+});
+
 test('store_picks_products_by_swiping_on_phone', async () => {
   await page.getByTestId('mode-swipe').click();
 

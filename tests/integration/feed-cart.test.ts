@@ -71,6 +71,48 @@ describe('лента магазина', () => {
     expect([...new Set(offers.map((offer) => offer.supplierId))]).toEqual([taraz]);
   });
 
+  it('feed_returns_product_photo_and_supplier_rating', async () => {
+    const supplier = await makeSupplier('+77030000050', '120340001230', ['taraz']);
+    const store = await makeStore('+77030000051', '140240003217', 'taraz');
+
+    const offer = await prisma.supplierOffer.findFirstOrThrow({ where: { supplierId: supplier } });
+    await prisma.product.update({
+      where: { id: offer.productId },
+      data: { photoUrls: ['/products/dairy.svg'] },
+    });
+
+    const before = await getFeed(store.companyId, store.cityId, { forSwipe: false });
+    const shown = before.find((item) => item.id === offer.id)!;
+    expect(shown.photoUrl).toBe('/products/dairy.svg');
+    // Оценок ещё нет: карточка покажет «мало оценок».
+    expect(shown.supplierRating).toBeNull();
+    expect(shown.supplierRatingCount).toBe(0);
+
+    const order = await prisma.order.create({
+      data: {
+        number: 'RATING-1',
+        storeId: store.companyId,
+        supplierId: supplier,
+        locationId: store.locationId,
+        status: 'CLOSED',
+      },
+    });
+    await prisma.rating.create({
+      data: {
+        orderId: order.id,
+        authorCompanyId: store.companyId,
+        targetCompanyId: supplier,
+        criteria: { quality: 5 },
+        score: '4.50',
+      },
+    });
+
+    const after = await getFeed(store.companyId, store.cityId, { forSwipe: false });
+    const rated = after.find((item) => item.id === offer.id)!;
+    expect(rated.supplierRating).toBe('4.50');
+    expect(rated.supplierRatingCount).toBe(1);
+  });
+
   it('feed_is_empty_when_nobody_delivers_to_city', async () => {
     await makeSupplier('+77030000004', '120340001230', ['astana']);
     const store = await makeStore('+77030000005', '140240003217', 'taraz');

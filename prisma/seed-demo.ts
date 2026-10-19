@@ -27,6 +27,13 @@ type ProductSeed = {
   stock: string;
 };
 
+/** Демо-изображения лежат рядом с приложением: внешних зависимостей у показа нет. */
+const PHOTO_BY_CATEGORY: Record<string, string> = {
+  grocery: '/products/grocery.svg',
+  dairy: '/products/dairy.svg',
+  drinks: '/products/drinks.svg',
+};
+
 const GROCERY: ProductSeed[] = [
   {
     barcode: '4870001000018',
@@ -297,6 +304,7 @@ async function fillCatalog(supplierId: string, products: ProductSeed[]) {
         country: 'Казахстан',
         categoryId: category?.id ?? null,
         unitId: unit.id,
+        photoUrls: PHOTO_BY_CATEGORY[item.category] ? [PHOTO_BY_CATEGORY[item.category]!] : [],
       },
     });
 

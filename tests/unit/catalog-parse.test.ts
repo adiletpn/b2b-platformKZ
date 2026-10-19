@@ -104,6 +104,17 @@ describe('разбор файла каталога', () => {
     expect(errors.map((error) => error.row)).toEqual([2, 3, 4]);
   });
 
+  it('catalog_accepts_photo_link_and_rejects_garbage', async () => {
+    const { rows } = await parse([validRow(1, { photoUrl: 'https://example.kz/milk.jpg' })]);
+    expect(rows[0]!.photoUrl).toBe('https://example.kz/milk.jpg');
+
+    const local = await parse([validRow(2, { photoUrl: '/products/dairy.svg' })]);
+    expect(local.rows[0]!.photoUrl).toBe('/products/dairy.svg');
+
+    const { errors } = await parse([validRow(3, { photoUrl: 'картинка.jpg' })]);
+    expect(errors[0]).toMatchObject({ column: 'photoUrl', code: 'invalid_photo_url' });
+  });
+
   it('catalog_reports_empty_file', async () => {
     const { errors } = await parse([]);
     expect(errors[0]).toMatchObject({ code: 'empty_file' });

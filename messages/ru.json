@@ -115,7 +115,8 @@
     "chatLink": "Чат",
     "adminLink": "Админка",
     "employeesLink": "Сотрудники",
-    "settlementsLink": "Взаиморасчёты"
+    "settlementsLink": "Взаиморасчёты",
+    "archiveLink": "Архив"
   },
   "companyType": {
     "STORE": "Магазин",
@@ -609,5 +610,23 @@
     "amount": "Сумма",
     "overdueDays": "Просрочка, дней",
     "onTime": "В срок"
+  },
+  "archive": {
+    "title": "Архив документов",
+    "subtitle": "Накладные, счета, акты и возвраты компании",
+    "search": "Поиск по номеру документа или заявки",
+    "type": "Тип",
+    "allTypes": "Все типы",
+    "number": "Номер",
+    "date": "Дата",
+    "counterparty": "Контрагент",
+    "order": "Заявка",
+    "total": "Сумма с НДС",
+    "version": "Версия",
+    "outgoing": "Исходящий",
+    "incoming": "Входящий",
+    "empty": "Документов не найдено",
+    "open": "PDF",
+    "export": "Выгрузить в Excel"
   }
 }

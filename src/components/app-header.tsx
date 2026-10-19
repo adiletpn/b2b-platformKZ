@@ -15,6 +15,7 @@ type NavItem = {
     | '/requisites'
     | '/employees'
     | '/settlements'
+    | '/archive'
     | '/chat';
   label: string;
   testId: string;
@@ -49,6 +50,7 @@ export async function AppHeader() {
       });
     }
     items.push({ href: '/orders', label: t('ordersLink'), testId: 'go-orders' });
+    items.push({ href: '/archive', label: t('archiveLink'), testId: 'go-archive' });
     items.push({ href: '/chat', label: t('chatLink'), testId: 'go-chat' });
     items.push({ href: '/ratings', label: t('ratingsLink'), testId: 'go-ratings' });
     items.push({ href: '/requisites', label: t('requisitesLink'), testId: 'go-requisites' });

@@ -115,7 +115,8 @@
     "chatLink": "Чат",
     "adminLink": "Әкімші",
     "employeesLink": "Қызметкерлер",
-    "settlementsLink": "Өзара есеп"
+    "settlementsLink": "Өзара есеп",
+    "archiveLink": "Мұрағат"
   },
   "companyType": {
     "STORE": "Дүкен",
@@ -609,5 +610,23 @@
     "amount": "Сома",
     "overdueDays": "Кешігу, күн",
     "onTime": "Мерзімінде"
+  },
+  "archive": {
+    "title": "Құжаттар мұрағаты",
+    "subtitle": "Компанияның жүкқұжаттары, шоттары, актілері және қайтарулары",
+    "search": "Құжат немесе өтінім нөмірі бойынша іздеу",
+    "type": "Түрі",
+    "allTypes": "Барлық түрлері",
+    "number": "Нөмірі",
+    "date": "Күні",
+    "counterparty": "Контрагент",
+    "order": "Өтінім",
+    "total": "ҚҚС-пен сома",
+    "version": "Нұсқа",
+    "outgoing": "Шығыс",
+    "incoming": "Кіріс",
+    "empty": "Құжат табылмады",
+    "open": "PDF",
+    "export": "Excel-ге жүктеу"
   }
 }

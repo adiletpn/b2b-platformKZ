@@ -1,7 +1,7 @@
 import Decimal from 'decimal.js';
 import { prisma } from '@/lib/prisma';
 import { notify } from '@/mocks/notifications';
-import { createGatewayPayment } from '@/mocks/payment-gateway';
+import { createGatewayPayment, isLiveGateway } from '@/mocks/payment-gateway';
 
 export type OnlinePaymentResult =
   | {
@@ -131,4 +131,48 @@ export async function confirmOnlinePayment(
   }
 
   return { status: 'ok', paymentId: payment.id, replayed: false };
+}
+
+export type OnlinePaymentView = {
+  provider: string;
+  amount: string;
+  payUrl: string;
+  qrPayload: string;
+  status: 'PENDING' | 'PAID' | 'FAILED';
+};
+
+/** Последний онлайн-платёж заявки для карточки: ссылка и QR не теряются при обновлении. */
+export async function getOnlinePayment(
+  orderId: string,
+  storeId: string,
+): Promise<OnlinePaymentView | null> {
+  const payment = await prisma.onlinePayment.findFirst({
+    // Правило 4: ссылку на оплату видит только магазин своей заявки.
+    where: { orderId, order: { storeId } },
+    orderBy: { createdAt: 'desc' },
+  });
+  if (!payment) return null;
+  return {
+    provider: payment.provider,
+    amount: payment.amount.toFixed(2),
+    payUrl: payment.payUrl,
+    qrPayload: payment.qrPayload,
+    status: payment.status,
+  };
+}
+
+/**
+ * Оплата в тестовом шлюзе: в демо заменяет оплату в приложении банка, как код SMS
+ * на экране заменяет отправку. С боевым шлюзом (`PAYMENT_API_KEY`) недоступна.
+ */
+export async function payInMockGateway(
+  orderId: string,
+  storeId: string,
+): Promise<ConfirmResult | { status: 'not_mock' }> {
+  if (isLiveGateway()) return { status: 'not_mock' };
+  const payment = await prisma.onlinePayment.findFirst({
+    where: { orderId, status: 'PENDING', order: { storeId } },
+  });
+  if (!payment) return { status: 'not_found' };
+  return confirmOnlinePayment(payment.externalId, true);
 }

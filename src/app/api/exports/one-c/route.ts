@@ -1,7 +1,30 @@
 import { NextResponse } from 'next/server';
 import { requirePermission } from '@/lib/auth/permissions';
-import { exportReceiptsToOneC } from '@/lib/exports/one-c';
+import {
+  exportCounterpartiesToOneC,
+  exportNomenclatureToOneC,
+  exportPaymentsToOneC,
+  exportReceiptsToOneC,
+  exportSalesToOneC,
+} from '@/lib/exports/one-c';
 
+const KINDS = ['receipts', 'sales', 'payments', 'nomenclature', 'counterparties'] as const;
+type Kind = (typeof KINDS)[number];
+
+const FILE_NAMES: Record<Kind, string> = {
+  receipts: 'поступления',
+  sales: 'реализации',
+  payments: 'оплаты',
+  nomenclature: 'номенклатура',
+  counterparties: 'контрагенты',
+};
+
+const DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * Выгрузки для 1С (раздел 4.4 ТЗ): поступления, реализации, оплаты за период,
+ * номенклатура и контрагенты целиком. Период — даты Казахстана, по умолчанию текущий месяц.
+ */
 export async function GET(request: Request) {
   // Выгрузки — отдельное право в матрице (раздел 3.12 ТЗ).
   const guard = await requirePermission('DOCUMENTS_PAYMENTS', 'EXPORT');
@@ -13,13 +36,37 @@ export async function GET(request: Request) {
   }
 
   const params = new URL(request.url).searchParams;
-  const to = params.get('to') ? new Date(`${params.get('to')}T23:59:59.999Z`) : new Date();
-  const from = params.get('from')
-    ? new Date(`${params.get('from')}T00:00:00.000Z`)
-    : new Date(to.getFullYear(), to.getMonth(), 1);
+  const kind = KINDS.find((item) => item === (params.get('kind') ?? 'receipts'));
+  if (!kind) return NextResponse.json({ status: 'invalid_kind' }, { status: 400 });
 
-  const xml = await exportReceiptsToOneC(guard.access.companyId, from, to);
-  const name = `поступления-${from.toISOString().slice(0, 10)}.xml`;
+  const today = new Date(Date.now() + 5 * 3_600_000).toISOString().slice(0, 10);
+  const toDay = params.get('to') ?? today;
+  const fromDay = params.get('from') ?? `${toDay.slice(0, 8)}01`;
+  if (!DATE.test(fromDay) || !DATE.test(toDay)) {
+    return NextResponse.json({ status: 'invalid_period' }, { status: 400 });
+  }
+  const from = new Date(`${fromDay}T00:00:00+05:00`);
+  const to = new Date(`${toDay}T23:59:59.999+05:00`);
+
+  const companyId = guard.access.companyId;
+  const xml =
+    kind === 'receipts'
+      ? await exportReceiptsToOneC(companyId, from, to)
+      : kind === 'sales'
+        ? await exportSalesToOneC(companyId, from, to)
+        : kind === 'payments'
+          ? // Дата оплаты хранится без времени: сравниваем по календарным дням.
+            await exportPaymentsToOneC(
+              companyId,
+              new Date(`${fromDay}T00:00:00Z`),
+              new Date(`${toDay}T00:00:00Z`),
+            )
+          : kind === 'nomenclature'
+            ? await exportNomenclatureToOneC(companyId)
+            : await exportCounterpartiesToOneC(companyId);
+
+  const period = kind === 'nomenclature' || kind === 'counterparties' ? '' : `-${fromDay}`;
+  const name = `${FILE_NAMES[kind]}${period}.xml`;
 
   return new NextResponse(xml, {
     headers: {

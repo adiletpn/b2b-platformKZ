@@ -20,8 +20,9 @@ export function NotificationList({ notifications }: { notifications: Item[] }) {
           {notifications.map((item) => (
             <li key={item.id} className="break-words">
               {t(`events.${item.event}` as 'events.order_created', {
-                number: item.payload.number ?? '',
-                total: item.payload.total ?? '',
+                number: '',
+                total: '',
+                ...item.payload,
               })}
               <span className="text-muted-foreground ml-2 text-xs">
                 {t('notificationChannels')}: {item.channels.join(', ')}

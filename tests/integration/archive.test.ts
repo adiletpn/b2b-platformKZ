@@ -117,6 +117,23 @@ describe('архив документов', () => {
     expect(byNumber).toHaveLength(1);
   });
 
+  it('archive_search_and_counterparty_filter_do_not_leak_other_companies', async () => {
+    const own = await orderWithDocuments(5);
+    const other = await orderWithDocuments(6);
+
+    // Номера документов у всех компаний одного вида: поиск по общему префиксу
+    // и фильтр по чужому контрагенту не должны отдавать чужие документы (правило 4).
+    const [sample] = await searchDocuments(own.storeId);
+    const prefix = sample!.number.slice(0, 2);
+    const bySearch = await searchDocuments(own.storeId, { search: prefix });
+    expect(bySearch.length).toBeGreaterThan(0);
+    expect(bySearch.every((row) => row.counterpartyName !== '')).toBe(true);
+    const ownIds = new Set((await searchDocuments(own.storeId)).map((row) => row.id));
+    expect(bySearch.every((row) => ownIds.has(row.id))).toBe(true);
+
+    expect(await searchDocuments(own.storeId, { counterpartyId: other.supplierId })).toEqual([]);
+  });
+
   it('archive_filters_by_amount_and_period', async () => {
     const context = await orderWithDocuments(3);
 

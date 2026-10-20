@@ -207,6 +207,7 @@ model Company {
   stockDocuments       StockDocument[]
   posShifts            PosShift[]
   receipts             Receipt[]
+  signatures           DocumentSignature[]
   markupRules          MarkupRule[]
   retailPrices         RetailPrice[]
   invitations          Invitation[]
@@ -521,13 +522,14 @@ model Order {
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
-  items         OrderItem[]
-  statusLogs    OrderStatusLog[]
-  notifications Notification[]
-  documents     Document[]
-  payments      Payment[]
-  ratings       Rating[]
-  chats         Chat[]
+  items          OrderItem[]
+  statusLogs     OrderStatusLog[]
+  notifications  Notification[]
+  documents      Document[]
+  payments       Payment[]
+  onlinePayments OnlinePayment[]
+  ratings        Rating[]
+  chats          Chat[]
 
   // Раздел 3.5 ТЗ: нумерация отдельная у каждой компании, поэтому номер уникален в пределах магазина.
   @@unique([storeId, number])
@@ -664,8 +666,9 @@ model Document {
   totalWithVat    Decimal             @db.Decimal(14, 2)
   payload         Json
 
-  movements StockMovement[]
-  payments  Payment[]
+  movements  StockMovement[]
+  payments   Payment[]
+  signatures DocumentSignature[]
 
   @@unique([issuerId, type, number])
   @@index([orderId])
@@ -916,6 +919,47 @@ enum PaymentStatus {
 }
 
 /// Платёж по заявке (раздел 3.6 ТЗ). В демо отметка ручная, платёжного шлюза нет.
+/// Онлайн-платёж: ссылка и QR платёжного шлюза, подтверждение приходит колбэком.
+enum OnlinePaymentStatus {
+  PENDING
+  PAID
+  FAILED
+}
+
+model OnlinePayment {
+  id          String              @id @default(cuid())
+  orderId     String
+  order       Order               @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  provider    String
+  amount      Decimal             @db.Decimal(14, 2)
+  status      OnlinePaymentStatus @default(PENDING)
+  /// Идентификатор платежа на стороне шлюза и ссылка для оплаты.
+  externalId  String              @unique
+  payUrl      String
+  qrPayload   String
+  confirmedAt DateTime?
+  createdAt   DateTime            @default(now())
+
+  @@index([orderId])
+  @@map("online_payments")
+}
+
+/// Подпись документа ЭЦП: в демо мок NCALayer / eGov mobile (раздел 4.5 ТЗ).
+model DocumentSignature {
+  id          String   @id @default(cuid())
+  documentId  String
+  document    Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  signerName  String
+  certificate String
+  signature   String
+  signedAt    DateTime @default(now())
+
+  @@unique([documentId, companyId])
+  @@map("document_signatures")
+}
+
 model Payment {
   id         String        @id @default(cuid())
   orderId    String

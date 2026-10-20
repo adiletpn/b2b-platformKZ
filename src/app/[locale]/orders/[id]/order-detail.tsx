@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Field } from '@/components/ui/field';
 import { Page, PageHeader } from '@/components/ui/page';
 import { OrderStatusBadge } from '@/components/order-status-badge';
+import { Badge } from '@/components/ui/badge';
 import { OrderProgress } from '@/components/order-progress';
 import { DocumentSignatures, type SignatureMark } from '@/components/document-signatures';
 import { AttachmentsPanel, type FileRow } from '@/components/attachments-panel';
@@ -25,7 +26,11 @@ type Item = {
   quantityOrdered: string;
   quantityConfirmed: string | null;
   priceWithVat: string;
+  /** Позиция предложена поставщиком вместо другой (раздел 3.4 ТЗ). */
+  substituteForId: string | null;
 };
+
+type SubstituteOffer = { id: string; name: string; priceWithVat: string };
 
 type DocumentRow = {
   id: string;
@@ -72,10 +77,12 @@ export function OrderDetail({
   onlinePayment,
   mockGateway,
   files,
+  substituteOffers,
 }: {
   locale: 'ru' | 'kk';
   side: 'store' | 'supplier';
   order: Order;
+  substituteOffers: SubstituteOffer[];
   onlinePayment: OnlinePayment | null;
   mockGateway: boolean;
   files: { initial: FileRow[]; canUpload: boolean; canDelete: boolean };
@@ -87,6 +94,9 @@ export function OrderDetail({
   const tRatings = useTranslations('ratings');
   const tChat = useTranslations('chat');
   const router = useRouter();
+  const [substitutes, setSubstitutes] = useState<
+    Record<string, { offerId: string; quantity: string }>
+  >({});
   const [quantities, setQuantities] = useState<Record<string, string>>(
     Object.fromEntries(
       order.items.map((item) => [item.id, item.quantityConfirmed ?? item.quantityOrdered]),
@@ -248,7 +258,13 @@ export function OrderDetail({
   const confirmLines = order.items.map((item) => ({
     orderItemId: item.id,
     quantityConfirmed: quantities[item.id] ?? item.quantityOrdered,
+    substituteOfferId: substitutes[item.id]?.offerId || undefined,
+    substituteQuantity: substitutes[item.id]?.offerId ? substitutes[item.id]!.quantity : undefined,
   }));
+  const itemName = (id: string) => {
+    const item = order.items.find((row) => row.id === id);
+    return item ? (locale === 'kk' ? item.nameKk : item.nameRu) : '';
+  };
 
   const nextStatus = NEXT_BY_SIDE[side][order.status];
   const canCreateDocuments =
@@ -342,6 +358,64 @@ export function OrderDetail({
               <tr key={item.id}>
                 <td className="px-3 py-2 break-words">
                   {locale === 'kk' ? item.nameKk : item.nameRu}
+                  {item.substituteForId ? (
+                    <Badge tone="info" className="ml-2" data-testid={`substitute-${item.id}`}>
+                      {t('substituteFor', { name: itemName(item.substituteForId) })}
+                    </Badge>
+                  ) : null}
+                  {canConfirm ? (
+                    <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        data-testid={`out-of-stock-${item.id}`}
+                        onClick={() => setQuantities((current) => ({ ...current, [item.id]: '0' }))}
+                      >
+                        {t('outOfStock')}
+                      </Button>
+                      {substituteOffers.length > 0 ? (
+                        <>
+                          <select
+                            className="border-input bg-background h-8 max-w-48 rounded-md border px-2 text-xs"
+                            aria-label={t('substitute')}
+                            value={substitutes[item.id]?.offerId ?? ''}
+                            data-testid={`substitute-offer-${item.id}`}
+                            onChange={(event) =>
+                              setSubstitutes((current) => ({
+                                ...current,
+                                [item.id]: {
+                                  offerId: event.target.value,
+                                  quantity: current[item.id]?.quantity ?? item.quantityOrdered,
+                                },
+                              }))
+                            }
+                          >
+                            <option value="">{t('substituteNone')}</option>
+                            {substituteOffers.map((offer) => (
+                              <option key={offer.id} value={offer.id}>
+                                {offer.name} · {offer.priceWithVat} ₸
+                              </option>
+                            ))}
+                          </select>
+                          {substitutes[item.id]?.offerId ? (
+                            <Input
+                              className="h-8 w-20 text-right text-xs"
+                              inputMode="decimal"
+                              aria-label={t('substituteQuantity')}
+                              value={substitutes[item.id]!.quantity}
+                              data-testid={`substitute-qty-${item.id}`}
+                              onChange={(event) =>
+                                setSubstitutes((current) => ({
+                                  ...current,
+                                  [item.id]: { ...current[item.id]!, quantity: event.target.value },
+                                }))
+                              }
+                            />
+                          ) : null}
+                        </>
+                      ) : null}
+                    </div>
+                  ) : null}
                 </td>
                 <td className="px-3 py-2 text-right tabular-nums">{item.quantityOrdered}</td>
                 <td className="px-3 py-2 text-right">

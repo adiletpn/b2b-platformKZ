@@ -61,6 +61,21 @@ export default async function OrderPage({
   );
   const onlinePayment =
     side === 'store' ? await getOnlinePayment(order.id, active!.companyId) : null;
+  // Раздел 3.4 ТЗ: вместо отсутствующей позиции поставщик предлагает свой товар.
+  const substituteOffers =
+    side === 'supplier' && order.status === 'SENT'
+      ? await prisma.supplierOffer.findMany({
+          where: {
+            supplierId: active!.companyId,
+            isActive: true,
+            stock: { gt: 0 },
+            id: { notIn: order.items.map((item) => item.offerId) },
+          },
+          include: { product: { select: { nameRu: true, nameKk: true } } },
+          orderBy: { product: { nameRu: 'asc' } },
+          take: 300,
+        })
+      : [];
 
   return (
     <OrderDetail
@@ -68,6 +83,11 @@ export default async function OrderPage({
       side={side}
       onlinePayment={onlinePayment}
       mockGateway={!isLiveGateway()}
+      substituteOffers={substituteOffers.map((offer) => ({
+        id: offer.id,
+        name: locale === 'kk' ? offer.product.nameKk : offer.product.nameRu,
+        priceWithVat: offer.priceWithVat.toFixed(2),
+      }))}
       files={{
         initial: (await listAttachments(active!.companyId, order.id)) ?? [],
         canUpload: can.CREATE,
@@ -90,6 +110,7 @@ export default async function OrderPage({
           quantityOrdered: item.quantityOrdered.toFixed(3),
           quantityConfirmed: item.quantityConfirmed?.toFixed(3) ?? null,
           priceWithVat: item.priceWithVat.toFixed(2),
+          substituteForId: item.substituteForId,
         })),
         statusLogs: order.statusLogs.map((log) => ({
           toStatus: log.toStatus,

@@ -23,6 +23,7 @@ type NavItem = {
     | '/employees'
     | '/settlements'
     | '/archive'
+    | '/support'
     | '/chat';
   label: string;
   testId: string;
@@ -135,6 +136,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
       items: [
         item('/requisites', 'requisitesLink', 'requisites'),
         item('/employees', 'employeesLink', 'employees'),
+        item('/support', 'supportLink', 'support'),
       ],
     },
   ];

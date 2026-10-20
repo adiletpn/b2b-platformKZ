@@ -9,6 +9,17 @@ import { AdminPanel } from './admin-panel';
 import { TemplateEditor } from './template-editor';
 import { getTemplateEditorData, TEMPLATE_EDITOR_ROLES } from '@/lib/admin/templates';
 import { Page } from '@/components/ui/page';
+import { ComplaintsPanel } from './complaints-panel';
+import {
+  BroadcastPanel,
+  IntegrationsPanel,
+  ReportsPanel,
+  TicketsPanel,
+  UsersPanel,
+} from './admin-ops';
+import { listOpenComplaints } from '@/lib/chat/extras';
+import { listTickets } from '@/lib/support/tickets';
+import { integrationStatus } from '@/lib/admin/broadcasts';
 
 export default async function AdminPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -52,8 +63,21 @@ export default async function AdminPage({ params }: { params: Promise<{ locale: 
       }),
     ]);
 
-  const canEditTemplates = TEMPLATE_EDITOR_ROLES.includes(session.admin.role);
+  const role = session.admin.role;
+  const canEditTemplates = TEMPLATE_EDITOR_ROLES.includes(role);
   const templates = canEditTemplates ? await getTemplateEditorData('WAYBILL', 'ru') : null;
+  // Раздел 3.13 ТЗ: каждой роли администратора — свои разделы.
+  const is = (...roles: string[]) => role === 'SUPERADMIN' || roles.includes(role);
+  const [complaints, tickets, cities] = await Promise.all([
+    is('MODERATOR') ? listOpenComplaints() : Promise.resolve(null),
+    is('SUPPORT') ? listTickets() : Promise.resolve(null),
+    is('CONTENT_MANAGER')
+      ? prisma.city.findMany({
+          orderBy: { nameRu: 'asc' },
+          select: { id: true, nameRu: true, nameKk: true },
+        })
+      : Promise.resolve(null),
+  ]);
 
   return (
     <>
@@ -85,11 +109,23 @@ export default async function AdminPage({ params }: { params: Promise<{ locale: 
           await prisma.company.findMany({ orderBy: { createdAt: 'desc' }, take: 20 })
         ).map((company) => ({ id: company.id, name: company.name }))}
       />
-      {templates ? (
-        <Page width="lg" className="pt-0 sm:pt-0">
-          <TemplateEditor initial={templates} />
-        </Page>
-      ) : null}
+      <Page width="lg" className="space-y-4 pt-0 sm:pt-0">
+        {complaints ? <ComplaintsPanel initial={complaints} /> : null}
+        {tickets ? <TicketsPanel initial={tickets} /> : null}
+        {is('SUPPORT') ? <UsersPanel /> : null}
+        {is('FINANCE') ? <ReportsPanel /> : null}
+        {cities ? (
+          <BroadcastPanel
+            cities={cities.map((city) => ({
+              id: city.id,
+              name: locale === 'kk' ? city.nameKk : city.nameRu,
+            }))}
+            plans={plans.map((plan) => ({ code: plan.code, name: plan.nameRu }))}
+          />
+        ) : null}
+        {templates ? <TemplateEditor initial={templates} /> : null}
+        {role === 'SUPERADMIN' ? <IntegrationsPanel rows={integrationStatus()} /> : null}
+      </Page>
     </>
   );
 }

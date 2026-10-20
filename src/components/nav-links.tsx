@@ -7,6 +7,7 @@ import {
   ClipboardList,
   Landmark,
   LayoutDashboard,
+  LifeBuoy,
   MessagesSquare,
   Package,
   ShoppingBasket,
@@ -37,6 +38,7 @@ const ICONS: Record<string, LucideIcon> = {
   ratings: Star,
   requisites: Landmark,
   employees: Users,
+  support: LifeBuoy,
 };
 
 /**

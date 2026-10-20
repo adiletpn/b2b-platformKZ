@@ -20,6 +20,11 @@ export function createTestPrisma() {
 
 /** Чистит операционные данные; справочники (города, НДС, единицы, категории) остаются. */
 export async function resetTransactionalData(prisma: PrismaClient) {
+  await prisma.supportMessage.deleteMany();
+  await prisma.supportTicket.deleteMany();
+  await prisma.chatComplaint.deleteMany();
+  await prisma.chatBlock.deleteMany();
+  await prisma.chatTemplate.deleteMany();
   await prisma.message.deleteMany();
   await prisma.chat.deleteMany();
   await prisma.rating.deleteMany();
@@ -66,6 +71,7 @@ export async function resetTransactionalData(prisma: PrismaClient) {
 export async function resetPlatformFlags(prisma: PrismaClient) {
   // Шаблоны печатных форм глобальные: чужой шаблон не должен влиять на другие тесты.
   await prisma.documentTemplate.deleteMany();
+  await prisma.broadcast.deleteMany();
   await prisma.adminAuditLog.deleteMany();
   await prisma.impersonationLog.deleteMany();
   await prisma.adminSession.deleteMany();

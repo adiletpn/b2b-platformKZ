@@ -2,7 +2,7 @@ import type { DocumentType } from '@/generated/prisma/enums';
 import { searchDocuments } from '@/lib/archive/search';
 import { exportDocuments } from '@/lib/archive/export';
 import { renderPdf } from '@/lib/documents/pdf';
-import { documentHtml } from '@/lib/documents/templates';
+import { printableHtml } from '@/lib/documents/print';
 import { documentForPrint } from '@/lib/documents/versions';
 import { verificationUrl } from '@/lib/documents/verification';
 import { exportEsf } from './esf';
@@ -57,7 +57,7 @@ export async function buildDocumentsBundle(input: BundleInput): Promise<BundleRe
   for (const row of rows) {
     const printable = await documentForPrint(row.id, input.companyId);
     if (!printable) continue;
-    const html = documentHtml(row.type, printable.payload, input.locale, {
+    const html = await printableHtml(row.type, printable.payload, input.locale, {
       verifyUrl: verificationUrl(
         input.baseUrl,
         input.locale,

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requirePermission } from '@/lib/auth/permissions';
 import { getActiveCompany } from '@/lib/auth/active-company';
-import { documentHtml } from '@/lib/documents/templates';
+import { printableHtml } from '@/lib/documents/print';
 import { renderPdf } from '@/lib/documents/pdf';
 import { documentForPrint } from '@/lib/documents/versions';
 import { appBaseUrl, verificationUrl } from '@/lib/documents/verification';
@@ -33,7 +33,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
   const locale = search.get('locale') === 'kk' ? 'kk' : 'ru';
   // QR ведёт на страницу проверки именно этой версии: по старой бумаге видно, что есть новая.
-  const html = documentHtml(document.type, printable.payload, locale, {
+  const html = await printableHtml(document.type, printable.payload, locale, {
     verifyUrl: verificationUrl(
       appBaseUrl(request),
       locale,

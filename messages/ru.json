@@ -704,7 +704,8 @@
     "printLabels": "Печать ценников",
     "scan": "Сканер",
     "scanPlaceholder": "Отсканируйте штрихкод",
-    "scanNotFound": "Такого штрихкода на точке нет"
+    "scanNotFound": "Такого штрихкода на точке нет",
+    "downloadLedger": "Скачать Excel"
   },
   "payment": {
     "title": "Оплата",
@@ -1498,7 +1499,12 @@
     "receiptChannels": {
       "sms": "SMS",
       "whatsapp": "WhatsApp"
-    }
+    },
+    "periodTitle": "Продажи за период",
+    "periodFrom": "С",
+    "periodTo": "По",
+    "downloadSales": "Скачать Excel",
+    "printReceipt": "Печать чека"
   },
   "files": {
     "orderTitle": "Файлы заявки",
@@ -1587,5 +1593,51 @@
     "errors": {
       "invalid": "Заполните тему и сообщение"
     }
+  },
+  "reportsXlsx": {
+    "ledger": "Движение",
+    "date": "Дата",
+    "type": "Операция",
+    "quantity": "Количество",
+    "costPrice": "Себестоимость",
+    "location": "Точка",
+    "document": "Документ",
+    "author": "Кто провёл",
+    "receipts": "Чеки",
+    "items": "Товары",
+    "number": "Номер",
+    "cashier": "Кассир",
+    "payment": "Оплата",
+    "kind": "Вид",
+    "discount": "Скидка",
+    "total": "Сумма",
+    "cost": "Себестоимость",
+    "barcode": "Штрихкод",
+    "product": "Товар",
+    "price": "Цена",
+    "refund": "Возврат",
+    "sale": "Продажа",
+    "payment_CASH": "Наличные",
+    "payment_CARD": "Карта",
+    "payment_QR": "Kaspi QR",
+    "payment_MIXED": "Смешанная"
+  },
+  "receiptPrint": {
+    "bin": "БИН",
+    "saleTitle": "Кассовый чек",
+    "refundTitle": "Чек возврата",
+    "cashier": "Кассир",
+    "discount": "Скидка",
+    "total": "ИТОГО",
+    "payment": "Оплата",
+    "fiscal": "Фискальный признак",
+    "thanks": "Спасибо за покупку!",
+    "print": "Печать"
+  },
+  "camera": {
+    "open": "Сканировать камерой",
+    "close": "Закрыть",
+    "hint": "Наведите камеру на штрихкод",
+    "denied": "Нет доступа к камере: разрешите его в настройках браузера"
   }
 }

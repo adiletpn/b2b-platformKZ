@@ -704,7 +704,8 @@
     "printLabels": "Бағажапсырманы басып шығару",
     "scan": "Сканер",
     "scanPlaceholder": "Штрихкодты сканерлеңіз",
-    "scanNotFound": "Нүктеде мұндай штрихкод жоқ"
+    "scanNotFound": "Нүктеде мұндай штрихкод жоқ",
+    "downloadLedger": "Excel жүктеу"
   },
   "payment": {
     "title": "Төлем",
@@ -1498,7 +1499,12 @@
     "receiptChannels": {
       "sms": "SMS",
       "whatsapp": "WhatsApp"
-    }
+    },
+    "periodTitle": "Кезеңдегі сатылым",
+    "periodFrom": "Бастап",
+    "periodTo": "Дейін",
+    "downloadSales": "Excel жүктеу",
+    "printReceipt": "Чекті басып шығару"
   },
   "files": {
     "orderTitle": "Өтінім файлдары",
@@ -1587,5 +1593,51 @@
     "errors": {
       "invalid": "Тақырып пен хабарламаны толтырыңыз"
     }
+  },
+  "reportsXlsx": {
+    "ledger": "Қозғалыс",
+    "date": "Күні",
+    "type": "Операция",
+    "quantity": "Саны",
+    "costPrice": "Өзіндік құны",
+    "location": "Нүкте",
+    "document": "Құжат",
+    "author": "Кім жүргізді",
+    "receipts": "Чектер",
+    "items": "Тауарлар",
+    "number": "Нөмірі",
+    "cashier": "Кассир",
+    "payment": "Төлем",
+    "kind": "Түрі",
+    "discount": "Жеңілдік",
+    "total": "Сомасы",
+    "cost": "Өзіндік құны",
+    "barcode": "Штрихкод",
+    "product": "Тауар",
+    "price": "Бағасы",
+    "refund": "Қайтару",
+    "sale": "Сату",
+    "payment_CASH": "Қолма-қол",
+    "payment_CARD": "Карта",
+    "payment_QR": "Kaspi QR",
+    "payment_MIXED": "Аралас"
+  },
+  "receiptPrint": {
+    "bin": "БСН",
+    "saleTitle": "Кассалық чек",
+    "refundTitle": "Қайтару чегі",
+    "cashier": "Кассир",
+    "discount": "Жеңілдік",
+    "total": "БАРЛЫҒЫ",
+    "payment": "Төлем",
+    "fiscal": "Фискалдық белгі",
+    "thanks": "Сатып алғаныңызға рахмет!",
+    "print": "Басып шығару"
+  },
+  "camera": {
+    "open": "Камерамен сканерлеу",
+    "close": "Жабу",
+    "hint": "Камераны штрихкодқа бағыттаңыз",
+    "denied": "Камераға рұқсат жоқ: браузер баптауларында рұқсат беріңіз"
   }
 }

@@ -17,12 +17,13 @@ import {
   WifiOff,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Field } from '@/components/ui/field';
 import { Card, CardHint, CardTitle } from '@/components/ui/card';
 import { Page, PageHeader } from '@/components/ui/page';
 import { cn } from '@/lib/utils';
+import { CameraScanButton } from '@/components/camera-scanner';
 
 type Product = {
   productId: string;
@@ -128,6 +129,7 @@ export function PosScreen({
   minAge: string;
 }) {
   const t = useTranslations('pos');
+  const locale = useLocale();
 
   const [shift, setShift] = useState<Shift>(initialShift);
   const [report, setReport] = useState<Report>(initialReport);
@@ -155,6 +157,8 @@ export function PosScreen({
   const [error, setError] = useState<{ key: string; value?: string } | null>(null);
   const [lastReceipt, setLastReceipt] = useState<{ id: string; number: string } | null>(null);
   const [pending, setPending] = useState(false);
+  const today = new Date(Date.now() + 5 * 3_600_000).toISOString().slice(0, 10);
+  const [period, setPeriod] = useState({ from: today, to: today });
 
   // Очередь офлайн-чеков уходит на сервер, как только появляется связь.
   useEffect(() => {
@@ -558,6 +562,38 @@ export function PosScreen({
         ) : null}
 
         {showReport && report ? <ReportPanel report={report} /> : null}
+
+        <div
+          className="border-border mt-4 flex flex-wrap items-end gap-2 border-t pt-4"
+          data-testid="pos-period"
+        >
+          <p className="w-full text-sm font-medium">{t('periodTitle')}</p>
+          <Field label={t('periodFrom')}>
+            <Input
+              type="date"
+              className="w-40"
+              value={period.from}
+              data-testid="pos-period-from"
+              onChange={(event) => setPeriod({ ...period, from: event.target.value })}
+            />
+          </Field>
+          <Field label={t('periodTo')}>
+            <Input
+              type="date"
+              className="w-40"
+              value={period.to}
+              data-testid="pos-period-to"
+              onChange={(event) => setPeriod({ ...period, to: event.target.value })}
+            />
+          </Field>
+          <a
+            href={`/api/pos/report/xlsx?from=${period.from}&to=${period.to}&locale=${locale}`}
+            className={buttonVariants({ variant: 'outline' })}
+            data-testid="pos-period-xlsx"
+          >
+            {t('downloadSales')}
+          </a>
+        </div>
       </Card>
 
       <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_24rem]">
@@ -582,6 +618,7 @@ export function PosScreen({
                   }}
                 />
               </div>
+              <CameraScanButton onCode={addByBarcode} />
             </Field>
             <Field label={t('search')}>
               <div className="relative">
@@ -984,6 +1021,17 @@ export function PosScreen({
               >
                 {t('refund', { number: lastReceipt.number })}
               </Button>
+            ) : null}
+            {lastReceipt ? (
+              <a
+                href={`/${locale}/pos/receipt/${lastReceipt.id}`}
+                target="_blank"
+                rel="noreferrer"
+                className={buttonVariants({ variant: 'outline', size: 'sm' })}
+                data-testid="pos-print"
+              >
+                {t('printReceipt')}
+              </a>
             ) : null}
             {queued > 0 ? (
               <span className="text-muted-foreground text-sm" data-testid="pos-queued">

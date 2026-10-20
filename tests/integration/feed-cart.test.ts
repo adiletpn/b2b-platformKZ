@@ -113,6 +113,26 @@ describe('лента магазина', () => {
     expect(rated.supplierRatingCount).toBe(1);
   });
 
+  it('tomorrow_filter_keeps_only_suppliers_delivering_tomorrow', async () => {
+    const daily = await makeSupplier('+77030000011', '120340001230', ['taraz']);
+    const rare = await makeSupplier('+77030000012', '150640004569', ['taraz']);
+    const store = await makeStore('+77030000013', '140240003217', 'taraz');
+    // Второй поставщик возит в любой день, кроме завтрашнего.
+    const tomorrow = new Date(Date.now() + 5 * 3_600_000 + 86_400_000).getUTCDay() || 7;
+    await prisma.deliveryZone.updateMany({
+      where: { supplierId: rare },
+      data: { deliveryDays: [1, 2, 3, 4, 5, 6, 7].filter((day) => day !== tomorrow) },
+    });
+
+    const offers = await getFeed(store.companyId, store.cityId, {
+      forSwipe: false,
+      filters: { onlyTomorrow: true },
+    });
+
+    expect(offers.length).toBeGreaterThan(0);
+    expect(offers.every((offer) => offer.supplierId === daily)).toBe(true);
+  });
+
   it('feed_is_empty_when_nobody_delivers_to_city', async () => {
     await makeSupplier('+77030000004', '120340001230', ['astana']);
     const store = await makeStore('+77030000005', '140240003217', 'taraz');

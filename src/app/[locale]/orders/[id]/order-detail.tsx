@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { OrderProgress } from '@/components/order-progress';
 import { DocumentSignatures, type SignatureMark } from '@/components/document-signatures';
 import { AttachmentsPanel, type FileRow } from '@/components/attachments-panel';
+import { CameraScanButton } from '@/components/camera-scanner';
 import { OnlinePaymentPanel, type OnlinePayment } from './online-payment-panel';
 import { DocumentVersions, type VersionRow } from './document-versions';
 
@@ -105,6 +106,26 @@ export function OrderDetail({
   const [scan, setScan] = useState('');
   const [scanned, setScanned] = useState<Record<string, number>>({});
   const [scanMiss, setScanMiss] = useState<string | null>(null);
+
+  /** Раздел 3.5 ТЗ: сверка сканером — каждый скан засчитывает одну единицу. */
+  function acceptScan(raw: string) {
+    const code = barcodeFromScan(raw);
+    const item = order.items.find(
+      (row) => row.barcode.replace(/^0+/, '') === code && code.length > 0,
+    );
+    setScan('');
+    if (!item) {
+      setScanMiss(raw.trim());
+      return;
+    }
+    setScanMiss(null);
+    const count = (scanned[item.id] ?? 0) + 1;
+    setScanned((current) => ({ ...current, [item.id]: count }));
+    setAcceptance((current) => ({
+      ...current,
+      [item.id]: { ...current[item.id]!, accepted: String(count) },
+    }));
+  }
   const [substitutes, setSubstitutes] = useState<
     Record<string, { offerId: string; quantity: string }>
   >({});
@@ -643,25 +664,10 @@ export function OrderDetail({
               onKeyDown={(event) => {
                 if (event.key !== 'Enter') return;
                 event.preventDefault();
-                // Раздел 3.5 ТЗ: сверка сканером — каждый скан засчитывает одну единицу.
-                const code = barcodeFromScan(scan);
-                const item = order.items.find(
-                  (row) => row.barcode.replace(/^0+/, '') === code && code.length > 0,
-                );
-                setScan('');
-                if (!item) {
-                  setScanMiss(scan.trim());
-                  return;
-                }
-                setScanMiss(null);
-                const count = (scanned[item.id] ?? 0) + 1;
-                setScanned((current) => ({ ...current, [item.id]: count }));
-                setAcceptance((current) => ({
-                  ...current,
-                  [item.id]: { ...current[item.id]!, accepted: String(count) },
-                }));
+                acceptScan(scan);
               }}
             />
+            <CameraScanButton onCode={acceptScan} />
             {scanMiss !== null ? (
               <span className="text-danger text-sm" role="alert" data-testid="acceptance-scan-miss">
                 {tAcceptance('scanMiss', { code: scanMiss })}

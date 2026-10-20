@@ -1,12 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Field } from '@/components/ui/field';
 import { Card, CardTitle } from '@/components/ui/card';
+import { CameraScanButton } from '@/components/camera-scanner';
 
 type Location = { id: string; address: string };
 type Balance = { productId: string; name: string; quantity: string; barcode: string };
@@ -43,6 +44,7 @@ export function StockDocuments({
   documents: DocumentRow[];
 }) {
   const t = useTranslations('stock');
+  const locale = useLocale();
   const router = useRouter();
 
   const [type, setType] = useState<DocumentRow['type']>('WRITE_OFF');
@@ -208,6 +210,7 @@ export function StockDocuments({
               }}
             />
           </Field>
+          <CameraScanButton onCode={applyScan} />
 
           <Field label={t('product')}>
             <select
@@ -314,6 +317,13 @@ export function StockDocuments({
           >
             {t('openLedger')}
           </Button>
+          <a
+            href={`/api/stock/ledger/${productId}/xlsx?locale=${locale}`}
+            className={buttonVariants({ variant: 'ghost' })}
+            data-testid="ledger-xlsx"
+          >
+            {t('downloadLedger')}
+          </a>
         </div>
       ) : null}
 

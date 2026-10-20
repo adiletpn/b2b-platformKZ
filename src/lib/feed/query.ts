@@ -68,6 +68,13 @@ export async function getFeed(
   if (supplierIds.length === 0) return [];
 
   const leadTimeBySupplier = new Map(zones.map((zone) => [zone.supplierId, zone.leadTimeDays]));
+  // День недели завтра по Казахстану: 1 — понедельник, 7 — воскресенье, как в DeliveryZone.
+  const tomorrowDay = new Date(Date.now() + 5 * 3_600_000 + 86_400_000).getUTCDay() || 7;
+  const deliversTomorrow = new Set(
+    zones
+      .filter((zone) => zone.deliveryDays.length === 0 || zone.deliveryDays.includes(tomorrowDay))
+      .map((zone) => zone.supplierId),
+  );
   const filters = options.filters ?? {};
 
   const hiddenOfferIds = options.forSwipe ? await getHiddenOfferIds(storeId) : [];
@@ -193,8 +200,14 @@ export async function getFeed(
   const filtered = mapped.filter((item) => {
     if (filters.onlyPromo && !item.isPromo) return false;
     if (filters.onlyNew && !item.isNew) return false;
-    // «Доставка завтра» — срок доставки не больше одного дня.
-    if (filters.onlyTomorrow && item.leadTimeDays > 1) return false;
+    // «Доставка завтра» — срок не больше дня и завтра у поставщика день доставки.
+    // Время отсечки заказа у поставщиков не заведено — TODO(open-question).
+    if (
+      filters.onlyTomorrow &&
+      (item.leadTimeDays > 1 || !deliversTomorrow.has(item.supplierId))
+    ) {
+      return false;
+    }
     if (filters.minRating && Number(item.supplierRating ?? 0) < Number(filters.minRating)) {
       return false;
     }

@@ -45,6 +45,8 @@ const LABELS = {
     mismatch: 'Пересорт',
     difference: 'Разница суммы',
     actNote: 'Сумма к оплате уменьшена на величину расхождений',
+    correction: 'Исправление',
+    correctionReason: 'Причина',
     currency: '₸',
   },
   kk: {
@@ -89,6 +91,8 @@ const LABELS = {
     mismatch: 'Сұрыпталмаған',
     difference: 'Сома айырмасы',
     actNote: 'Төлеуге арналған сома алшақтық мөлшеріне азайтылды',
+    correction: 'Түзету',
+    correctionReason: 'Себебі',
     currency: '₸',
   },
 } as const;
@@ -137,6 +141,7 @@ const STYLES = `
   td.num, th.num { text-align: right; white-space: nowrap; }
   tfoot td { font-weight: 600; }
   .note { margin-top: 3mm; font-size: 9pt; }
+  .correction { border-left: 1mm solid #b45309; padding-left: 2mm; }
   .signatures { display: flex; gap: 10mm; margin-top: 10mm; font-size: 9pt; }
   .signature { flex: 1; border-top: 0.3mm solid #666; padding-top: 1.5mm; }
 `;
@@ -196,6 +201,11 @@ function header(title: string, form: string | null, payload: DocumentPayload, lo
     <div class="meta">
       ${t.date}: ${escapeHtml(payload.issuedAt)} · ${t.order}: ${escapeHtml(payload.orderNumber)}
     </div>
+    ${
+      payload.correction
+        ? `<div class="meta correction">${t.correction} № ${payload.correction.version} ${t.date.toLowerCase()} ${escapeHtml(payload.correction.correctedAt)}. ${t.correctionReason}: ${escapeHtml(payload.correction.reason)}</div>`
+        : ''
+    }
     <div class="parties">
       ${party(t.supplier, payload.supplier, locale)}
       ${party(t.store, payload.store, locale)}

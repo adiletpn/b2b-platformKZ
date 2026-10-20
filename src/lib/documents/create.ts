@@ -7,7 +7,7 @@ import { documentTotals, lineTotals } from './totals';
 import type { DocumentLine, DocumentParty, DocumentPayload } from './payload';
 import { LONG_TRANSACTION } from '@/lib/db-tx';
 
-function toParty(company: {
+export function toParty(company: {
   name: string;
   bin: string;
   legalAddress: string;

@@ -34,6 +34,8 @@ export type DocumentPayload = {
   totalWithoutVat: string;
   vatAmount: string;
   totalWithVat: string;
+  /** Исправленная версия документа (раздел 4.3 ТЗ): номер версии, дата и причина. */
+  correction?: { version: number; correctedAt: string; reason: string };
   /** Только для акта расхождений. */
   discrepancies?: {
     position: number;

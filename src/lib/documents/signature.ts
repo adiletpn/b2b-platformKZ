@@ -9,7 +9,8 @@ export type SignResult =
 
 /**
  * Раздел 4.5 ТЗ: подпись документа ЭЦП. Подписать может только сторона документа,
- * повторная подпись той же компанией не создаётся.
+ * повторная подпись той же компанией не создаётся. Подпись ставится на текущую версию:
+ * после исправления (раздел 4.3 ТЗ) стороны подписывают документ заново.
  */
 export async function signDocumentByCompany(
   documentId: string,
@@ -27,7 +28,9 @@ export async function signDocumentByCompany(
   if (!isParty) return { status: 'not_a_party' };
 
   const existing = await prisma.documentSignature.findUnique({
-    where: { documentId_companyId: { documentId, companyId } },
+    where: {
+      documentId_companyId_version: { documentId, companyId, version: document.version },
+    },
   });
   if (existing) {
     return {
@@ -48,6 +51,7 @@ export async function signDocumentByCompany(
       signerName: company.name,
       certificate: signed.certificate,
       signature: signed.signature,
+      version: document.version,
     },
   });
 
@@ -62,9 +66,15 @@ export async function signDocumentByCompany(
 
 export type SignatureRow = { companyId: string; signerName: string; signedAt: string };
 
+/** Подписи текущей версии документа. */
 export async function getSignatures(documentId: string): Promise<SignatureRow[]> {
+  const document = await prisma.document.findUnique({
+    where: { id: documentId },
+    select: { version: true },
+  });
+  if (!document) return [];
   const rows = await prisma.documentSignature.findMany({
-    where: { documentId },
+    where: { documentId, version: document.version },
     orderBy: { signedAt: 'asc' },
   });
   return rows.map((row) => ({

@@ -231,6 +231,8 @@ model Company {
   chatBlocksReceived   ChatBlock[]            @relation("ChatBlocked")
   supportTickets       SupportTicket[]
 
+  license CompanyLicense?
+
   @@map("companies")
 }
 
@@ -1575,4 +1577,17 @@ model Broadcast {
   createdAt  DateTime     @default(now())
 
   @@map("broadcasts")
+}
+
+/// Лицензия на алкоголь, табак и т. п. (раздел 2 ТЗ): номер с elicense.kz.
+/// Без действующей лицензии лицензируемые товары скрыты в каталоге у обеих сторон.
+model CompanyLicense {
+  id         String    @id @default(cuid())
+  companyId  String    @unique
+  company    Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  number     String
+  validUntil DateTime? @db.Date
+  updatedAt  DateTime  @updatedAt
+
+  @@map("company_licenses")
 }

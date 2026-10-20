@@ -1,3 +1,4 @@
+import { licensedOfferFilter } from '@/lib/licenses/licenses';
 import { prisma } from '@/lib/prisma';
 import { windowStart as ratingWindowStart } from '@/lib/ratings/metrics';
 import { effectivePrices, isNewProduct } from '@/lib/pricing/price';
@@ -71,6 +72,8 @@ export async function getFeed(
 
   const hiddenOfferIds = options.forSwipe ? await getHiddenOfferIds(storeId) : [];
   const favoriteOfferIds = await getFavoriteOfferIds(storeId);
+  // Раздел 2 ТЗ: лицензируемое — только при лицензии у обеих сторон.
+  const licensed = await licensedOfferFilter(storeId);
 
   const offers = await prisma.supplierOffer.findMany({
     where: {
@@ -78,6 +81,7 @@ export async function getFeed(
         ? { equals: filters.supplierId, in: supplierIds }
         : { in: supplierIds },
       isActive: true,
+      AND: [licensed],
       ...(options.forSwipe ? { stock: { gt: 0 } } : {}),
       ...(hiddenOfferIds.length > 0 ? { id: { notIn: hiddenOfferIds } } : {}),
       ...(filters.onlyFavorites ? { id: { in: [...favoriteOfferIds] } } : {}),
@@ -131,6 +135,7 @@ export async function getFeed(
       productId: { in: offers.map((offer) => offer.productId) },
       supplierId: { in: supplierIds },
       isActive: true,
+      AND: [licensed],
     },
     select: { id: true, productId: true, priceWithVat: true, supplierId: true },
   });

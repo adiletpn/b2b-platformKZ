@@ -1,3 +1,4 @@
+import { licensedOfferFilter } from '@/lib/licenses/licenses';
 import { prisma } from '@/lib/prisma';
 import { effectivePrices } from '@/lib/pricing/price';
 import { windowStart as ratingWindowStart } from '@/lib/ratings/metrics';
@@ -52,14 +53,20 @@ export async function getOfferDetails(
   // Правило 4 и раздел 3.9: товар виден только если поставщик возит в город точки.
   if (supplierIds.length === 0) return null;
 
+  const licensed = await licensedOfferFilter(storeId);
   const offer = await prisma.supplierOffer.findFirst({
-    where: { id: offerId, isActive: true, supplierId: { in: supplierIds } },
+    where: { id: offerId, isActive: true, supplierId: { in: supplierIds }, AND: [licensed] },
     include: { product: { include: { unit: true } } },
   });
   if (!offer) return null;
 
   const competing = await prisma.supplierOffer.findMany({
-    where: { productId: offer.productId, isActive: true, supplierId: { in: supplierIds } },
+    where: {
+      productId: offer.productId,
+      isActive: true,
+      supplierId: { in: supplierIds },
+      AND: [licensed],
+    },
     include: { supplier: { select: { name: true } } },
   });
 

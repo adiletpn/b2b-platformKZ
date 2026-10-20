@@ -1,6 +1,7 @@
 import Decimal from 'decimal.js';
 import { prisma } from '@/lib/prisma';
 import { getOrCreateCart, setCartItem } from '@/lib/cart/cart';
+import { licensedOfferFilter } from '@/lib/licenses/licenses';
 
 /** Свайп вправо кладёт товар в корзину с минимальной партией (раздел 3.3 ТЗ). */
 export async function recordSwipe(
@@ -10,6 +11,13 @@ export async function recordSwipe(
   action: 'LIKE' | 'SKIP' | 'FAV',
 ) {
   const offer = await prisma.supplierOffer.findUniqueOrThrow({ where: { id: offerId } });
+  // Раздел 2 ТЗ: лицензируемое без лицензии в корзину не попадает.
+  if (action === 'LIKE') {
+    const allowed = await prisma.supplierOffer.count({
+      where: { id: offerId, AND: [await licensedOfferFilter(storeId)] },
+    });
+    if (allowed === 0) return { added: false, licenseRequired: true };
+  }
 
   return prisma.$transaction(async (tx) => {
     await tx.swipeAction.create({ data: { storeId, offerId, action } });

@@ -1,3 +1,4 @@
+import { licensedOfferFilter } from '@/lib/licenses/licenses';
 import Decimal from 'decimal.js';
 import { prisma } from '@/lib/prisma';
 import { notify } from '@/mocks/notifications';
@@ -30,6 +31,7 @@ export type CreatedOrder = {
 export type CheckoutResult =
   | { status: 'created'; orders: CreatedOrder[] }
   | { status: 'empty_cart' }
+  | { status: 'license_required'; products: string[] }
   | { status: 'below_minimum'; suppliers: { supplierName: string; missing: string }[] };
 
 /**
@@ -44,6 +46,27 @@ export async function checkout(input: CheckoutInput): Promise<CheckoutResult> {
     },
   });
   if (!cart || cart.items.length === 0) return { status: 'empty_cart' };
+
+  // Раздел 2 ТЗ: лицензия могла истечь, пока товар лежал в корзине.
+  const allowed = new Set(
+    (
+      await prisma.supplierOffer.findMany({
+        where: {
+          id: { in: cart.items.map((item) => item.offerId) },
+          AND: [await licensedOfferFilter(input.storeId)],
+        },
+        select: { id: true },
+      })
+    ).map((offer) => offer.id),
+  );
+  const unlicensed = cart.items.filter((item) => !allowed.has(item.offerId));
+  if (unlicensed.length > 0) {
+    const products = await prisma.product.findMany({
+      where: { offers: { some: { id: { in: unlicensed.map((item) => item.offerId) } } } },
+      select: { nameRu: true },
+    });
+    return { status: 'license_required', products: products.map((product) => product.nameRu) };
+  }
 
   const zones = await prisma.deliveryZone.findMany({
     where: {

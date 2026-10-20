@@ -772,7 +772,8 @@ model PosShift {
   openedAt    DateTime    @default(now())
   closedAt    DateTime?
 
-  receipts Receipt[]
+  receipts       Receipt[]
+  cashOperations CashOperation[]
 
   @@unique([companyId, number])
   @@index([locationId, status])
@@ -783,6 +784,8 @@ enum ReceiptPaymentType {
   CASH
   CARD
   QR
+  /// Смешанная оплата: часть наличными, часть картой (раздел 4.2 ТЗ).
+  MIXED
 }
 
 enum ReceiptStatus {
@@ -790,27 +793,54 @@ enum ReceiptStatus {
   REFUNDED
 }
 
+enum CashOperationType {
+  CASH_IN
+  CASH_OUT
+}
+
+/// Внесение и изъятие наличных в смене (раздел 4.2 ТЗ): попадают в X- и Z-отчёт.
+model CashOperation {
+  id        String            @id @default(cuid())
+  shiftId   String
+  shift     PosShift          @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  companyId String
+  type      CashOperationType
+  amount    Decimal           @db.Decimal(14, 2)
+  reason    String
+  userId    String?
+  createdAt DateTime          @default(now())
+
+  @@index([shiftId])
+  @@map("cash_operations")
+}
+
 /// Чек кассы. `clientId` даёт идемпотентность при синхронизации офлайн-продаж.
 model Receipt {
-  id          String             @id @default(cuid())
-  number      String
-  clientId    String
-  shiftId     String
-  shift       PosShift           @relation(fields: [shiftId], references: [id], onDelete: Cascade)
-  companyId   String
-  company     Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  locationId  String
-  location    Location           @relation(fields: [locationId], references: [id])
-  paymentType ReceiptPaymentType
-  status      ReceiptStatus      @default(PAID)
-  total       Decimal            @db.Decimal(14, 2)
-  costTotal   Decimal            @default(0) @db.Decimal(14, 2)
+  id            String             @id @default(cuid())
+  number        String
+  clientId      String
+  shiftId       String
+  shift         PosShift           @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  companyId     String
+  company       Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  locationId    String
+  location      Location           @relation(fields: [locationId], references: [id])
+  paymentType   ReceiptPaymentType
+  status        ReceiptStatus      @default(PAID)
+  total         Decimal            @db.Decimal(14, 2)
+  costTotal     Decimal            @default(0) @db.Decimal(14, 2)
+  /// Скидки чека: сумма скидок по позициям и на весь чек (раздел 4.2 ТЗ).
+  discountTotal Decimal            @default(0) @db.Decimal(14, 2)
+  /// Части смешанной оплаты и полученные наличные — для сдачи и ящика кассы.
+  cashAmount    Decimal?           @db.Decimal(14, 2)
+  cardAmount    Decimal?           @db.Decimal(14, 2)
+  cashReceived  Decimal?           @db.Decimal(14, 2)
   /// Ответ онлайн-кассы: номер фискального документа и ссылка в ОФД (в демо — мок).
-  fiscalId    String?
-  fiscalUrl   String?
-  userId      String?
-  user        User?              @relation(fields: [userId], references: [id])
-  createdAt   DateTime           @default(now())
+  fiscalId      String?
+  fiscalUrl     String?
+  userId        String?
+  user          User?              @relation(fields: [userId], references: [id])
+  createdAt     DateTime           @default(now())
 
   items    ReceiptItem[]
   refundOf String?
@@ -831,6 +861,8 @@ model ReceiptItem {
   quantity  Decimal @db.Decimal(12, 3)
   price     Decimal @db.Decimal(14, 2)
   costPrice Decimal @db.Decimal(14, 2)
+  /// Скидка на позицию в тенге, включая её долю скидки на чек.
+  discount  Decimal @default(0) @db.Decimal(14, 2)
   total     Decimal @db.Decimal(14, 2)
 
   @@index([receiptId])

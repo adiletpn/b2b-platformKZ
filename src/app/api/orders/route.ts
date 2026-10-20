@@ -21,7 +21,13 @@ export async function GET() {
 
   // Правило 4: видны только заявки, где компания — одна из сторон.
   const orders = await prisma.order.findMany({
-    where: { OR: [{ storeId: active.companyId }, { supplierId: active.companyId }] },
+    // Черновик магазина поставщику ещё не отправлен — в его список не попадает.
+    where: {
+      OR: [
+        { storeId: active.companyId },
+        { supplierId: active.companyId, status: { not: 'DRAFT' } },
+      ],
+    },
     include: { store: { select: { name: true } }, supplier: { select: { name: true } } },
     orderBy: { createdAt: 'desc' },
     take: 50,

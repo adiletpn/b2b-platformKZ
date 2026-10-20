@@ -52,6 +52,8 @@ export default async function OrderPage({
   // Правило 4: чужая заявка не открывается.
   const side = sideOf(order, active!.companyId);
   if (!side) notFound();
+  // Черновик магазина поставщику не виден: заявка ему ещё не отправлена.
+  if (side === 'supplier' && order.status === 'DRAFT') notFound();
 
   const can = await permissionFlags('DOCUMENTS_PAYMENTS', ['SIGN', 'UPDATE', 'CREATE', 'DELETE']);
   const versions = await Promise.all(
@@ -78,6 +80,7 @@ export default async function OrderPage({
         total: order.totalWithVat.toFixed(2),
         counterparty: side === 'store' ? order.supplier.name : order.store.name,
         rejectionReason: order.rejectionReason,
+        creditHold: order.creditHold && order.status === 'DRAFT',
         items: order.items.map((item) => ({
           id: item.id,
           nameRu: item.offer.product.nameRu,

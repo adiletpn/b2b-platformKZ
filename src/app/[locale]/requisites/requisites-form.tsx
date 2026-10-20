@@ -14,10 +14,13 @@ export function RequisitesForm({
   initial,
   initialChannels,
   initialCostMethod,
+  extra,
 }: {
   initial: { iik: string; bik: string; bankName: string };
   initialChannels: string[];
   initialCostMethod: 'AVERAGE' | 'FIFO';
+  /** Блоки страницы, которые зависят от типа компании (условия оплаты поставщика). */
+  extra?: React.ReactNode;
 }) {
   const t = useTranslations('requisites');
   const tDashboard = useTranslations('dashboard');
@@ -198,6 +201,7 @@ export function RequisitesForm({
           {t(`errors.${error}` as 'errors.unknown')}
         </p>
       ) : null}
+      {extra}
     </Page>
   );
 }

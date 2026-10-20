@@ -46,6 +46,7 @@ type Order = {
   total: string;
   counterparty: string;
   rejectionReason: string | null;
+  creditHold: boolean;
   items: Item[];
   statusLogs: { toStatus: Status; createdAt: string; comment: string | null }[];
   disputeReason: string | null;
@@ -297,6 +298,23 @@ export function OrderDetail({
       />
 
       <OrderProgress status={order.status} history={order.statusLogs.map((log) => log.toStatus)} />
+
+      {order.creditHold && side === 'store' ? (
+        <div
+          className="border-warning/40 bg-warning-soft mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border p-4 text-sm"
+          data-testid="credit-hold"
+        >
+          <p className="text-warning min-w-0 flex-1">{t('creditHold')}</p>
+          <Button
+            size="sm"
+            disabled={pending}
+            data-testid="credit-resend"
+            onClick={() => void post(`/api/orders/${order.id}/resend`, {})}
+          >
+            {t('resend')}
+          </Button>
+        </div>
+      ) : null}
 
       {order.status === 'CHANGED_BY_SUPPLIER' && side === 'store' ? (
         <p className="mt-3 text-sm text-amber-700" data-testid="order-changed-notice">

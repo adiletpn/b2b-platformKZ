@@ -5,6 +5,7 @@ import { getAccess, hasPermission } from '@/lib/auth/permissions';
 import { listPendingApprovals } from '@/lib/orders/approval';
 import { prisma } from '@/lib/prisma';
 import { buttonVariants } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { EmptyState, Page, PageHeader } from '@/components/ui/page';
 import { OrderStatusBadge } from '@/components/order-status-badge';
@@ -21,7 +22,10 @@ export default async function OrdersPage({ params }: { params: Promise<{ locale:
   const companyId = active!.companyId;
   const [orders, notifications] = await Promise.all([
     prisma.order.findMany({
-      where: { OR: [{ storeId: companyId }, { supplierId: companyId }] },
+      // Черновик (согласование, пауза по кредитному лимиту) поставщику ещё не отправлен.
+      where: {
+        OR: [{ storeId: companyId }, { supplierId: companyId, status: { not: 'DRAFT' } }],
+      },
       include: { store: { select: { name: true } }, supplier: { select: { name: true } } },
       orderBy: { createdAt: 'desc' },
       take: 50,
@@ -81,6 +85,11 @@ export default async function OrdersPage({ params }: { params: Promise<{ locale:
                         status={order.status}
                         testId={`order-status-${order.number}`}
                       />
+                      {order.creditHold && order.status === 'DRAFT' ? (
+                        <Badge tone="warning" className="ml-1.5" data-testid="order-credit-hold">
+                          {t('creditHoldBadge')}
+                        </Badge>
+                      ) : null}
                     </td>
                     <td className="px-4 py-2.5 text-right whitespace-nowrap">
                       {order.totalWithVat.toFixed(2)} ₸

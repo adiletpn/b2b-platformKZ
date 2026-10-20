@@ -32,6 +32,9 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   // Правило 4: чужая заявка не отдаётся и её существование не раскрывается.
   const side = sideOf(order, active.companyId);
   if (!side) return NextResponse.json({ error: 'not_found' }, { status: 404 });
+  if (side === 'supplier' && order.status === 'DRAFT') {
+    return NextResponse.json({ error: 'not_found' }, { status: 404 });
+  }
 
   return NextResponse.json({
     id: order.id,

@@ -12,6 +12,12 @@ export async function POST(request: Request) {
   const result = await verifyLoginCode(phone, body.code);
   if (!result.ok) return NextResponse.json({ error: result.reason }, { status: 400 });
 
+  const user = await prisma.user.findUnique({
+    where: { id: result.userId },
+    select: { blockedAt: true },
+  });
+  if (user?.blockedAt) return NextResponse.json({ error: 'user_blocked' }, { status: 403 });
+
   await createSession(result.userId);
 
   const memberships = await prisma.membership.findMany({

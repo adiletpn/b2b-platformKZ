@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { notify } from '@/mocks/notifications';
 import { nextDocumentNumber } from './numbering';
 import { orderLimitFor } from './approval';
+import { checkCredit } from './credit';
 import { LONG_TRANSACTION } from '@/lib/db-tx';
 
 export type CheckoutInput = {
@@ -22,6 +23,8 @@ export type CreatedOrder = {
   total: string;
   /** Заявка ждёт согласования Владельца и поставщику ещё не ушла (раздел 3.12 ТЗ). */
   needsApproval: boolean;
+  /** Заявка на паузе: превышен кредитный лимит поставщика (раздел 3.6 ТЗ). */
+  creditHold: boolean;
 };
 
 export type CheckoutResult =
@@ -87,6 +90,11 @@ export async function checkout(input: CheckoutInput): Promise<CheckoutResult> {
 
   // Раздел 3.12 ТЗ: заявка выше лимита сотрудника уходит на согласование, а не поставщику.
   const limit = await orderLimitFor(input.storeId, input.userId);
+  // Раздел 3.6 ТЗ: при превышении кредитного лимита новая заявка ставится на паузу.
+  const holds = new Map<string, boolean>();
+  for (const [supplierId, total] of totals) {
+    holds.set(supplierId, (await checkCredit(input.storeId, supplierId, total)).exceeded);
+  }
 
   const created = await prisma.$transaction(async (tx) => {
     const orders: CreatedOrder[] = [];
@@ -95,7 +103,8 @@ export async function checkout(input: CheckoutInput): Promise<CheckoutResult> {
       const number = await nextDocumentNumber(tx, input.storeId, 'order');
       const total = totals.get(supplierId)!;
       const needsApproval = limit !== null && total.greaterThan(limit);
-      const status = needsApproval ? 'DRAFT' : 'SENT';
+      const creditHold = holds.get(supplierId) ?? false;
+      const status = needsApproval || creditHold ? 'DRAFT' : 'SENT';
 
       const order = await tx.order.create({
         data: {
@@ -105,6 +114,7 @@ export async function checkout(input: CheckoutInput): Promise<CheckoutResult> {
           locationId: input.locationId,
           status,
           needsApproval,
+          creditHold,
           createdById: input.userId,
           deliveryDate: input.deliveryDate ? new Date(input.deliveryDate) : null,
           comment: input.comment ?? null,
@@ -132,6 +142,7 @@ export async function checkout(input: CheckoutInput): Promise<CheckoutResult> {
         supplierName: items[0]!.offer.supplier.name,
         total: total.toFixed(2),
         needsApproval,
+        creditHold,
       });
     }
 
@@ -139,7 +150,7 @@ export async function checkout(input: CheckoutInput): Promise<CheckoutResult> {
     return orders;
   }, LONG_TRANSACTION);
 
-  for (const order of created.filter((row) => !row.needsApproval)) {
+  for (const order of created.filter((row) => !row.needsApproval && !row.creditHold)) {
     const supplierId = [...bySupplier.keys()].find(
       (id) => bySupplier.get(id)![0]!.offer.supplier.name === order.supplierName,
     );

@@ -516,6 +516,8 @@ model Order {
   totalWithVat    Decimal       @default(0) @db.Decimal(14, 2)
   /// Заявка выше лимита сотрудника ждёт согласования Владельца (раздел 3.12 ТЗ).
   needsApproval   Boolean       @default(false)
+  /// Заявка на паузе: долг магазина перед поставщиком превысит кредитный лимит (раздел 3.6 ТЗ).
+  creditHold      Boolean       @default(false)
   approvedById    String?
   approvedBy      User?         @relation("ApprovedOrders", fields: [approvedById], references: [id])
   approvedAt      DateTime?

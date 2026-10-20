@@ -14,6 +14,7 @@ type NavItem = {
     | '/feed'
     | '/cart'
     | '/orders'
+    | '/analytics'
     | '/stock'
     | '/pos'
     | '/catalog'
@@ -106,6 +107,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
         item('/dashboard', 'dashboardLink', 'dashboard'),
         ...(store ? [item('/feed', 'feedLink', 'feed'), item('/cart', 'cartLink', 'cart')] : []),
         item('/orders', 'ordersLink', 'orders'),
+        item('/analytics', 'analyticsLink', 'analytics'),
         ...(supplier
           ? [
               item('/catalog', 'catalogLink', 'catalog'),

@@ -32,6 +32,16 @@
 - Касса: плитка «Поштучно» (`pos-tile-piece`), строка чека по ключу `key`, штуки в печатном чеке.
 - Тесты: `tests/integration/loyalty-pieces.test.ts`, e2e `tests/e2e/f2-loyalty.spec.ts`.
 
+## Сделано (коммит «B7 аналитика»)
+
+- `src/lib/analytics/analytics.ts`: `storeAnalytics` (продажи и прибыль по дням и категориям,
+  ABC с порогами `analytics_abc_thresholds`=80,95, оборачиваемость, залежавшийся по
+  `analytics_stale_days`=30, рекомендации из `getRecommendations`) и `supplierAnalytics`
+  (оборот по магазинам и товарам, доля выполненных, топ-5). Статусы оборота — TODO(open-question).
+- Экран `/analytics` (пункт меню «Аналитика»), график `src/components/bar-chart.tsx` (SVG),
+  Excel `/api/analytics/xlsx`. Права: магазин — PURCHASE_PRICES VIEW, поставщик — SWIPE_ORDERS VIEW.
+- Тесты: `tests/integration/analytics.test.ts`, шаг в `tests/e2e/f2-loyalty.spec.ts`.
+
 ## Как гонять e2e в этом контейнере
 
 Node 22.22 падает при загрузке спек («module not been linked»). Рабочий способ: собрать
@@ -43,7 +53,7 @@ Node 22.22 падает при загрузке спек («module not been link
 ## Не доделано
 
 - Интеграционные тесты дублей и баннеров, e2e объединения дублей.
-- Блок B: 7 аналитика, 8 торговые представители, 9 маршруты водителей.
+- Блок B: 8 торговые представители, 9 маршруты водителей.
   План по каждому пункту был такой:
   - 6: `LoyaltyCustomer(companyId, phone, balance)`, `LoyaltyMovement`, поля чека
     `bonusRedeemed/bonusEarned/loyaltyCustomerId`; «к оплате» = total − бонусы, в Z-отчёте строка

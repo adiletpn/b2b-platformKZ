@@ -244,7 +244,8 @@
     "supportLink": "Поддержка",
     "banners": {
       "dismiss": "Закрыть объявление"
-    }
+    },
+    "analyticsLink": "Аналитика"
   },
   "companyType": {
     "STORE": "Магазин",
@@ -1846,5 +1847,51 @@
   },
   "sms": {
     "loginCode": "Код входа: {code}. Никому его не сообщайте."
+  },
+  "analytics": {
+    "title": "Аналитика",
+    "subtitle": "Продажи, прибыль и оборот за период",
+    "downloadXlsx": "Скачать Excel",
+    "fileName": "Аналитика",
+    "from": "С",
+    "to": "По",
+    "apply": "Показать",
+    "revenue": "Выручка",
+    "profit": "Валовая прибыль",
+    "receipts": "Чеков",
+    "byDay": "Продажи по дням",
+    "byCategory": "По категориям",
+    "category": "Категория",
+    "noCategory": "Без категории",
+    "abc": "ABC-анализ товаров",
+    "product": "Товар",
+    "share": "Доля",
+    "group": "Группа",
+    "turnover": "Оборачиваемость и залежавшийся товар",
+    "staleHint": "«Лежит» — товар на остатке без продаж {days} дней",
+    "stock": "Остаток",
+    "sold": "Продано",
+    "daysOfStock": "Хватит на дней",
+    "stale": "Лежит",
+    "noSales": "Продаж за период нет",
+    "recommendations": "Рекомендации закупок",
+    "noRecommendations": "Остатков хватает: добирать нечего",
+    "recommendation": "добрать {suggested}, хватит на {days} дн. · {supplier}",
+    "supplierTitle": "Как поставщик",
+    "turnoverTotal": "Оборот",
+    "ordersShipped": "Заявок отгружено",
+    "fulfillment": "Выполнено заявок",
+    "fulfillmentHint": "выполнено {done}, отклонено или отменено {failed}",
+    "topStores": "Топ магазинов",
+    "noOrders": "Заявок за период нет",
+    "byStore": "Оборот по магазинам",
+    "store": "Магазин",
+    "orders": "Заявок",
+    "byProduct": "Оборот по товарам",
+    "quantity": "Количество",
+    "day": "День",
+    "fulfilled": "Выполнено",
+    "notFulfilled": "Не выполнено",
+    "yes": "да"
   }
 }

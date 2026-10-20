@@ -77,3 +77,18 @@ test('next_receipt_redeems_bonus_and_report_shows_it', async () => {
   await expect(storePage.getByTestId('receipt-bonus')).toContainText('6.50');
   await storePage.goto('/ru/pos');
 });
+
+test('analytics_shows_sales_of_the_period', async () => {
+  const { storePage } = pair;
+  await storePage.getByTestId('go-analytics').click();
+  await storePage.waitForURL(/\/analytics$/);
+  // Два чека по 130: выручка 260, прибыль 2 × 30.
+  await expect(storePage.getByTestId('analytics-store')).toContainText('260.00 ₸');
+  await expect(storePage.getByTestId('analytics-chart')).toBeVisible();
+  await expect(storePage.getByTestId('analytics-abc')).toContainText('A');
+  const file = await storePage.request.get(
+    (await storePage.getByTestId('analytics-xlsx').getAttribute('href'))!,
+  );
+  expect(file.status()).toBe(200);
+  await expectNoHorizontalScroll(storePage);
+});

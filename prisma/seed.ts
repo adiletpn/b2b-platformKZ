@@ -339,6 +339,10 @@ const SETTINGS = [
   // TODO(open-question): процент и доля — значения по умолчанию, подтверждает заказчик.
   { key: 'loyalty_earn_percent', value: '5' },
   { key: 'loyalty_max_redeem_share', value: '50' },
+  // Этап 3 ТЗ, аналитика: пороги ABC (A до 80%, B до 95% выручки) и «залежавшийся» — 30 дней.
+  // TODO(open-question): пороги и срок подтверждает заказчик.
+  { key: 'analytics_abc_thresholds', value: '80,95' },
+  { key: 'analytics_stale_days', value: '30' },
 ];
 
 async function main() {

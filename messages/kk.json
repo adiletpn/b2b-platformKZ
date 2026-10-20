@@ -244,7 +244,8 @@
     "supportLink": "Қолдау",
     "banners": {
       "dismiss": "Хабарландыруды жабу"
-    }
+    },
+    "analyticsLink": "Талдау"
   },
   "companyType": {
     "STORE": "Дүкен",
@@ -1846,5 +1847,51 @@
   },
   "sms": {
     "loginCode": "Кіру коды: {code}. Оны ешкімге айтпаңыз."
+  },
+  "analytics": {
+    "title": "Талдау",
+    "subtitle": "Кезеңдегі сату, пайда және айналым",
+    "downloadXlsx": "Excel жүктеу",
+    "fileName": "Талдау",
+    "from": "Бастап",
+    "to": "Дейін",
+    "apply": "Көрсету",
+    "revenue": "Түсім",
+    "profit": "Жалпы пайда",
+    "receipts": "Чек",
+    "byDay": "Күндер бойынша сату",
+    "byCategory": "Санаттар бойынша",
+    "category": "Санат",
+    "noCategory": "Санатсыз",
+    "abc": "Тауарлардың ABC-талдауы",
+    "product": "Тауар",
+    "share": "Үлес",
+    "group": "Топ",
+    "turnover": "Айналымдылық және жатып қалған тауар",
+    "staleHint": "«Жатыр» — {days} күн сатылмаған қалдықтағы тауар",
+    "stock": "Қалдық",
+    "sold": "Сатылды",
+    "daysOfStock": "Неше күнге жетеді",
+    "stale": "Жатыр",
+    "noSales": "Кезеңде сату жоқ",
+    "recommendations": "Сатып алу ұсыныстары",
+    "noRecommendations": "Қалдық жеткілікті: толтыру қажет емес",
+    "recommendation": "{suggested} толтыру, {days} күнге жетеді · {supplier}",
+    "supplierTitle": "Жеткізуші ретінде",
+    "turnoverTotal": "Айналым",
+    "ordersShipped": "Жөнелтілген өтінім",
+    "fulfillment": "Орындалған өтінімдер",
+    "fulfillmentHint": "орындалды {done}, қабылданбады немесе бас тартылды {failed}",
+    "topStores": "Үздік дүкендер",
+    "noOrders": "Кезеңде өтінім жоқ",
+    "byStore": "Дүкендер бойынша айналым",
+    "store": "Дүкен",
+    "orders": "Өтінім",
+    "byProduct": "Тауарлар бойынша айналым",
+    "quantity": "Саны",
+    "day": "Күн",
+    "fulfilled": "Орындалды",
+    "notFulfilled": "Орындалмады",
+    "yes": "иә"
   }
 }

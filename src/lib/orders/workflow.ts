@@ -119,13 +119,20 @@ export async function changeStatus(
   return { status: 'ok', orderStatus: to };
 }
 
-export type ConfirmationLine = { orderItemId: string; quantityConfirmed: string };
+export type ConfirmationLine = {
+  orderItemId: string;
+  quantityConfirmed: string;
+  /** «Нет в наличии — предлагаю замену»: своё предложение поставщика и его количество. */
+  substituteOfferId?: string;
+  substituteQuantity?: string;
+};
 
 export type ConfirmResult =
   | { status: 'ok'; orderStatus: OrderStatus; total: string }
   | { status: 'not_found' }
   | { status: 'forbidden_transition'; from: OrderStatus; to: OrderStatus }
-  | { status: 'invalid_quantity'; orderItemId: string };
+  | { status: 'invalid_quantity'; orderItemId: string }
+  | { status: 'invalid_substitute'; orderItemId: string };
 
 /**
  * Поставщик подтверждает заявку. Если хотя бы одна позиция урезана,
@@ -146,6 +153,12 @@ export async function confirmOrder(
 
   const byId = new Map(order.items.map((item) => [item.id, item]));
   const confirmations = new Map<string, Decimal>();
+  const substitutes: {
+    forId: string;
+    quantity: Decimal;
+    offer: { id: string; priceWithoutVat: Decimal; priceWithVat: Decimal; vatRate: Decimal };
+  }[] = [];
+  const inOrder = new Set(order.items.map((item) => item.offerId));
 
   for (const line of lines) {
     const item = byId.get(line.orderItemId);
@@ -159,6 +172,35 @@ export async function confirmOrder(
       return { status: 'invalid_quantity', orderItemId: line.orderItemId };
     }
     confirmations.set(line.orderItemId, quantity);
+
+    if (line.substituteOfferId) {
+      // Замена — только своё активное предложение, которого ещё нет в заявке (правило 4).
+      const offer = await prisma.supplierOffer.findFirst({
+        where: { id: line.substituteOfferId, supplierId, isActive: true },
+        include: { vatRate: true },
+      });
+      const substituteQuantity = new Decimal(line.substituteQuantity ?? 'NaN');
+      if (
+        !offer ||
+        inOrder.has(offer.id) ||
+        substituteQuantity.isNaN() ||
+        !substituteQuantity.greaterThan(0) ||
+        substituteQuantity.decimalPlaces() > 3
+      ) {
+        return { status: 'invalid_substitute', orderItemId: line.orderItemId };
+      }
+      inOrder.add(offer.id);
+      substitutes.push({
+        forId: item.id,
+        quantity: substituteQuantity,
+        offer: {
+          id: offer.id,
+          priceWithoutVat: new Decimal(offer.priceWithoutVat.toString()),
+          priceWithVat: new Decimal(offer.priceWithVat.toString()),
+          vatRate: new Decimal(offer.vatRate.rate.toString()),
+        },
+      });
+    }
   }
 
   let total = new Decimal(0);
@@ -175,6 +217,16 @@ export async function confirmOrder(
     );
   }
 
+  for (const substitute of substitutes) {
+    total = total.plus(
+      substitute.offer.priceWithVat
+        .times(substitute.quantity)
+        .toDecimalPlaces(2, Decimal.ROUND_HALF_UP),
+    );
+  }
+  // Замена всегда требует согласия магазина.
+  if (substitutes.length > 0) changed = true;
+
   const nextStatus: OrderStatus = changed ? 'CHANGED_BY_SUPPLIER' : 'ACCEPTED';
 
   await prisma.$transaction(async (tx) => {
@@ -183,6 +235,20 @@ export async function confirmOrder(
       await tx.orderItem.update({
         where: { id: item.id },
         data: { quantityConfirmed: confirmed.toFixed(3) },
+      });
+    }
+    for (const substitute of substitutes) {
+      await tx.orderItem.create({
+        data: {
+          orderId,
+          offerId: substitute.offer.id,
+          substituteForId: substitute.forId,
+          quantityOrdered: substitute.quantity.toFixed(3),
+          quantityConfirmed: substitute.quantity.toFixed(3),
+          priceWithoutVat: substitute.offer.priceWithoutVat.toFixed(2),
+          priceWithVat: substitute.offer.priceWithVat.toFixed(2),
+          vatRateValue: substitute.offer.vatRate.toFixed(2),
+        },
       });
     }
     await tx.order.update({

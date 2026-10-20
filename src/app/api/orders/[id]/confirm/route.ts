@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requirePermission } from '@/lib/auth/permissions';
 import { getActiveCompany } from '@/lib/auth/active-company';
-import { confirmOrder } from '@/lib/orders/workflow';
+import { confirmOrder, type ConfirmationLine } from '@/lib/orders/workflow';
 import { withIdempotency } from '@/lib/orders/idempotency';
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -20,7 +20,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const { id } = await params;
   const body = (await request.json()) as {
     idempotencyKey?: string;
-    lines?: { orderItemId: string; quantityConfirmed: string }[];
+    lines?: ConfirmationLine[];
   };
 
   const { result } = await withIdempotency(body.idempotencyKey, active.companyId, 'confirm', () =>

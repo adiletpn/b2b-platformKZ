@@ -83,6 +83,7 @@ model User {
   approvedOrders  Order[]                @relation("ApprovedOrders")
   createdOrders   Order[]                @relation("CreatedOrders")
   auditLogs       AuditLog[]
+  attachments     Attachment[]
   messages        Message[]
 
   @@map("users")
@@ -220,6 +221,7 @@ model Company {
   storeChats           Chat[]                 @relation("StoreChats")
   supplierChats        Chat[]                 @relation("SupplierChats")
   sentMessages         Message[]              @relation("SentMessages")
+  attachments          Attachment[]
 
   @@map("companies")
 }
@@ -529,6 +531,7 @@ model Order {
   payments       Payment[]
   onlinePayments OnlinePayment[]
   ratings        Rating[]
+  attachments    Attachment[]
   chats          Chat[]
 
   // Раздел 3.5 ТЗ: нумерация отдельная у каждой компании, поэтому номер уникален в пределах магазина.
@@ -646,29 +649,33 @@ enum DiscrepancyDecision {
 /// Первичный документ. Снимок данных хранится в payload: печатная форма не должна
 /// меняться задним числом вслед за каталогом.
 model Document {
-  id              String              @id @default(cuid())
-  type            DocumentType
-  number          String
-  issuedAt        DateTime            @default(now())
-  orderId         String
-  order           Order               @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  issuerId        String
-  issuer          Company             @relation("IssuedDocuments", fields: [issuerId], references: [id])
-  recipientId     String
-  recipient       Company             @relation("ReceivedDocuments", fields: [recipientId], references: [id])
-  version         Int                 @default(1)
+  id               String              @id @default(cuid())
+  type             DocumentType
+  number           String
+  issuedAt         DateTime            @default(now())
+  orderId          String
+  order            Order               @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  issuerId         String
+  issuer           Company             @relation("IssuedDocuments", fields: [issuerId], references: [id])
+  recipientId      String
+  recipient        Company             @relation("ReceivedDocuments", fields: [recipientId], references: [id])
+  version          Int                 @default(1)
   /// Поставщик подтверждает или оспаривает акт расхождений (раздел 3.5 ТЗ).
-  decision        DiscrepancyDecision @default(PENDING)
-  decisionReason  String?
-  decidedAt       DateTime?
-  totalWithoutVat Decimal             @db.Decimal(14, 2)
-  vatAmount       Decimal             @db.Decimal(14, 2)
-  totalWithVat    Decimal             @db.Decimal(14, 2)
-  payload         Json
+  decision         DiscrepancyDecision @default(PENDING)
+  decisionReason   String?
+  decidedAt        DateTime?
+  totalWithoutVat  Decimal             @db.Decimal(14, 2)
+  vatAmount        Decimal             @db.Decimal(14, 2)
+  totalWithVat     Decimal             @db.Decimal(14, 2)
+  payload          Json
+  /// Раздел 4.3 ТЗ: исправление выпускает новую версию, прошлая уходит в историю.
+  correctionReason String?
+  correctedAt      DateTime?
 
   movements  StockMovement[]
   payments   Payment[]
   signatures DocumentSignature[]
+  versions   DocumentVersion[]
 
   @@unique([issuerId, type, number])
   @@index([orderId])
@@ -954,10 +961,76 @@ model DocumentSignature {
   signerName  String
   certificate String
   signature   String
+  /// Подпись относится к версии документа: исправленную версию стороны подписывают заново.
+  version     Int      @default(1)
   signedAt    DateTime @default(now())
 
-  @@unique([documentId, companyId])
+  @@unique([documentId, companyId, version])
   @@map("document_signatures")
+}
+
+/// Прошлая версия документа (раздел 4.3 ТЗ): снимок печатной формы до исправления.
+/// Текущая версия живёт в самом `Document`, поэтому ссылки движений и оплат не меняются.
+model DocumentVersion {
+  id              String   @id @default(cuid())
+  documentId      String
+  document        Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  version         Int
+  payload         Json
+  totalWithoutVat Decimal  @db.Decimal(14, 2)
+  vatAmount       Decimal  @db.Decimal(14, 2)
+  totalWithVat    Decimal  @db.Decimal(14, 2)
+  /// Причина исправления, с которой вышла эта версия (у первой — пусто).
+  reason          String?
+  /// Когда версию заменило исправление.
+  supersededAt    DateTime @default(now())
+
+  @@unique([documentId, version])
+  @@map("document_versions")
+}
+
+// ---------- Свои файлы компании и заявки (раздел 4.3 ТЗ) ----------
+
+enum AttachmentKind {
+  CONTRACT
+  CERTIFICATE
+  LICENSE
+  PHOTO
+  OTHER
+}
+
+/// Файл, загруженный компанией: к заявке (видят обе стороны) или к самой компании.
+model Attachment {
+  id           String          @id @default(cuid())
+  companyId    String
+  company      Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  orderId      String?
+  order        Order?          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  kind         AttachmentKind
+  fileName     String
+  /// Тип определяется по содержимому файла, а не по заявлению браузера.
+  mimeType     String
+  size         Int
+  sha256       String
+  uploadedById String?
+  uploadedBy   User?           @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+  createdAt    DateTime        @default(now())
+  blob         AttachmentBlob?
+
+  @@index([companyId, createdAt])
+  @@index([orderId])
+  @@map("attachments")
+}
+
+/// Содержимое файла хранится в PostgreSQL: диск контейнера Railway не постоянный,
+/// а база попадает в ежедневную резервную копию (НФТ 5.4).
+/// TODO(open-question): S3-совместимое хранилище в РК (раздел 5.3 ТЗ) — провайдер и ключи.
+model AttachmentBlob {
+  attachmentId String     @id
+  attachment   Attachment @relation(fields: [attachmentId], references: [id], onDelete: Cascade)
+  data         Bytes
+
+  @@map("attachment_blobs")
 }
 
 model Payment {

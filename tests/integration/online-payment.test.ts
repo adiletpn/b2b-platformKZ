@@ -8,7 +8,15 @@ import { checkout } from '@/lib/orders/checkout';
 import { changeStatus, confirmOrder } from '@/lib/orders/workflow';
 import { createWaybillAndInvoice } from '@/lib/documents/create';
 import { acceptDelivery } from '@/lib/acceptance/accept';
-import { confirmOnlinePayment, startOnlinePayment } from '@/lib/payments/online';
+import {
+  confirmOnlinePayment,
+  getOnlinePayment,
+  payInMockGateway,
+  startOnlinePayment,
+} from '@/lib/payments/online';
+import { signGatewayCallback } from '@/mocks/payment-gateway';
+import { POST as gatewayCallback } from '@/app/api/payments/callback/route';
+import { searchDocuments } from '@/lib/archive/search';
 import { getSignatures, signDocumentByCompany } from '@/lib/documents/signature';
 import { testPoolBin } from '@/mocks/bin-registry';
 
@@ -200,7 +208,114 @@ describe('онлайн-оплата заявки', () => {
   });
 });
 
+describe('экран онлайн-оплаты', () => {
+  function callback(externalId: string, signature: string | null) {
+    return gatewayCallback(
+      new Request('http://localhost/api/payments/callback', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          ...(signature ? { 'x-signature': signature } : {}),
+        },
+        body: JSON.stringify({ externalId, paid: true }),
+      }),
+    );
+  }
+
+  it('card_shows_link_and_qr_of_started_payment_only_to_store', async () => {
+    const context = await orderAwaitingPayment(10);
+    expect(await getOnlinePayment(context.orderId, context.storeId)).toBeNull();
+
+    const started = await startOnlinePayment(context.orderId, context.storeId, 'halyk');
+    if (started.status !== 'ok') throw new Error(started.status);
+
+    const view = await getOnlinePayment(context.orderId, context.storeId);
+    expect(view).toMatchObject({
+      provider: 'halyk',
+      status: 'PENDING',
+      payUrl: started.payUrl,
+      qrPayload: started.qrPayload,
+      amount: started.amount,
+    });
+    // Правило 4: поставщик и посторонние ссылку на оплату не видят.
+    expect(await getOnlinePayment(context.orderId, context.supplierId)).toBeNull();
+  });
+
+  it('mock_gateway_button_pays_order_once', async () => {
+    const context = await orderAwaitingPayment(11);
+    await startOnlinePayment(context.orderId, context.storeId);
+
+    expect(await payInMockGateway(context.orderId, context.storeId)).toMatchObject({
+      status: 'ok',
+    });
+    const order = await prisma.order.findUniqueOrThrow({ where: { id: context.orderId } });
+    expect(order.status).toBe('PAID');
+    // Повторное нажатие: платёж уже не в ожидании, второго Payment нет.
+    expect(await payInMockGateway(context.orderId, context.storeId)).toEqual({
+      status: 'not_found',
+    });
+    expect(await prisma.payment.count({ where: { orderId: context.orderId } })).toBe(1);
+  });
+
+  it('mock_gateway_refuses_other_company_and_live_mode', async () => {
+    const context = await orderAwaitingPayment(12);
+    await startOnlinePayment(context.orderId, context.storeId);
+
+    expect(await payInMockGateway(context.orderId, context.supplierId)).toEqual({
+      status: 'not_found',
+    });
+
+    process.env.PAYMENT_API_KEY = 'test-live-key';
+    try {
+      expect(await payInMockGateway(context.orderId, context.storeId)).toEqual({
+        status: 'not_mock',
+      });
+    } finally {
+      delete process.env.PAYMENT_API_KEY;
+    }
+    const order = await prisma.order.findUniqueOrThrow({ where: { id: context.orderId } });
+    expect(order.status).toBe('AWAITING_PAYMENT');
+  });
+
+  it('callback_without_gateway_signature_is_rejected', async () => {
+    const context = await orderAwaitingPayment(13);
+    const started = await startOnlinePayment(context.orderId, context.storeId);
+    if (started.status !== 'ok') throw new Error(started.status);
+    const { externalId } = await prisma.onlinePayment.findUniqueOrThrow({
+      where: { id: started.paymentId },
+    });
+
+    // Без подписи и с поддельной подписью оплату не отметить.
+    expect((await callback(externalId, null)).status).toBe(401);
+    expect((await callback(externalId, 'a'.repeat(64))).status).toBe(401);
+    expect((await prisma.order.findUniqueOrThrow({ where: { id: context.orderId } })).status).toBe(
+      'AWAITING_PAYMENT',
+    );
+
+    const signed = await callback(externalId, signGatewayCallback(externalId, true));
+    expect(signed.status).toBe(200);
+    expect((await prisma.order.findUniqueOrThrow({ where: { id: context.orderId } })).status).toBe(
+      'PAID',
+    );
+  });
+});
+
 describe('подпись ЭЦП', () => {
+  it('archive_shows_who_signed_and_when', async () => {
+    const context = await orderAwaitingPayment(14);
+    await signDocumentByCompany(context.invoiceId, context.supplierId, context.supplierUserId);
+
+    const forStore = await searchDocuments(context.storeId, { type: 'INVOICE' });
+    expect(forStore).toHaveLength(1);
+    expect(forStore[0]!.signatures).toHaveLength(1);
+    expect(forStore[0]!.signatures[0]!.signedAt).toMatch(/^\d{2}\.\d{2}\.\d{4} \d{2}:\d{2}$/);
+    // Магазин ещё не подписал — кнопка подписи у него остаётся.
+    expect(forStore[0]!.signedByMe).toBe(false);
+
+    const forSupplier = await searchDocuments(context.supplierId, { type: 'INVOICE' });
+    expect(forSupplier[0]!.signedByMe).toBe(true);
+  });
+
   it('both_parties_can_sign_the_document', async () => {
     const context = await orderAwaitingPayment(6);
 

@@ -2,6 +2,7 @@ import { setRequestLocale } from 'next-intl/server';
 import { redirect } from '@/i18n/navigation';
 import { getActiveCompany } from '@/lib/auth/active-company';
 import { getMessages, listChats, markRead } from '@/lib/chat/chat';
+import { blockState, listTemplates } from '@/lib/chat/extras';
 import { ChatScreen } from './chat-screen';
 
 export default async function ChatPage({
@@ -33,6 +34,8 @@ export default async function ChatPage({
       }))}
       initialChatId={openId}
       initialMessages={opened?.messages ?? []}
+      initialBlock={opened ? await blockState(openId!, companyId) : null}
+      templates={await listTemplates(companyId)}
     />
   );
 }

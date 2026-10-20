@@ -11,6 +11,7 @@ import { Field } from '@/components/ui/field';
 import { EmptyState, Page, PageHeader } from '@/components/ui/page';
 import { DocumentSignatures, type SignatureMark } from '@/components/document-signatures';
 import { AttachmentsPanel, type FileRow } from '@/components/attachments-panel';
+import { ExportsPanel } from './exports-panel';
 
 type Row = {
   id: string;
@@ -39,12 +40,14 @@ export function ArchiveScreen({
   initialDocuments,
   title,
   canSign,
+  exports,
   files,
 }: {
   locale: 'ru' | 'kk';
   initialDocuments: Row[];
   title: string;
   canSign: boolean;
+  exports: { documents: boolean; catalog: boolean; stock: boolean };
   files: { initial: FileRow[]; canUpload: boolean; canDelete: boolean };
 }) {
   const t = useTranslations('archive');
@@ -73,27 +76,19 @@ export function ArchiveScreen({
         title={title}
         description={t('subtitle')}
         actions={
-          <div className="flex flex-wrap gap-2">
-            <a
-              href={`/api/archive/export?locale=${locale}${type ? `&type=${type}` : ''}${
-                search ? `&search=${encodeURIComponent(search)}` : ''
-              }`}
-              className={buttonVariants({ variant: 'outline', size: 'sm' })}
-              data-testid="archive-export"
-            >
-              {t('export')}
-            </a>
-            {/* Раздел 4.5 ТЗ: поступления за месяц файлом для 1С. */}
-            <a
-              href={`/api/exports/one-c?locale=${locale}`}
-              className={buttonVariants({ variant: 'outline', size: 'sm' })}
-              data-testid="export-one-c"
-            >
-              {t('exportOneC')}
-            </a>
-          </div>
+          <a
+            href={`/api/archive/export?locale=${locale}${type ? `&type=${type}` : ''}${
+              search ? `&search=${encodeURIComponent(search)}` : ''
+            }`}
+            className={buttonVariants({ variant: 'outline', size: 'sm' })}
+            data-testid="archive-export"
+          >
+            {t('export')}
+          </a>
         }
       />
+
+      <ExportsPanel locale={locale} can={exports} />
 
       <Card>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">

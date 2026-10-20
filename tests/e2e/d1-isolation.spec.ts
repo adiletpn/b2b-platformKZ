@@ -117,6 +117,44 @@ test('new_routes_are_closed_without_session', async ({ browser }, testInfo) => {
   await anonymous.close();
 });
 
+test('stage2_routes_are_closed_without_session', async ({ browser }, testInfo) => {
+  test.skip(
+    testInfo.project.name !== ONLY_PROJECT,
+    'проверка уровня API, достаточно одного прогона',
+  );
+
+  const anonymous = await browser.newContext();
+
+  // Правило 4: маршруты этапа 2 без сессии данных компании не отдают.
+  for (const path of [
+    '/api/files',
+    '/api/files/any-file-id',
+    '/api/archive/bundle?from=2026-10-01&to=2026-10-31',
+    '/api/exports/one-c?kind=nomenclature',
+    '/api/exports/csv/catalog',
+    '/api/exports/csv/stock',
+    '/api/documents/any-document-id/versions',
+    '/api/documents/any-document-id/pdf',
+    '/api/admin/templates?type=INVOICE&locale=ru',
+  ]) {
+    expect((await anonymous.request.get(path)).status(), path).toBe(401);
+  }
+  for (const path of [
+    '/api/files',
+    '/api/documents/any-document-id/correct',
+    '/api/documents/any-document-id/sign',
+    '/api/orders/any-order-id/online-payment',
+    '/api/orders/any-order-id/online-payment/mock-pay',
+    '/api/admin/templates',
+    '/api/admin/templates/preview',
+  ]) {
+    expect((await anonymous.request.post(path, { data: {} })).status(), path).toBe(401);
+  }
+  expect((await anonymous.request.delete('/api/files/any-file-id')).status()).toBe(401);
+
+  await anonymous.close();
+});
+
 test('admin_routes_are_closed_without_admin_session', async ({ browser }, testInfo) => {
   test.skip(
     testInfo.project.name !== ONLY_PROJECT,

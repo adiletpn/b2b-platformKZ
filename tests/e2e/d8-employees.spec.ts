@@ -98,6 +98,27 @@ test('cashier_cannot_reach_orders_and_prices_through_api', async ({}, testInfo) 
   });
   expect(limits.status()).toBe(403);
 
+  // Этап 2: документы, файлы, выгрузки и подпись кассиру тоже закрыты (раздел 3.12 ТЗ).
+  for (const path of [
+    '/api/files',
+    '/api/files/any-file-id',
+    '/api/archive/bundle?from=2026-10-01&to=2026-10-31',
+    '/api/exports/one-c?kind=sales',
+    '/api/exports/csv/catalog',
+    '/api/exports/csv/stock',
+    '/api/documents/any-document-id/versions',
+  ]) {
+    expect((await cashierPage.request.get(path)).status(), path).toBe(403);
+  }
+  for (const path of [
+    '/api/documents/any-document-id/sign',
+    '/api/documents/any-document-id/correct',
+    '/api/orders/any-order-id/online-payment',
+    '/api/orders/any-order-id/online-payment/mock-pay',
+  ]) {
+    expect((await cashierPage.request.post(path, { data: {} })).status(), path).toBe(403);
+  }
+
   // Остатки своей точки кассиру доступны.
   const stock = await cashierPage.request.get('/api/stock');
   expect(stock.status()).toBe(200);

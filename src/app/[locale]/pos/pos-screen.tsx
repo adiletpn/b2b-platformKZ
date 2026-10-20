@@ -24,8 +24,18 @@ import { Card, CardHint, CardTitle } from '@/components/ui/card';
 import { Page, PageHeader } from '@/components/ui/page';
 import { cn } from '@/lib/utils';
 
-type Product = { productId: string; name: string; barcode: string; price: string; stock: string };
-type Line = Product & { quantity: string; discountPercent: string };
+type Product = {
+  productId: string;
+  name: string;
+  barcode: string;
+  price: string;
+  stock: string;
+  /** Маркированный: каждая единица продаётся со своим кодом DataMatrix. */
+  isMarked: boolean;
+  /** Подакцизный: часы продажи и подтверждение возраста. */
+  isExcise: boolean;
+};
+type Line = Product & { quantity: string; discountPercent: string; markingCodes: string[] };
 type Shift = { id: string; number: string; openedAt: string } | null;
 type Report = {
   receipts: number;
@@ -51,7 +61,13 @@ const PAYMENT_ICONS = { CASH: Banknote, CARD: CreditCard, QR: QrCode, MIXED: Spl
 type QueuedSale = {
   clientId: string;
   paymentType: (typeof PAYMENTS)[number];
-  lines: { productId: string; quantity: string; discountPercent?: string }[];
+  lines: {
+    productId: string;
+    quantity: string;
+    discountPercent?: string;
+    markingCodes?: string[];
+  }[];
+  ageConfirmed?: boolean;
   receiptDiscountPercent?: string;
   cashAmount?: string;
   cardAmount?: string;
@@ -103,11 +119,13 @@ export function PosScreen({
   initialShift,
   initialReport,
   maxDiscount,
+  minAge,
 }: {
   products: Product[];
   initialShift: Shift;
   initialReport: Report;
   maxDiscount: string | null;
+  minAge: string;
 }) {
   const t = useTranslations('pos');
 
@@ -120,6 +138,9 @@ export function PosScreen({
   const [receiptDiscount, setReceiptDiscount] = useState('');
   const [cashReceived, setCashReceived] = useState('');
   const [mixedCash, setMixedCash] = useState('');
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
+  const [codeDrafts, setCodeDrafts] = useState<Record<string, string>>({});
+  const [receiptPhone, setReceiptPhone] = useState('');
   const [cash, setCash] = useState('0');
   const [cashOp, setCashOp] = useState<{
     type: 'CASH_IN' | 'CASH_OUT';
@@ -201,7 +222,19 @@ export function PosScreen({
     setError(null);
     setCart((current) => {
       const existing = current.find((item) => item.productId === product.productId);
-      if (!existing) return [...current, { ...product, quantity: '1', discountPercent: '' }];
+      // Маркированный товар добавляется сканированием кода: количество = числу кодов.
+      if (!existing) {
+        return [
+          ...current,
+          {
+            ...product,
+            quantity: product.isMarked ? '0' : '1',
+            discountPercent: '',
+            markingCodes: [],
+          },
+        ];
+      }
+      if (product.isMarked) return current;
       return current.map((item) =>
         item.productId === product.productId
           ? { ...item, quantity: String(Number(item.quantity) + 1) }
@@ -234,11 +267,44 @@ export function PosScreen({
             ? { ...item, quantity: String(Math.max(0, Number(item.quantity) + delta)) }
             : item,
         )
-        .filter((item) => Number(item.quantity) > 0),
+        .filter((item) => item.productId !== productId || Number(item.quantity) > 0),
+    );
+  }
+
+  /** DataMatrix со сканера: код добавляется к позиции, количество растёт на единицу. */
+  function addCode(productId: string) {
+    const code = (codeDrafts[productId] ?? '').trim();
+    if (!code) return;
+    setCart((current) =>
+      current.map((item) =>
+        item.productId === productId && !item.markingCodes.includes(code)
+          ? {
+              ...item,
+              markingCodes: [...item.markingCodes, code],
+              quantity: String(item.markingCodes.length + 1),
+            }
+          : item,
+      ),
+    );
+    setCodeDrafts((current) => ({ ...current, [productId]: '' }));
+  }
+
+  function removeCode(productId: string, code: string) {
+    setCart((current) =>
+      current.map((item) =>
+        item.productId === productId
+          ? {
+              ...item,
+              markingCodes: item.markingCodes.filter((value) => value !== code),
+              quantity: String(item.markingCodes.length - 1),
+            }
+          : item,
+      ),
     );
   }
 
   function resetReceipt() {
+    setAgeConfirmed(false);
     setCart([]);
     setReceiptDiscount('');
     setCashReceived('');
@@ -281,7 +347,9 @@ export function PosScreen({
         productId: item.productId,
         quantity: item.quantity,
         discountPercent: item.discountPercent || undefined,
+        markingCodes: item.isMarked ? item.markingCodes : undefined,
       })),
+      ageConfirmed: ageConfirmed || undefined,
       receiptDiscountPercent: receiptDiscount || undefined,
       cashReceived: payment === 'CASH' && cashReceived ? cashReceived : undefined,
       cashAmount: payment === 'MIXED' ? mixedCash || '0' : undefined,
@@ -301,9 +369,15 @@ export function PosScreen({
         change?: string;
         limit?: string;
         total?: string;
+        hours?: string;
+        productId?: string;
       };
       if (data.status !== 'ok') {
-        setError({ key: data.status ?? 'unknown', value: data.limit ?? data.total });
+        const product = cart.find((item) => item.productId === data.productId)?.name;
+        setError({
+          key: data.status ?? 'unknown',
+          value: data.limit ?? data.total ?? data.hours ?? product,
+        });
         setPending(false);
         return;
       }
@@ -594,15 +668,67 @@ export function PosScreen({
               {cart.map((item) => (
                 <li key={item.productId} className="space-y-1.5 py-2">
                   <div className="flex justify-between gap-2">
-                    <span className="min-w-0 break-words">{item.name}</span>
+                    <span className="min-w-0 break-words">
+                      {item.name}
+                      {item.isExcise ? (
+                        <Badge tone="warning" className="ml-1.5">
+                          {t('exciseBadge')}
+                        </Badge>
+                      ) : null}
+                    </span>
                     <span className="tabular-nums">{item.price} ₸</span>
                   </div>
+                  {item.isMarked ? (
+                    <div className="space-y-1" data-testid="pos-marking">
+                      <div className="flex gap-2">
+                        <Input
+                          className="h-8 px-2 font-mono text-xs"
+                          placeholder={t('markingPlaceholder')}
+                          aria-label={t('markingPlaceholder')}
+                          value={codeDrafts[item.productId] ?? ''}
+                          data-testid="pos-marking-input"
+                          onChange={(event) =>
+                            setCodeDrafts((current) => ({
+                              ...current,
+                              [item.productId]: event.target.value,
+                            }))
+                          }
+                          onKeyDown={(event) => {
+                            if (event.key !== 'Enter') return;
+                            event.preventDefault();
+                            addCode(item.productId);
+                          }}
+                        />
+                        <Button variant="outline" size="sm" onClick={() => addCode(item.productId)}>
+                          {t('markingAdd')}
+                        </Button>
+                      </div>
+                      <ul className="flex flex-wrap gap-1">
+                        {item.markingCodes.map((code) => (
+                          <li
+                            key={code}
+                            className="bg-muted flex items-center gap-1 rounded px-1.5 font-mono text-[10px]"
+                          >
+                            …{code.slice(-8)}
+                            <button
+                              type="button"
+                              aria-label={t('markingRemove')}
+                              onClick={() => removeCode(item.productId, code)}
+                            >
+                              ×
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
                   <div className="flex items-center gap-2">
                     <Button
                       variant="outline"
                       size="icon"
                       className="size-8"
                       aria-label={t('less')}
+                      disabled={item.isMarked}
                       onClick={() => step(item.productId, -1)}
                     >
                       <Minus aria-hidden />
@@ -611,6 +737,7 @@ export function PosScreen({
                       className="h-8 w-16 px-2 text-center"
                       inputMode="decimal"
                       value={item.quantity}
+                      readOnly={item.isMarked}
                       aria-label={t('quantity')}
                       onChange={(event) =>
                         updateLine(item.productId, { quantity: event.target.value })
@@ -621,6 +748,7 @@ export function PosScreen({
                       size="icon"
                       className="size-8"
                       aria-label={t('more')}
+                      disabled={item.isMarked}
                       onClick={() => step(item.productId, 1)}
                     >
                       <Plus aria-hidden />
@@ -682,6 +810,18 @@ export function PosScreen({
               </Field>
             ) : null}
           </div>
+
+          {cart.some((item) => item.isExcise) ? (
+            <label className="bg-warning-soft text-warning mt-3 flex items-center gap-2 rounded-lg px-3 py-2 text-sm">
+              <input
+                type="checkbox"
+                checked={ageConfirmed}
+                data-testid="pos-age-confirmed"
+                onChange={(event) => setAgeConfirmed(event.target.checked)}
+              />
+              {t('ageConfirm', { age: minAge })}
+            </label>
+          ) : null}
 
           <div
             className="mt-3 grid grid-cols-4 gap-1.5"
@@ -797,6 +937,39 @@ export function PosScreen({
                   </li>
                 ))}
               </ul>
+            </div>
+          ) : null}
+
+          {lastReceipt ? (
+            <div className="mt-3 flex flex-wrap gap-2" data-testid="pos-e-receipt">
+              <Input
+                className="h-9 min-w-0 flex-1"
+                inputMode="tel"
+                placeholder={t('receiptPhone')}
+                aria-label={t('receiptPhone')}
+                value={receiptPhone}
+                data-testid="pos-receipt-phone"
+                onChange={(event) => setReceiptPhone(event.target.value)}
+              />
+              {(['sms', 'whatsapp'] as const).map((channel) => (
+                <Button
+                  key={channel}
+                  variant="outline"
+                  size="sm"
+                  disabled={pending}
+                  data-testid={`pos-receipt-${channel}`}
+                  onClick={() =>
+                    void post(`/api/pos/receipt/${lastReceipt.id}/send`, {
+                      phone: receiptPhone,
+                      channel,
+                    }).then((ok) => {
+                      if (ok) setNotice({ key: 'receiptSent' });
+                    })
+                  }
+                >
+                  {t(`receiptChannels.${channel}`)}
+                </Button>
+              ))}
             </div>
           ) : null}
 

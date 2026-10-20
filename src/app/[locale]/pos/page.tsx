@@ -4,6 +4,7 @@ import { getAccess, hasPermission } from '@/lib/auth/permissions';
 import { getStoreContext } from '@/lib/auth/store-context';
 import { prisma } from '@/lib/prisma';
 import { getOpenShift, getZReport } from '@/lib/pos/shift';
+import { getSetting } from '@/lib/admin/settings';
 import { PosScreen } from './pos-screen';
 
 export default async function PosPage({ params }: { params: Promise<{ locale: string }> }) {
@@ -41,6 +42,8 @@ export default async function PosPage({ params }: { params: Promise<{ locale: st
           barcode: balance.product.barcode,
           price: priceByProduct.get(balance.productId)!.toFixed(2),
           stock: balance.quantity.toFixed(3),
+          isMarked: balance.product.isMarked,
+          isExcise: balance.product.isExcise,
         }))}
       initialShift={
         shift
@@ -48,6 +51,7 @@ export default async function PosPage({ params }: { params: Promise<{ locale: st
           : null
       }
       initialReport={report}
+      minAge={await getSetting('excise_min_age', '21')}
       maxDiscount={
         (
           await prisma.membership.findUnique({

@@ -11,7 +11,7 @@ import { OfferDetailsPanel } from './offer-details-panel';
 import { GeographyPanel } from './geography-panel';
 import type { OfferDetails } from '@/lib/feed/offer-details';
 import type { FeedOffer, Option } from './types';
-import { Page } from '@/components/ui/page';
+import { EmptyState, Page } from '@/components/ui/page';
 
 type Mode = 'auto' | 'swipe' | 'list';
 
@@ -175,8 +175,14 @@ export function FeedScreen({
       body: JSON.stringify({ offerId: offer.id, quantity: value || '0' }),
     });
     if (!response.ok) return;
-    const data = (await response.json()) as { quantity: string; removed: boolean };
+    const data = (await response.json()) as {
+      quantity: string;
+      removed: boolean;
+      rounded: boolean;
+    };
     setQuantities((current) => ({ ...current, [offer.id]: data.removed ? '' : data.quantity }));
+    // Магазин должен видеть, что количество поменяли не просто так.
+    if (data.rounded) setNotice('quantityAdjusted');
   }
 
   async function repeatLastOrder() {
@@ -261,7 +267,22 @@ export function FeedScreen({
         </p>
       ) : null}
 
-      <section className={`mt-5 ${swipeClass}`} data-testid="swipe-mode">
+      {suppliers.length === 0 ? (
+        // Пустая лента без объяснения выглядит как поломка: говорим, почему пусто и что дальше.
+        <div className="mt-5" data-testid="feed-no-suppliers">
+          <EmptyState>
+            <span className="text-foreground block font-medium">
+              {t('noSuppliersTitle', { city: cityName })}
+            </span>
+            <span className="mt-2 block">{t('noSuppliersText')}</span>
+          </EmptyState>
+        </div>
+      ) : null}
+
+      <section
+        className={`mt-5 ${suppliers.length === 0 ? 'hidden' : swipeClass}`}
+        data-testid="swipe-mode"
+      >
         {/* Свайп — мобильный сценарий: на широком экране колода остаётся карточкой. */}
         <div className="mx-auto w-full max-w-md">
           <SwipeDeck
@@ -284,7 +305,10 @@ export function FeedScreen({
         ) : null}
       </section>
 
-      <section className={`mt-5 ${listClass}`} data-testid="list-mode">
+      <section
+        className={`mt-5 ${suppliers.length === 0 ? 'hidden' : listClass}`}
+        data-testid="list-mode"
+      >
         <div className="border-border bg-card rounded-lg border p-4">
           <h2 className="text-muted-foreground text-sm font-medium">{t('filters.title')}</h2>
           <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -387,7 +411,7 @@ export function FeedScreen({
 
         {listOffers.length === 0 ? (
           <p className="text-muted-foreground mt-4 text-sm" data-testid="list-empty">
-            {t('emptyFeed')}
+            {t('emptyList')}
           </p>
         ) : (
           <div className="border-border bg-card shadow-card mt-4 overflow-x-auto rounded-xl border">

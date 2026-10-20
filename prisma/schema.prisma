@@ -1302,15 +1302,18 @@ enum VerificationDecision {
 
 /// Очередь проверки компаний (раздел 3.11 п.6–7 и 3.13 ТЗ).
 model VerificationRequest {
-  id          String               @id @default(cuid())
-  companyId   String
-  company     Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  status      VerificationDecision @default(PENDING)
-  reason      String?
-  decidedById String?
-  decidedBy   AdminUser?           @relation(fields: [decidedById], references: [id])
-  decidedAt   DateTime?
-  createdAt   DateTime             @default(now())
+  id           String               @id @default(cuid())
+  companyId    String
+  company      Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  status       VerificationDecision @default(PENDING)
+  /// Название и адрес подставил реестр БИН. false — их ввёл сам пользователь,
+  /// администратор сверяет их при проверке компании.
+  fromRegistry Boolean              @default(true)
+  reason       String?
+  decidedById  String?
+  decidedBy    AdminUser?           @relation(fields: [decidedById], references: [id])
+  decidedAt    DateTime?
+  createdAt    DateTime             @default(now())
 
   @@index([status, createdAt])
   @@map("verification_requests")

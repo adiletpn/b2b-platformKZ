@@ -7,6 +7,11 @@ import { Input } from '@/components/ui/input';
 import { Field } from '@/components/ui/field';
 import { Link, useRouter } from '@/i18n/navigation';
 import type { CartSupplierGroup } from '@/lib/cart/cart';
+
+/** «12.000» → «12», «0.500» → «0.5»: количества храним с 3 знаками, читать так проще. */
+function trimZeros(value: string): string {
+  return value.includes('.') ? value.replace(/\.?0+$/, '') : value;
+}
 import { Page } from '@/components/ui/page';
 
 export function CartScreen({
@@ -205,6 +210,17 @@ export function CartScreen({
                     <li key={item.offerId} className="flex flex-wrap items-center gap-3 py-2">
                       <span className="min-w-0 flex-1 text-sm break-words">
                         {locale === 'kk' ? item.nameKk : item.nameRu}
+                        <span
+                          className="text-muted-foreground block text-xs"
+                          data-testid={`cart-terms-${item.offerId}`}
+                        >
+                          {t('itemTerms', {
+                            price: item.priceWithVat,
+                            unit: locale === 'kk' ? item.unitKk : item.unitRu,
+                            packSize: trimZeros(item.packSize),
+                            minBatch: trimZeros(item.minBatch),
+                          })}
+                        </span>
                       </span>
                       <Input
                         className="h-9 w-24 text-right"

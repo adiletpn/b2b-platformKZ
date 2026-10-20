@@ -15,6 +15,7 @@ import { listDisputedRatings } from '@/lib/ratings/rate';
 import {
   BroadcastPanel,
   IntegrationsPanel,
+  PlatformFlagsPanel,
   ReportsPanel,
   TicketsPanel,
   UsersPanel,
@@ -22,6 +23,7 @@ import {
 import { listOpenComplaints } from '@/lib/chat/extras';
 import { listTickets } from '@/lib/support/tickets';
 import { integrationStatus } from '@/lib/admin/broadcasts';
+import { ADMIN_FLAGS, getSetting } from '@/lib/admin/settings';
 
 export default async function AdminPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -47,7 +49,9 @@ export default async function AdminPage({ params }: { params: Promise<{ locale: 
       listSubscriptions(),
       getReferenceData(),
       prisma.verificationRequest.findMany({
-        where: { status: 'PENDING' },
+        // Автопроверка одобряет компании сразу, но реквизиты, введённые вручную,
+        // остаются в очереди на глаз администратора, пока их не решат.
+        where: { OR: [{ status: 'PENDING' }, { fromRegistry: false, decidedById: null }] },
         include: { company: true },
         orderBy: { createdAt: 'asc' },
         take: 20,
@@ -95,6 +99,9 @@ export default async function AdminPage({ params }: { params: Promise<{ locale: 
           id: request.id,
           companyName: request.company.name,
           bin: request.company.bin,
+          legalAddress: request.company.legalAddress,
+          fromRegistry: request.fromRegistry,
+          status: request.status,
         }))}
         audit={audit.map((entry) => ({
           id: entry.id,
@@ -128,6 +135,15 @@ export default async function AdminPage({ params }: { params: Promise<{ locale: 
           />
         ) : null}
         {templates ? <TemplateEditor initial={templates} /> : null}
+        {role === 'SUPERADMIN' ? (
+          <PlatformFlagsPanel
+            initial={Object.fromEntries(
+              await Promise.all(
+                ADMIN_FLAGS.map(async (key) => [key, (await getSetting(key, 'false')) === 'true']),
+              ),
+            )}
+          />
+        ) : null}
         {role === 'SUPERADMIN' ? <IntegrationsPanel rows={integrationStatus()} /> : null}
       </Page>
     </>

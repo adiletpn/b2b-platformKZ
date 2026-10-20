@@ -50,7 +50,8 @@ export default async function CatalogPage({ params }: { params: Promise<{ locale
       selectedZones={zones.map((zone) => ({
         cityId: zone.cityId,
         minOrderAmount: zone.minOrderAmount.toFixed(2),
-        leadTimeDays: zone.leadTimeDays,
+        leadTimeDays: String(zone.leadTimeDays),
+        deliveryDays: zone.deliveryDays,
       }))}
       initialTotal={total}
       initialOffers={offers.map((offer) => ({

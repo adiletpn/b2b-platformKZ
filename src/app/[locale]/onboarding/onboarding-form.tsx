@@ -5,15 +5,23 @@ import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { DemoHint, Field } from '@/components/ui/field';
+import { DemoHint, Field, Notice } from '@/components/ui/field';
 import { Page } from '@/components/ui/page';
 
 type CompanyType = 'STORE' | 'SUPPLIER' | 'BOTH';
 type City = { id: string; name: string };
 type BinEntry = { bin: string; name: string };
 type Found = { name: string; legalForm: string; legalAddress: string; isVatPayer: boolean };
+type LegalForm = 'IP' | 'TOO' | 'AO';
 
 const TYPES: CompanyType[] = ['STORE', 'SUPPLIER', 'BOTH'];
+const LEGAL_FORMS: LegalForm[] = ['TOO', 'IP', 'AO'];
+const EMPTY_MANUAL = {
+  name: '',
+  legalAddress: '',
+  legalForm: 'TOO' as LegalForm,
+  isVatPayer: false,
+};
 const FORMATS = ['grocery', 'convenience', 'pharmacy', 'cafe'] as const;
 
 export function OnboardingForm({ cities, demoBins }: { cities: City[]; demoBins: BinEntry[] }) {
@@ -23,6 +31,8 @@ export function OnboardingForm({ cities, demoBins }: { cities: City[]; demoBins:
   const [type, setType] = useState<CompanyType>('STORE');
   const [bin, setBin] = useState('');
   const [found, setFound] = useState<Found | null>(null);
+  // БИН нет в реестре: название и адрес вводит сам пользователь, их сверит администратор.
+  const [manual, setManual] = useState<typeof EMPTY_MANUAL | null>(null);
   const [cityId, setCityId] = useState(cities[0]?.id ?? '');
   const [address, setAddress] = useState('');
   const [format, setFormat] = useState<string>(FORMATS[0]);
@@ -35,11 +45,23 @@ export function OnboardingForm({ cities, demoBins }: { cities: City[]; demoBins:
   const needsLocation = type === 'STORE' || type === 'BOTH';
   const needsDelivery = type === 'SUPPLIER' || type === 'BOTH';
 
+  function changeBin(value: string) {
+    setBin(value);
+    setFound(null);
+    setManual(null);
+    setError(null);
+  }
+
   async function checkBin() {
     setError(null);
     setFound(null);
+    setManual(null);
     const response = await fetch(`/api/bin/${encodeURIComponent(bin)}`);
-    const data = (await response.json()) as Found & { error?: string };
+    const data = (await response.json()) as Found & { error?: string; legalForm?: LegalForm };
+    if (response.status === 404) {
+      setManual({ ...EMPTY_MANUAL, legalForm: data.legalForm ?? 'TOO' });
+      return;
+    }
     if (!response.ok) {
       setError(data.error ?? 'unknown');
       return;
@@ -60,6 +82,7 @@ export function OnboardingForm({ cities, demoBins }: { cities: City[]; demoBins:
         location: needsLocation ? { cityId, address, format } : undefined,
         deliveryCityIds: needsDelivery ? deliveryCityIds : undefined,
         consentAccepted: consent,
+        manual: manual ?? undefined,
       }),
     });
     const data = (await response.json()) as { status?: string; error?: string };
@@ -70,6 +93,8 @@ export function OnboardingForm({ cities, demoBins }: { cities: City[]; demoBins:
       return;
     }
     if (!response.ok) {
+      // Отправили, не проверив БИН, а в реестре его нет — открываем поля для ручного ввода.
+      if (data.status === 'missing_company_details' && !manual) setManual(EMPTY_MANUAL);
       setError(data.status ?? data.error ?? 'unknown');
       return;
     }
@@ -118,24 +143,26 @@ export function OnboardingForm({ cities, demoBins }: { cities: City[]; demoBins:
 
         <section className="space-y-3">
           <h2 className="text-muted-foreground text-sm font-medium">{t('stepBin')}</h2>
-          <DemoHint title={t('demoBinTitle')}>
-            {t('demoBinHint')}:
-            <ul className="mt-1 space-y-0.5">
-              {demoBins.map((entry) => (
-                <li key={entry.bin}>
-                  <button
-                    type="button"
-                    className="font-mono underline-offset-2 hover:underline"
-                    data-testid={`demo-bin-${entry.bin}`}
-                    onClick={() => setBin(entry.bin)}
-                  >
-                    {entry.bin}
-                  </button>{' '}
-                  — {entry.name}
-                </li>
-              ))}
-            </ul>
-          </DemoHint>
+          {demoBins.length > 0 ? (
+            <DemoHint title={t('demoBinTitle')}>
+              {t('demoBinHint')}:
+              <ul className="mt-1 space-y-0.5">
+                {demoBins.map((entry) => (
+                  <li key={entry.bin}>
+                    <button
+                      type="button"
+                      className="font-mono underline-offset-2 hover:underline"
+                      data-testid={`demo-bin-${entry.bin}`}
+                      onClick={() => changeBin(entry.bin)}
+                    >
+                      {entry.bin}
+                    </button>{' '}
+                    — {entry.name}
+                  </li>
+                ))}
+              </ul>
+            </DemoHint>
+          ) : null}
           <div className="flex gap-2">
             <Field label={t('binLabel')}>
               <Input
@@ -143,7 +170,7 @@ export function OnboardingForm({ cities, demoBins }: { cities: City[]; demoBins:
                 maxLength={12}
                 value={bin}
                 data-testid="bin-input"
-                onChange={(event) => setBin(event.target.value.replace(/\D/g, ''))}
+                onChange={(event) => changeBin(event.target.value.replace(/\D/g, ''))}
               />
             </Field>
             <Button
@@ -175,6 +202,55 @@ export function OnboardingForm({ cities, demoBins }: { cities: City[]; demoBins:
                 <dd className="text-right">{found.isVatPayer ? t('vatYes') : t('vatNo')}</dd>
               </div>
             </dl>
+          ) : null}
+
+          {manual ? (
+            <div className="border-border space-y-3 rounded-lg border p-3" data-testid="bin-manual">
+              <Notice tone="info">{t('manualHint')}</Notice>
+              <Field label={t('companyName')}>
+                <Input
+                  value={manual.name}
+                  maxLength={200}
+                  placeholder={t('companyNamePlaceholder')}
+                  data-testid="manual-company-name"
+                  onChange={(event) => setManual({ ...manual, name: event.target.value })}
+                />
+              </Field>
+              <Field label={t('legalAddress')}>
+                <Input
+                  value={manual.legalAddress}
+                  maxLength={300}
+                  data-testid="manual-legal-address"
+                  onChange={(event) => setManual({ ...manual, legalAddress: event.target.value })}
+                />
+              </Field>
+              <Field label={t('legalForm')}>
+                <select
+                  className="border-border bg-card h-11 w-full rounded-lg border px-3"
+                  value={manual.legalForm}
+                  data-testid="manual-legal-form"
+                  onChange={(event) =>
+                    setManual({ ...manual, legalForm: event.target.value as LegalForm })
+                  }
+                >
+                  {LEGAL_FORMS.map((value) => (
+                    <option key={value} value={value}>
+                      {t(`legalForms.${value}`)}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  className="size-4"
+                  checked={manual.isVatPayer}
+                  data-testid="manual-vat"
+                  onChange={(event) => setManual({ ...manual, isVatPayer: event.target.checked })}
+                />
+                {t('vatPayer')}
+              </label>
+            </div>
           ) : null}
         </section>
 
@@ -226,6 +302,7 @@ export function OnboardingForm({ cities, demoBins }: { cities: City[]; demoBins:
             <div className="border-border space-y-2 rounded-lg border p-3">
               <h3 className="text-sm font-medium">{t('supplierSection')}</h3>
               <p className="text-muted-foreground text-xs">{t('supplierHint')}</p>
+              <p className="text-muted-foreground text-xs">{t('supplierZonesLater')}</p>
               <ul className="grid max-h-56 grid-cols-1 gap-1 overflow-y-auto sm:grid-cols-2">
                 {cities.map((city) => (
                   <li key={city.id}>

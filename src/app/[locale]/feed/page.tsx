@@ -2,6 +2,7 @@ import { setRequestLocale } from 'next-intl/server';
 import { redirect } from '@/i18n/navigation';
 import { getStoreContext } from '@/lib/auth/store-context';
 import { getFeed } from '@/lib/feed/query';
+import { visibleSupplierWhere } from '@/lib/admin/settings';
 import { prisma } from '@/lib/prisma';
 import { FeedScreen } from './feed-screen';
 
@@ -13,12 +14,16 @@ export default async function FeedPage({ params }: { params: Promise<{ locale: s
   if (!store) redirect({ href: '/login', locale });
 
   const { companyId, cityId, locationId } = store!;
+  const visibleSuppliers = await visibleSupplierWhere();
   const [swipeOffers, listOffers, city, categories, zones, cart] = await Promise.all([
     getFeed(companyId, cityId, { forSwipe: true }),
     getFeed(companyId, cityId, { forSwipe: false }),
     prisma.city.findUniqueOrThrow({ where: { id: cityId } }),
     prisma.category.findMany({ orderBy: { nameRu: 'asc' } }),
-    prisma.deliveryZone.findMany({ where: { cityId }, include: { supplier: true } }),
+    prisma.deliveryZone.findMany({
+      where: { cityId, supplier: visibleSuppliers },
+      include: { supplier: true },
+    }),
     prisma.cart.findUnique({ where: { locationId }, include: { items: true } }),
   ]);
 

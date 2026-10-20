@@ -13,6 +13,13 @@ export async function POST(request: Request) {
   // Не раскрываем, существует ли такой администратор.
   if (!admin || !admin.isActive) return NextResponse.json({ error: 'not_found' }, { status: 404 });
 
-  const { code } = await issueLoginCode(phone);
-  return NextResponse.json({ phone, code });
+  const issued = await issueLoginCode(phone);
+  if (!issued.ok) {
+    return NextResponse.json(
+      { error: issued.error },
+      { status: issued.error === 'too_many_requests' ? 429 : 502 },
+    );
+  }
+  // Код в ответе только у мока SMS, как во входе компаний.
+  return NextResponse.json({ phone, ...(issued.code ? { code: issued.code } : {}) });
 }

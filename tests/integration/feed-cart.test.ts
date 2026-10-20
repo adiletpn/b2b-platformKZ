@@ -7,6 +7,8 @@ import { importCatalog } from '@/lib/catalog/import';
 import { getFeed } from '@/lib/feed/query';
 import { getCartGroups, setCartItem } from '@/lib/cart/cart';
 import { recordSwipe, repeatLastOrder, undoLastSwipe } from '@/lib/feed/swipe';
+import { getGeography } from '@/lib/feed/geography';
+import { outsideRegistryBin } from '../helpers/real-bin';
 
 const prisma = createTestPrisma();
 
@@ -23,6 +25,8 @@ async function makeSupplier(phone: string, bin: string, cityCodes: string[], pro
     type: 'SUPPLIER',
     deliveryCityIds: cities.map((item) => item.id),
     consentAccepted: true,
+    // БИН вне мок-реестра — настоящая компания, реквизиты она вводит сама.
+    manual: { name: `ТОО «Поставщик ${bin.slice(-4)}»`, legalAddress: 'г. Тараз, ул. Абая, 5' },
   });
   if (result.status !== 'created') throw new Error(result.status);
 
@@ -42,6 +46,7 @@ async function makeStore(phone: string, bin: string, cityCode: string) {
     type: 'STORE',
     location: { cityId: target.id, address: 'ул. Демонстрационная, 1' },
     consentAccepted: true,
+    manual: { name: `ИП «Магазин ${bin.slice(-4)}»`, legalAddress: 'г. Тараз, ул. Абая, 7' },
   });
   if (result.status !== 'created') throw new Error(result.status);
 
@@ -299,5 +304,64 @@ describe('свайп и корзина', () => {
 
     expect(await getCartGroups(first.locationId, first.cityId)).toHaveLength(1);
     expect(await getCartGroups(second.locationId, second.cityId)).toEqual([]);
+  });
+});
+
+describe('пилот с настоящими компаниями', () => {
+  async function setHideDemo(value: boolean) {
+    await prisma.platformSetting.upsert({
+      where: { key: 'hide_demo_companies' },
+      update: { value: String(value) },
+      create: { key: 'hide_demo_companies', value: String(value) },
+    });
+  }
+
+  it('hide_demo_companies_removes_registry_suppliers_from_feed_search_and_map', async () => {
+    const demo = await makeSupplier('+77030000060', '120340001230', ['taraz']);
+    const real = await makeSupplier('+77030000061', outsideRegistryBin(20), ['taraz']);
+    const store = await makeStore('+77030000062', outsideRegistryBin(21), 'taraz');
+    await prisma.location.create({
+      data: { companyId: demo, type: 'WAREHOUSE', cityId: store.cityId, address: 'склад 1' },
+    });
+    const suppliersOf = (offers: { supplierId: string }[]) =>
+      [...new Set(offers.map((offer) => offer.supplierId))].sort();
+
+    // Флаг выключен по умолчанию: демо-сценарий видит тестовых поставщиков.
+    expect(suppliersOf(await getFeed(store.companyId, store.cityId, { forSwipe: false }))).toEqual(
+      [demo, real].sort(),
+    );
+
+    await setHideDemo(true);
+    try {
+      expect(
+        suppliersOf(await getFeed(store.companyId, store.cityId, { forSwipe: false })),
+      ).toEqual([real]);
+      const search = await getFeed(store.companyId, store.cityId, {
+        forSwipe: false,
+        filters: { search: 'Тестовый товар' },
+      });
+      expect(search.every((offer) => offer.supplierId === real)).toBe(true);
+      const geography = await getGeography(store.cityId);
+      expect(geography.points.map((point) => point.companyId)).not.toContain(demo);
+    } finally {
+      await setHideDemo(false);
+    }
+  });
+
+  it('cart_raises_quantity_to_min_batch', async () => {
+    const supplier = await makeSupplier('+77030000063', outsideRegistryBin(22), ['taraz']);
+    const store = await makeStore('+77030000064', outsideRegistryBin(23), 'taraz');
+    const offer = await prisma.supplierOffer.findFirstOrThrow({ where: { supplierId: supplier } });
+    await prisma.supplierOffer.update({
+      where: { id: offer.id },
+      data: { packSize: '6', minBatch: '18' },
+    });
+
+    // Меньше минимальной партии поставщик не отгружает: 5 → 18.
+    const result = await setCartItem(store.locationId, offer.id, new Decimal('5'));
+
+    expect(result).toMatchObject({ quantity: '18.000', rounded: true });
+    const group = (await getCartGroups(store.locationId, store.cityId))[0]!;
+    expect(group.items[0]).toMatchObject({ packSize: '6.000', minBatch: '18.000' });
   });
 });

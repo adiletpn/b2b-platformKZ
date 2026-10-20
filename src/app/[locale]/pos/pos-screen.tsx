@@ -468,7 +468,8 @@ export function PosScreen({
       setError({ key: data.status ?? 'unknown' });
       return;
     }
-    setApproval({ ...approval, issued: data.code });
+    // У мока SMS код в ответе, с настоящим провайдером он только в SMS старшему.
+    setApproval({ ...approval, issued: data.code ?? '' });
   }
 
   async function submitCashOp() {
@@ -1112,12 +1113,14 @@ export function PosScreen({
                 >
                   {t('approvalConfirm')}
                 </Button>
-                {approval.issued ? (
+                {approval.issued !== undefined ? (
                   <p
                     className="text-muted-foreground w-full text-xs"
                     data-testid="pos-approval-issued"
                   >
-                    {t('approvalIssued', { code: approval.issued })}
+                    {approval.issued
+                      ? t('approvalIssued', { code: approval.issued })
+                      : t('approvalSmsSent')}
                   </p>
                 ) : null}
               </div>

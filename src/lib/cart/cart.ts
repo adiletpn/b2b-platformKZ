@@ -31,6 +31,7 @@ export type CartSupplierGroup = {
     unitKk: string;
     quantity: string;
     packSize: string;
+    minBatch: string;
     priceWithVat: string;
     lineTotal: string;
   }[];
@@ -89,6 +90,7 @@ export async function getCartGroups(
       unitKk: item.offer.product.unit.nameKk,
       quantity: quantity.toFixed(3),
       packSize: item.offer.packSize.toFixed(3),
+      minBatch: item.offer.minBatch.toFixed(3),
       priceWithVat: price.toFixed(2),
       lineTotal: lineTotal.toFixed(2),
     });
@@ -107,10 +109,15 @@ export async function getCartGroups(
   });
 }
 
-/** Количество приводится к кратности упаковки; 0 убирает позицию. */
+/**
+ * Количество приводится к кратности упаковки; 0 убирает позицию. Меньше минимальной
+ * партии поставщик не отгружает (раздел 3.2 ТЗ), поэтому такое количество поднимается до неё.
+ */
 export async function setCartItem(locationId: string, offerId: string, quantity: Decimal) {
   const offer = await prisma.supplierOffer.findUniqueOrThrow({ where: { id: offerId } });
-  const rounded = roundToPackSize(quantity, new Decimal(offer.packSize.toString()));
+  const minBatch = new Decimal(offer.minBatch.toString());
+  const wanted = quantity.greaterThan(0) && quantity.lessThan(minBatch) ? minBatch : quantity;
+  const rounded = roundToPackSize(wanted, new Decimal(offer.packSize.toString()));
   const cart = await getOrCreateCart(locationId);
 
   if (rounded.lessThanOrEqualTo(0)) {

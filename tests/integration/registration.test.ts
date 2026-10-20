@@ -84,9 +84,10 @@ describe('регистрация компании', () => {
     expect(await prisma.company.count()).toBe(0);
   });
 
-  it('registration_rejects_bin_missing_from_registry', async () => {
+  it('registration_outside_registry_needs_entered_details', async () => {
     const user = await createUser('+77010000004');
-    // Валидная контрольная сумма, но такого БИН нет в мок-реестре.
+    // Валидная контрольная сумма, но такого БИН нет в мок-реестре: без названия и адреса
+    // компания не создаётся. Полный сценарий — registration-outside-registry.test.ts.
     const result = await registerCompany({
       userId: user.id,
       bin: '180340001112',
@@ -95,7 +96,7 @@ describe('регистрация компании', () => {
       consentAccepted: true,
     });
 
-    expect(result.status).toBe('bin_not_found');
+    expect(result.status).toBe('missing_company_details');
     expect(await prisma.company.count()).toBe(0);
   });
 

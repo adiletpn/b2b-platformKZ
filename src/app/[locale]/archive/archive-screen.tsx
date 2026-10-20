@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Field } from '@/components/ui/field';
 import { EmptyState, Page, PageHeader } from '@/components/ui/page';
 import { DocumentSignatures, type SignatureMark } from '@/components/document-signatures';
+import { AttachmentsPanel, type FileRow } from '@/components/attachments-panel';
 
 type Row = {
   id: string;
@@ -38,11 +39,13 @@ export function ArchiveScreen({
   initialDocuments,
   title,
   canSign,
+  files,
 }: {
   locale: 'ru' | 'kk';
   initialDocuments: Row[];
   title: string;
   canSign: boolean;
+  files: { initial: FileRow[]; canUpload: boolean; canDelete: boolean };
 }) {
   const t = useTranslations('archive');
   const tTypes = useTranslations('documents.types');
@@ -153,6 +156,11 @@ export function ArchiveScreen({
                   <tr key={row.id} className="hover:bg-muted/40">
                     <td className="px-4 py-2.5 font-mono text-xs whitespace-nowrap">
                       {row.number}
+                      {row.version > 1 ? (
+                        <Badge tone="warning" className="ml-2" data-testid="archive-version">
+                          {t('versionShort', { version: row.version })}
+                        </Badge>
+                      ) : null}
                     </td>
                     <td className="px-4 py-2.5">
                       <Badge tone={row.outgoing ? 'info' : 'neutral'}>{tTypes(row.type)}</Badge>
@@ -196,6 +204,12 @@ export function ArchiveScreen({
           </div>
         </Card>
       )}
+
+      <AttachmentsPanel
+        initialFiles={files.initial}
+        canUpload={files.canUpload}
+        canDelete={files.canDelete}
+      />
     </Page>
   );
 }

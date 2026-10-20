@@ -1,8 +1,9 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { redirect } from '@/i18n/navigation';
 import { getActiveCompany } from '@/lib/auth/active-company';
-import { getAccess, hasPermission } from '@/lib/auth/permissions';
+import { permissionFlags } from '@/lib/auth/permissions';
 import { searchDocuments } from '@/lib/archive/search';
+import { listAttachments } from '@/lib/files/attachments';
 import { ArchiveScreen } from './archive-screen';
 
 export default async function ArchivePage({ params }: { params: Promise<{ locale: string }> }) {
@@ -14,15 +15,19 @@ export default async function ArchivePage({ params }: { params: Promise<{ locale
 
   const documents = await searchDocuments(active!.companyId);
   const t = await getTranslations('archive');
-  const access = await getAccess();
-  const canSign = access ? await hasPermission(access, 'DOCUMENTS_PAYMENTS', 'SIGN') : false;
+  const can = await permissionFlags('DOCUMENTS_PAYMENTS', ['SIGN', 'CREATE', 'DELETE']);
 
   return (
     <ArchiveScreen
       locale={locale === 'kk' ? 'kk' : 'ru'}
       initialDocuments={documents}
       title={t('title')}
-      canSign={canSign}
+      canSign={can.SIGN}
+      files={{
+        initial: (await listAttachments(active!.companyId)) ?? [],
+        canUpload: can.CREATE,
+        canDelete: can.DELETE,
+      }}
     />
   );
 }

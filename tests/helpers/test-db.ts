@@ -33,6 +33,10 @@ export async function resetTransactionalData(prisma: PrismaClient) {
   await prisma.stockDocument.deleteMany();
   await prisma.stockMovement.deleteMany();
   await prisma.stockBalance.deleteMany();
+  await prisma.attachmentBlob.deleteMany();
+  await prisma.attachment.deleteMany();
+  await prisma.documentVersion.deleteMany();
+  await prisma.documentSignature.deleteMany();
   await prisma.document.deleteMany();
   await prisma.orderItem.deleteMany();
   await prisma.orderStatusLog.deleteMany();

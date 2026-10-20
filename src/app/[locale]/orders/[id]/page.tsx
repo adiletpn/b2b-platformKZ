@@ -2,13 +2,24 @@ import { notFound } from 'next/navigation';
 import { setRequestLocale } from 'next-intl/server';
 import { redirect } from '@/i18n/navigation';
 import { getActiveCompany } from '@/lib/auth/active-company';
-import { getAccess, hasPermission } from '@/lib/auth/permissions';
+import { permissionFlags } from '@/lib/auth/permissions';
 import { formatDateTime } from '@/lib/format';
 import { getOnlinePayment } from '@/lib/payments/online';
+import { listDocumentVersions } from '@/lib/documents/versions';
+import { listAttachments } from '@/lib/files/attachments';
+import type { DocumentPayload } from '@/lib/documents/payload';
 import { isLiveGateway } from '@/mocks/payment-gateway';
 import { sideOf } from '@/lib/orders/workflow';
 import { prisma } from '@/lib/prisma';
 import { OrderDetail } from './order-detail';
+
+/** Подписи прошлых версий остаются в базе, в карточке — только по текущей. */
+function currentSignatures<T extends { version: number }>(document: {
+  version: number;
+  signatures: T[];
+}) {
+  return document.signatures.filter((signature) => signature.version === document.version);
+}
 
 export default async function OrderPage({
   params,
@@ -42,8 +53,10 @@ export default async function OrderPage({
   const side = sideOf(order, active!.companyId);
   if (!side) notFound();
 
-  const access = await getAccess();
-  const canSign = access ? await hasPermission(access, 'DOCUMENTS_PAYMENTS', 'SIGN') : false;
+  const can = await permissionFlags('DOCUMENTS_PAYMENTS', ['SIGN', 'UPDATE', 'CREATE', 'DELETE']);
+  const versions = await Promise.all(
+    order.documents.map((document) => listDocumentVersions(document.id, active!.companyId)),
+  );
   const onlinePayment =
     side === 'store' ? await getOnlinePayment(order.id, active!.companyId) : null;
 
@@ -53,6 +66,11 @@ export default async function OrderPage({
       side={side}
       onlinePayment={onlinePayment}
       mockGateway={!isLiveGateway()}
+      files={{
+        initial: (await listAttachments(active!.companyId, order.id)) ?? [],
+        canUpload: can.CREATE,
+        canDelete: can.DELETE,
+      }}
       order={{
         id: order.id,
         number: order.number,
@@ -91,20 +109,26 @@ export default async function OrderPage({
           bik: order.supplier.bik,
           bankName: order.supplier.bankName,
         },
-        documents: order.documents.map((document) => ({
+        documents: order.documents.map((document, index) => ({
           id: document.id,
           type: document.type,
           number: document.number,
           totalWithVat: document.totalWithVat.toFixed(2),
-          signatures: document.signatures.map((signature) => ({
+          versions: versions[index] ?? [],
+          deliveryAddress: (document.payload as unknown as DocumentPayload).deliveryAddress,
+          // Исправляет выписавшая сторона (раздел 4.3 ТЗ).
+          canCorrect: can.UPDATE && document.issuerId === active!.companyId,
+          signatures: currentSignatures(document).map((signature) => ({
             signerName: signature.signerName,
             signedAt: formatDateTime(signature.signedAt),
             certificate: signature.certificate,
           })),
           // Подписывает каждая сторона один раз, при наличии права SIGN (раздел 3.12 ТЗ).
           canSign:
-            canSign &&
-            !document.signatures.some((signature) => signature.companyId === active!.companyId),
+            can.SIGN &&
+            !currentSignatures(document).some(
+              (signature) => signature.companyId === active!.companyId,
+            ),
         })),
       }}
     />

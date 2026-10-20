@@ -9,7 +9,9 @@ import { Field } from '@/components/ui/field';
 import { Page, PageHeader } from '@/components/ui/page';
 import { OrderStatusBadge } from '@/components/order-status-badge';
 import { DocumentSignatures, type SignatureMark } from '@/components/document-signatures';
+import { AttachmentsPanel, type FileRow } from '@/components/attachments-panel';
 import { OnlinePaymentPanel, type OnlinePayment } from './online-payment-panel';
+import { DocumentVersions, type VersionRow } from './document-versions';
 
 import type { DocumentType, OrderStatus as Status } from '@/generated/prisma/enums';
 
@@ -31,6 +33,9 @@ type DocumentRow = {
   totalWithVat: string;
   signatures: SignatureMark[];
   canSign: boolean;
+  versions: VersionRow[];
+  deliveryAddress: string;
+  canCorrect: boolean;
 };
 
 type Order = {
@@ -64,12 +69,14 @@ export function OrderDetail({
   order,
   onlinePayment,
   mockGateway,
+  files,
 }: {
   locale: 'ru' | 'kk';
   side: 'store' | 'supplier';
   order: Order;
   onlinePayment: OnlinePayment | null;
   mockGateway: boolean;
+  files: { initial: FileRow[]; canUpload: boolean; canDelete: boolean };
 }) {
   const t = useTranslations('orders');
   const tDocuments = useTranslations('documents');
@@ -494,6 +501,13 @@ export function OrderDetail({
                   signatures={document.signatures}
                   canSign={document.canSign}
                 />
+                <DocumentVersions
+                  documentId={document.id}
+                  locale={locale}
+                  versions={document.versions}
+                  deliveryAddress={document.deliveryAddress}
+                  canCorrect={document.canCorrect}
+                />
               </li>
             ))}
           </ul>
@@ -788,6 +802,13 @@ export function OrderDetail({
           {order.disputeReason}
         </p>
       ) : null}
+
+      <AttachmentsPanel
+        orderId={order.id}
+        initialFiles={files.initial}
+        canUpload={files.canUpload}
+        canDelete={files.canDelete}
+      />
 
       <section className="mt-6">
         <h2 className="text-muted-foreground text-sm font-medium">{t('history')}</h2>

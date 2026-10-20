@@ -328,6 +328,10 @@ const SETTINGS = [
   // В демо компании подтверждаются автоматически, иначе показ упирается в модерацию.
   { key: 'auto_verify_companies', value: 'true' },
   { key: 'platform_name', value: 'B2B-платформа (демо)' },
+  // Раздел 4.2 ТЗ: подакцизный товар (алкоголь, табак) продаётся только в эти часы.
+  // TODO(open-question): часы и возраст сверяются с юристом и местными правилами акимата.
+  { key: 'excise_sale_hours', value: '08:00-23:00' },
+  { key: 'excise_min_age', value: '21' },
 ];
 
 async function main() {

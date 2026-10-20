@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Field } from '@/components/ui/field';
 import { Page, PageHeader } from '@/components/ui/page';
 import { OrderStatusBadge } from '@/components/order-status-badge';
+import { OrderProgress } from '@/components/order-progress';
 import { DocumentSignatures, type SignatureMark } from '@/components/document-signatures';
 import { AttachmentsPanel, type FileRow } from '@/components/attachments-panel';
 import { OnlinePaymentPanel, type OnlinePayment } from './online-payment-panel';
@@ -294,6 +295,8 @@ export function OrderDetail({
           </>
         }
       />
+
+      <OrderProgress status={order.status} history={order.statusLogs.map((log) => log.toStatus)} />
 
       {order.status === 'CHANGED_BY_SUPPLIER' && side === 'store' ? (
         <p className="mt-3 text-sm text-amber-700" data-testid="order-changed-notice">
@@ -812,11 +815,14 @@ export function OrderDetail({
 
       <section className="mt-6">
         <h2 className="text-muted-foreground text-sm font-medium">{t('history')}</h2>
-        <ol className="mt-2 space-y-1 text-sm" data-testid="status-history">
+        <ol
+          className="border-border mt-3 ml-1.5 space-y-3 border-l pl-4 text-sm"
+          data-testid="status-history"
+        >
           {order.statusLogs.map((log, index) => (
             <li
               key={`${log.toStatus}-${index}`}
-              className="flex flex-wrap items-baseline justify-between gap-2"
+              className="before:bg-primary before:ring-background relative flex flex-wrap items-baseline justify-between gap-2 before:absolute before:top-1.5 before:-left-[21px] before:size-2.5 before:rounded-full before:ring-4"
             >
               <span>
                 {t(`status.${log.toStatus}`)}

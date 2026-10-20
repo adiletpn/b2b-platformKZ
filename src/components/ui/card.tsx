@@ -1,4 +1,5 @@
 import * as React from 'react';
+import type { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 function Card({ className, ...props }: React.ComponentProps<'section'>) {
@@ -18,4 +19,64 @@ function CardHint({ className, ...props }: React.ComponentProps<'p'>) {
   return <p className={cn('text-muted-foreground mt-1 text-xs', className)} {...props} />;
 }
 
-export { Card, CardTitle, CardHint };
+const TONES = {
+  primary: 'bg-primary-soft text-primary',
+  success: 'bg-success-soft text-success',
+  warning: 'bg-warning-soft text-warning',
+  danger: 'bg-danger-soft text-danger',
+  accent: 'bg-accent-soft text-warning',
+  neutral: 'bg-muted text-muted-foreground',
+} as const;
+
+/** Иконка в цветной плашке: заголовки карточек, показатели, пустые состояния. */
+function IconBadge({
+  icon: Icon,
+  tone = 'primary',
+  className,
+}: {
+  icon: LucideIcon;
+  tone?: keyof typeof TONES;
+  className?: string;
+}) {
+  return (
+    <span
+      aria-hidden
+      className={cn('grid size-9 shrink-0 place-items-center rounded-lg', TONES[tone], className)}
+    >
+      <Icon className="size-[18px]" />
+    </span>
+  );
+}
+
+/** Показатель кабинета: подпись, крупное число и пояснение. */
+function StatCard({
+  icon,
+  tone,
+  label,
+  value,
+  hint,
+  className,
+  ...props
+}: {
+  icon: LucideIcon;
+  tone?: keyof typeof TONES;
+  label: string;
+  value: React.ReactNode;
+  hint?: React.ReactNode;
+} & Omit<React.ComponentProps<'section'>, 'children'>) {
+  return (
+    <Card
+      className={cn('flex flex-col items-start gap-2 p-3.5 sm:flex-row sm:gap-3 sm:p-4', className)}
+      {...props}
+    >
+      <IconBadge icon={icon} tone={tone} />
+      <div className="min-w-0">
+        <p className="text-muted-foreground text-xs">{label}</p>
+        <p className="mt-0.5 text-lg font-semibold tabular-nums sm:text-xl">{value}</p>
+        {hint ? <p className="text-muted-foreground mt-0.5 text-xs">{hint}</p> : null}
+      </div>
+    </Card>
+  );
+}
+
+export { Card, CardTitle, CardHint, IconBadge, StatCard };

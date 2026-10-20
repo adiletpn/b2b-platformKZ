@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import { hasLocale, NextIntlClientProvider } from 'next-intl';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { routing } from '@/i18n/routing';
-import { AppHeader } from '@/components/app-header';
+import { AppShell } from '@/components/app-header';
 import { ServiceWorkerRegistration } from '@/components/service-worker';
 import '../globals.css';
 
@@ -43,9 +43,8 @@ export default async function LocaleLayout({
       <body>
         <NextIntlClientProvider>
           {/* Шапка общая: разделы, язык и выход доступны с любого экрана. */}
-          <AppHeader />
+          <AppShell>{children}</AppShell>
           <ServiceWorkerRegistration />
-          {children}
         </NextIntlClientProvider>
       </body>
     </html>

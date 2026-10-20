@@ -1,17 +1,23 @@
 import { getTranslations } from 'next-intl/server';
+import { LogIn } from 'lucide-react';
 import { Link } from '@/i18n/navigation';
 import { getSession } from '@/lib/auth/session';
+import { Badge } from '@/components/ui/badge';
+import { buttonVariants } from '@/components/ui/button';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { LogoutButton } from '@/components/logout-button';
+import { NavLinks } from '@/components/nav-links';
 
 type NavItem = {
   href:
+    | '/dashboard'
     | '/feed'
     | '/cart'
     | '/orders'
     | '/stock'
     | '/pos'
     | '/catalog'
+    | '/deliveries'
     | '/ratings'
     | '/requisites'
     | '/employees'
@@ -20,12 +26,44 @@ type NavItem = {
     | '/chat';
   label: string;
   testId: string;
+  icon: string;
 };
 
-/** Общая шапка: бренд, разделы по типу компании, язык и выход. */
-export async function AppHeader() {
+export type NavGroup = { label: string; items: NavItem[] };
+
+/** Знак платформы: плейсхолдер, логотип заказчик не передал (TZ-demo 8.6). */
+function Brand({
+  name,
+  href,
+  compact = false,
+}: {
+  name: string;
+  href: '/' | '/dashboard';
+  compact?: boolean;
+}) {
+  return (
+    <Link href={href} className="flex min-w-0 items-center gap-2.5">
+      <span
+        aria-hidden
+        className="from-primary grid size-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br to-[oklch(0.62_0.14_200)] text-sm font-bold text-white shadow-sm"
+      >
+        B
+      </span>
+      <span className={`truncate text-sm font-semibold ${compact ? 'hidden sm:inline' : ''}`}>
+        {name}
+      </span>
+    </Link>
+  );
+}
+
+/**
+ * Оболочка кабинета: разделы по типу компании, язык и выход. Гость видит только
+ * верхнюю строку со входом. Содержимое страницы сдвигается под боковое меню.
+ */
+export async function AppShell({ children }: { children: React.ReactNode }) {
   const t = await getTranslations('dashboard');
   const tApp = await getTranslations('app');
+  const tType = await getTranslations('companyType');
 
   // Компания уже приходит вместе с сессией: лишний запрос к базе на каждый рендер не нужен.
   const session = await getSession();
@@ -35,64 +73,108 @@ export async function AppHeader() {
     ) ?? session?.user.memberships.find((item) => item.status === 'ACTIVE');
   const company = membership?.company ?? null;
 
-  const items: NavItem[] = [];
-  if (company) {
-    if (company.type !== 'SUPPLIER') {
-      items.push({ href: '/feed', label: t('feedLink'), testId: 'go-feed' });
-      items.push({ href: '/cart', label: t('cartLink'), testId: 'go-cart' });
-      items.push({ href: '/stock', label: t('stockLink'), testId: 'go-stock' });
-      items.push({ href: '/pos', label: t('posLink'), testId: 'go-pos' });
-    }
-    if (company.type !== 'STORE') {
-      items.push({ href: '/catalog', label: t('catalogLink'), testId: 'go-catalog' });
-      items.push({
-        href: '/settlements',
-        label: t('settlementsLink'),
-        testId: 'go-settlements',
-      });
-    }
-    items.push({ href: '/orders', label: t('ordersLink'), testId: 'go-orders' });
-    items.push({ href: '/archive', label: t('archiveLink'), testId: 'go-archive' });
-    items.push({ href: '/chat', label: t('chatLink'), testId: 'go-chat' });
-    items.push({ href: '/ratings', label: t('ratingsLink'), testId: 'go-ratings' });
-    items.push({ href: '/requisites', label: t('requisitesLink'), testId: 'go-requisites' });
-    items.push({ href: '/employees', label: t('employeesLink'), testId: 'go-employees' });
+  if (!company) {
+    return (
+      <>
+        <header className="border-border bg-card/80 sticky top-0 z-30 border-b backdrop-blur">
+          <div className="mx-auto flex w-full max-w-6xl items-center gap-3 px-4 py-2.5 sm:px-6">
+            <Brand name={tApp('name')} href="/" />
+            <div className="ml-auto flex items-center gap-2">
+              <LanguageSwitcher />
+            </div>
+          </div>
+        </header>
+        {children}
+      </>
+    );
   }
 
+  const store = company.type !== 'SUPPLIER';
+  const supplier = company.type !== 'STORE';
+  const item = (href: NavItem['href'], key: string, icon: string): NavItem => ({
+    href,
+    label: t(key as 'feedLink'),
+    testId: `go-${href.slice(1)}`,
+    icon,
+  });
+
+  const groups: NavGroup[] = [
+    {
+      label: t('navGroups.main'),
+      items: [
+        item('/dashboard', 'dashboardLink', 'dashboard'),
+        ...(store ? [item('/feed', 'feedLink', 'feed'), item('/cart', 'cartLink', 'cart')] : []),
+        item('/orders', 'ordersLink', 'orders'),
+        ...(supplier
+          ? [
+              item('/catalog', 'catalogLink', 'catalog'),
+              item('/deliveries', 'deliveriesLink', 'deliveries'),
+            ]
+          : []),
+      ],
+    },
+    ...(store
+      ? [
+          {
+            label: t('navGroups.warehouse'),
+            items: [item('/stock', 'stockLink', 'stock'), item('/pos', 'posLink', 'pos')],
+          },
+        ]
+      : []),
+    {
+      label: t('navGroups.documents'),
+      items: [
+        ...(supplier ? [item('/settlements', 'settlementsLink', 'settlements')] : []),
+        item('/archive', 'archiveLink', 'archive'),
+        item('/chat', 'chatLink', 'chat'),
+        item('/ratings', 'ratingsLink', 'ratings'),
+      ],
+    },
+    {
+      label: t('navGroups.company'),
+      items: [
+        item('/requisites', 'requisitesLink', 'requisites'),
+        item('/employees', 'employeesLink', 'employees'),
+      ],
+    },
+  ];
+
   return (
-    <header className="border-border bg-card/80 sticky top-0 z-20 border-b backdrop-blur">
-      <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2.5 sm:px-6">
-        <Link href={company ? '/dashboard' : '/'} className="flex items-center gap-2">
-          <span
-            aria-hidden
-            className="bg-primary text-primary-foreground grid size-7 place-items-center rounded-md text-sm font-bold"
-          >
-            B
-          </span>
-          <span className="text-sm font-semibold whitespace-nowrap">{tApp('name')}</span>
-        </Link>
-
-        {/* На телефоне разделы прокручиваются вбок: затухание справа подсказывает это. */}
-        {items.length > 0 ? (
-          <nav className="order-3 -mx-1 flex w-full gap-1 overflow-x-auto [mask-image:linear-gradient(to_right,black_85%,transparent)] sm:order-none sm:mx-0 sm:w-auto sm:[mask-image:none]">
-            {items.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                data-testid={item.testId}
-                className="text-muted-foreground hover:bg-muted hover:text-foreground rounded-md px-2.5 py-1.5 text-sm whitespace-nowrap transition-colors"
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-        ) : null}
-
-        <div className="ml-auto flex items-center gap-2">
-          <LanguageSwitcher />
-          {company ? <LogoutButton label={t('logout')} /> : null}
+    <>
+      <header className="border-border bg-card/85 lg:bg-sidebar lg:text-sidebar-foreground sticky top-0 z-30 flex flex-wrap items-center gap-x-3 border-b px-4 pt-2.5 backdrop-blur sm:px-6 lg:fixed lg:inset-y-0 lg:left-0 lg:w-64 lg:flex-col lg:flex-nowrap lg:items-stretch lg:border-r-0 lg:border-b-0 lg:px-0 lg:pt-0">
+        <div className="order-1 flex min-w-0 items-center lg:px-5 lg:pt-5 lg:pb-3">
+          <Brand name={tApp('name')} href="/dashboard" compact />
         </div>
-      </div>
-    </header>
+
+        <div
+          className="order-4 hidden min-w-0 lg:order-2 lg:mx-3 lg:mb-1 lg:block lg:rounded-xl lg:bg-white/5 lg:px-3 lg:py-2.5"
+          data-testid="shell-company"
+        >
+          <p className="truncate text-sm font-medium">{company.name}</p>
+          <Badge tone="info" className="mt-1">
+            {tType(company.type)}
+          </Badge>
+        </div>
+
+        <div className="order-2 ml-auto flex items-center gap-2 lg:order-5 lg:ml-0 lg:justify-between lg:border-t lg:border-white/10 lg:px-4 lg:py-3">
+          <LanguageSwitcher inShell />
+          <LogoutButton label={t('logout')} />
+        </div>
+
+        <NavLinks groups={groups} />
+      </header>
+
+      <div className="lg:pl-64">{children}</div>
+    </>
+  );
+}
+
+/** Ссылка входа для гостевых страниц. */
+export function LoginLink({ label }: { label: string }) {
+  return (
+    <Link href="/login" className={buttonVariants({ size: 'sm' })} data-testid="go-login">
+      <LogIn aria-hidden />
+      {label}
+    </Link>
   );
 }

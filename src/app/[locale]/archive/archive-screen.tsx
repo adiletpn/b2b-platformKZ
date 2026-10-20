@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Field } from '@/components/ui/field';
 import { EmptyState, Page, PageHeader } from '@/components/ui/page';
+import { DocumentSignatures, type SignatureMark } from '@/components/document-signatures';
 
 type Row = {
   id: string;
@@ -20,6 +21,8 @@ type Row = {
   totalWithVat: string;
   version: number;
   outgoing: boolean;
+  signatures: SignatureMark[];
+  signedByMe: boolean;
 };
 
 const TYPES: DocumentType[] = [
@@ -34,10 +37,12 @@ export function ArchiveScreen({
   locale,
   initialDocuments,
   title,
+  canSign,
 }: {
   locale: 'ru' | 'kk';
   initialDocuments: Row[];
   title: string;
+  canSign: boolean;
 }) {
   const t = useTranslations('archive');
   const tTypes = useTranslations('documents.types');
@@ -131,7 +136,7 @@ export function ArchiveScreen({
       ) : (
         <Card className="mt-4 overflow-hidden p-0">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px] text-sm">
+            <table className="w-full min-w-[880px] text-sm">
               <thead className="text-muted-foreground border-border bg-muted/50 border-b text-left">
                 <tr>
                   <th className="px-4 py-2.5 font-medium">{t('number')}</th>
@@ -139,6 +144,7 @@ export function ArchiveScreen({
                   <th className="px-4 py-2.5 font-medium">{t('date')}</th>
                   <th className="px-4 py-2.5 font-medium">{t('counterparty')}</th>
                   <th className="px-4 py-2.5 text-right font-medium">{t('total')}</th>
+                  <th className="px-4 py-2.5 font-medium">{t('signatures')}</th>
                   <th className="px-4 py-2.5" />
                 </tr>
               </thead>
@@ -154,6 +160,15 @@ export function ArchiveScreen({
                     <td className="px-4 py-2.5 whitespace-nowrap">{row.issuedAt}</td>
                     <td className="px-4 py-2.5 break-words">{row.counterpartyName}</td>
                     <td className="px-4 py-2.5 text-right tabular-nums">{row.totalWithVat}</td>
+                    <td className="px-4 py-2.5">
+                      <DocumentSignatures
+                        documentId={row.id}
+                        signatures={row.signatures}
+                        canSign={canSign && !row.signedByMe}
+                        compact
+                        onSigned={() => void reload({})}
+                      />
+                    </td>
                     <td className="px-4 py-2.5 text-right">
                       <a
                         href={`/api/documents/${row.id}/pdf?locale=${locale}`}

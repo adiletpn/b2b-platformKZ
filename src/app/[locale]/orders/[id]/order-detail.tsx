@@ -8,6 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Field } from '@/components/ui/field';
 import { Page, PageHeader } from '@/components/ui/page';
 import { OrderStatusBadge } from '@/components/order-status-badge';
+import { DocumentSignatures, type SignatureMark } from '@/components/document-signatures';
+import { OnlinePaymentPanel, type OnlinePayment } from './online-payment-panel';
 
 import type { DocumentType, OrderStatus as Status } from '@/generated/prisma/enums';
 
@@ -27,6 +29,8 @@ type DocumentRow = {
   type: DocumentType;
   number: string;
   totalWithVat: string;
+  signatures: SignatureMark[];
+  canSign: boolean;
 };
 
 type Order = {
@@ -58,10 +62,14 @@ export function OrderDetail({
   locale,
   side,
   order,
+  onlinePayment,
+  mockGateway,
 }: {
   locale: 'ru' | 'kk';
   side: 'store' | 'supplier';
   order: Order;
+  onlinePayment: OnlinePayment | null;
+  mockGateway: boolean;
 }) {
   const t = useTranslations('orders');
   const tDocuments = useTranslations('documents');
@@ -242,6 +250,9 @@ export function OrderDetail({
   const canRequestPayment =
     order.status === 'ACCEPTED_BY_STORE' || order.status === 'ACCEPTED_WITH_DISCREPANCY';
   const canPay = side === 'store' && order.status === 'AWAITING_PAYMENT';
+  // Раздел 3.6 ТЗ: онлайн-оплата доступна и по просроченной заявке.
+  const canPayOnline =
+    side === 'store' && (order.status === 'AWAITING_PAYMENT' || order.status === 'OVERDUE');
   // Раздел 3.4 ТЗ: магазин может отменить заявку до статуса «Собирается», с причиной.
   const canRate = order.status === 'CLOSED' && order.myRatingScore === null;
   const canCancel =
@@ -454,28 +465,35 @@ export function OrderDetail({
       {order.documents.length > 0 ? (
         <section className="border-border bg-card shadow-card mt-5 rounded-xl border p-4 sm:p-5">
           <h2 className="text-muted-foreground text-sm font-medium">{tDocuments('title')}</h2>
-          <ul className="mt-2 space-y-2 text-sm" data-testid="order-documents">
+          <ul className="mt-2 space-y-3 text-sm" data-testid="order-documents">
             {order.documents.map((document) => (
               <li
                 key={document.id}
-                className="flex flex-wrap items-center justify-between gap-2"
+                className="space-y-1.5"
                 data-testid={`document-${document.type}`}
               >
-                <span className="min-w-0 break-words">
-                  {tDocuments(`types.${document.type}`)} № {document.number}
-                </span>
-                <span className="flex items-center gap-3">
-                  <span className="tabular-nums">{document.totalWithVat} ₸</span>
-                  <a
-                    href={`/api/documents/${document.id}/pdf?locale=${locale}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className={buttonVariants({ variant: 'outline', size: 'sm' })}
-                    data-testid={`document-pdf-${document.type}`}
-                  >
-                    {tDocuments('open')}
-                  </a>
-                </span>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="min-w-0 break-words">
+                    {tDocuments(`types.${document.type}`)} № {document.number}
+                  </span>
+                  <span className="flex items-center gap-3">
+                    <span className="tabular-nums">{document.totalWithVat} ₸</span>
+                    <a
+                      href={`/api/documents/${document.id}/pdf?locale=${locale}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className={buttonVariants({ variant: 'outline', size: 'sm' })}
+                      data-testid={`document-pdf-${document.type}`}
+                    >
+                      {tDocuments('open')}
+                    </a>
+                  </span>
+                </div>
+                <DocumentSignatures
+                  documentId={document.id}
+                  signatures={document.signatures}
+                  canSign={document.canSign}
+                />
               </li>
             ))}
           </ul>
@@ -588,6 +606,10 @@ export function OrderDetail({
             {tPayment('toPayment')}
           </Button>
         </section>
+      ) : null}
+
+      {canPayOnline ? (
+        <OnlinePaymentPanel orderId={order.id} initial={onlinePayment} mockGateway={mockGateway} />
       ) : null}
 
       {canPay ? (

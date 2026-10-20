@@ -2,6 +2,10 @@ import { notFound } from 'next/navigation';
 import { setRequestLocale } from 'next-intl/server';
 import { redirect } from '@/i18n/navigation';
 import { getActiveCompany } from '@/lib/auth/active-company';
+import { getAccess, hasPermission } from '@/lib/auth/permissions';
+import { formatDateTime } from '@/lib/format';
+import { getOnlinePayment } from '@/lib/payments/online';
+import { isLiveGateway } from '@/mocks/payment-gateway';
 import { sideOf } from '@/lib/orders/workflow';
 import { prisma } from '@/lib/prisma';
 import { OrderDetail } from './order-detail';
@@ -23,7 +27,10 @@ export default async function OrderPage({
       store: { select: { name: true } },
       items: { include: { offer: { include: { product: { include: { unit: true } } } } } },
       statusLogs: { orderBy: { createdAt: 'asc' } },
-      documents: { orderBy: { issuedAt: 'asc' } },
+      documents: {
+        orderBy: { issuedAt: 'asc' },
+        include: { signatures: { orderBy: { signedAt: 'asc' } } },
+      },
       payments: { orderBy: { createdAt: 'asc' } },
       ratings: true,
       supplier: { select: { name: true, iik: true, bik: true, bankName: true } },
@@ -35,10 +42,17 @@ export default async function OrderPage({
   const side = sideOf(order, active!.companyId);
   if (!side) notFound();
 
+  const access = await getAccess();
+  const canSign = access ? await hasPermission(access, 'DOCUMENTS_PAYMENTS', 'SIGN') : false;
+  const onlinePayment =
+    side === 'store' ? await getOnlinePayment(order.id, active!.companyId) : null;
+
   return (
     <OrderDetail
       locale={locale === 'kk' ? 'kk' : 'ru'}
       side={side}
+      onlinePayment={onlinePayment}
+      mockGateway={!isLiveGateway()}
       order={{
         id: order.id,
         number: order.number,
@@ -82,6 +96,15 @@ export default async function OrderPage({
           type: document.type,
           number: document.number,
           totalWithVat: document.totalWithVat.toFixed(2),
+          signatures: document.signatures.map((signature) => ({
+            signerName: signature.signerName,
+            signedAt: formatDateTime(signature.signedAt),
+            certificate: signature.certificate,
+          })),
+          // Подписывает каждая сторона один раз, при наличии права SIGN (раздел 3.12 ТЗ).
+          canSign:
+            canSign &&
+            !document.signatures.some((signature) => signature.companyId === active!.companyId),
         })),
       }}
     />

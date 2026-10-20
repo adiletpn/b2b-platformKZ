@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { notify } from '@/mocks/notifications';
+import { isBlocked } from './extras';
 
 export const MESSAGE_MAX_LENGTH = 2000;
 
@@ -57,7 +58,8 @@ export type SendResult =
   | { status: 'ok'; messageId: string }
   | { status: 'not_found' }
   | { status: 'empty_message' }
-  | { status: 'too_long' };
+  | { status: 'too_long' }
+  | { status: 'blocked' };
 
 export async function sendMessage(
   chatId: string,
@@ -73,6 +75,10 @@ export async function sendMessage(
   if (!chat || (chat.storeId !== companyId && chat.supplierId !== companyId)) {
     return { status: 'not_found' };
   }
+
+  // Раздел 3.7 ТЗ: заблокированная переписка закрыта для обеих сторон.
+  const otherId = chat.storeId === companyId ? chat.supplierId : chat.storeId;
+  if (await isBlocked(companyId, otherId)) return { status: 'blocked' };
 
   const text = rawText.trim();
   if (text.length === 0) return { status: 'empty_message' };
@@ -155,7 +161,11 @@ export async function getMessages(chatId: string, companyId: string) {
       store: { select: { id: true, name: true } },
       supplier: { select: { id: true, name: true } },
       order: { select: { number: true } },
-      messages: { orderBy: { createdAt: 'asc' }, take: 200 },
+      messages: {
+        orderBy: { createdAt: 'asc' },
+        take: 200,
+        include: { attachments: { select: { id: true, mimeType: true } } },
+      },
     },
   });
   if (!chat || (chat.storeId !== companyId && chat.supplierId !== companyId)) return null;
@@ -171,6 +181,12 @@ export async function getMessages(chatId: string, companyId: string) {
       mine: message.authorCompanyId === companyId,
       read: message.readAt !== null,
       createdAt: message.createdAt.toISOString(),
+      file: message.attachments[0]
+        ? {
+            id: message.attachments[0].id,
+            image: message.attachments[0].mimeType.startsWith('image/'),
+          }
+        : null,
     })),
   };
 }

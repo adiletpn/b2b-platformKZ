@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requirePermission } from '@/lib/auth/permissions';
 import { getMessages, sendMessage } from '@/lib/chat/chat';
+import { blockState } from '@/lib/chat/extras';
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const guard = await requirePermission('SWIPE_ORDERS', 'VIEW');
@@ -15,7 +16,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   const chat = await getMessages(id, guard.access.companyId);
   if (!chat) return NextResponse.json({ error: 'not_found' }, { status: 404 });
 
-  return NextResponse.json(chat);
+  return NextResponse.json({ ...chat, block: await blockState(id, guard.access.companyId) });
 }
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {

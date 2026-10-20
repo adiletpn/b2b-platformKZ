@@ -50,6 +50,8 @@ export type UploadInput = {
   companyId: string;
   userId: string;
   orderId?: string;
+  /** Файл сообщения чата: доступ к переписке проверяет вызывающий код. */
+  messageId?: string;
   kind: string;
   fileName: string;
   data: Uint8Array;
@@ -97,6 +99,7 @@ export async function uploadAttachment(input: UploadInput): Promise<UploadResult
         data: {
           companyId: input.companyId,
           orderId: input.orderId ?? null,
+          messageId: input.messageId ?? null,
           kind: input.kind as AttachmentKind,
           fileName,
           mimeType,
@@ -142,7 +145,7 @@ export async function listAttachments(
   if (orderId && !(await ownOrder(orderId, companyId))) return null;
 
   const rows = await prisma.attachment.findMany({
-    where: orderId ? { orderId } : { companyId, orderId: null },
+    where: orderId ? { orderId } : { companyId, orderId: null, messageId: null },
     include: { company: { select: { name: true } } },
     orderBy: { createdAt: 'desc' },
   });
@@ -162,14 +165,21 @@ export async function listAttachments(
 export async function readAttachment(id: string, companyId: string) {
   const attachment = await prisma.attachment.findUnique({
     where: { id },
-    include: { blob: true, order: { select: { storeId: true, supplierId: true } } },
+    include: {
+      blob: true,
+      order: { select: { storeId: true, supplierId: true } },
+      message: { select: { chat: { select: { storeId: true, supplierId: true } } } },
+    },
   });
   if (!attachment?.blob) return null;
 
+  // Файл видят: владелец, стороны заявки, стороны переписки (правило 4).
+  const parties = [attachment.order, attachment.message?.chat].filter(
+    (item): item is { storeId: string; supplierId: string } => Boolean(item),
+  );
   const allowed =
     attachment.companyId === companyId ||
-    (attachment.order !== null &&
-      (attachment.order.storeId === companyId || attachment.order.supplierId === companyId));
+    parties.some((party) => party.storeId === companyId || party.supplierId === companyId);
   if (!allowed) return null;
 
   return {

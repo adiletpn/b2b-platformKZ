@@ -19,6 +19,9 @@ import { inviteEmployee, acceptPendingInvitations } from '../src/lib/employees/i
 import { createCustomRole, updateEmployeeAccess } from '../src/lib/employees/roles';
 import { decideDiscrepancyAct } from '../src/lib/documents/returns';
 import { assignPlan } from '../src/lib/admin/tariffs';
+import { savePaymentTerms } from '../src/lib/payments/terms';
+import { saveLicense } from '../src/lib/licenses/licenses';
+import { setMarkup, repriceAll } from '../src/lib/stock/pricing';
 
 type ProductSeed = {
   barcode: string;
@@ -256,6 +259,71 @@ const DRINKS: ProductSeed[] = [
     stock: '240',
   },
 ];
+
+/**
+ * Подакцизный, маркированный и лицензируемый товар (разделы 2 и 4.2 ТЗ): на нём показываются
+ * лицензия, DataMatrix на кассе и подтверждение возраста. Данные вымышленные.
+ */
+const EXCISE: ProductSeed[] = [
+  {
+    barcode: '4870003000061',
+    nameRu: 'Пиво светлое, 0,5 л (тест)',
+    nameKk: 'Ашық сыра, 0,5 л (тест)',
+    category: 'drinks',
+    unit: 'pcs',
+    priceWithoutVat: '410.00',
+    packSize: '20',
+    minBatch: '40',
+    stock: '400',
+  },
+];
+
+/** Полный путь заявки до приёмки: товар приходует на склад магазина документом движения. */
+async function deliverAndAccept(
+  store: { companyId: string; userId: string; locationId: string; cityId: string },
+  supplier: { companyId: string; userId: string },
+  offerIds: string[],
+) {
+  for (const offerId of offerIds) {
+    await recordSwipe(store.companyId, store.locationId, offerId, 'LIKE');
+  }
+  const result = await checkout({
+    storeId: store.companyId,
+    locationId: store.locationId,
+    cityId: store.cityId,
+    userId: store.userId,
+  });
+  if (result.status !== 'created') throw new Error(`заявка: ${result.status}`);
+  const orderId = result.orders[0]!.id;
+  const order = await prisma.order.findUniqueOrThrow({
+    where: { id: orderId },
+    include: { items: true },
+  });
+  await confirmOrder(
+    orderId,
+    supplier.companyId,
+    supplier.userId,
+    order.items.map((item) => ({
+      orderItemId: item.id,
+      quantityConfirmed: item.quantityOrdered.toFixed(3),
+    })),
+  );
+  await createWaybillAndInvoice(orderId, supplier.companyId);
+  for (const status of ['PICKING', 'SHIPPED', 'DELIVERED'] as const) {
+    await changeStatus(orderId, supplier.companyId, supplier.userId, status);
+  }
+  await acceptDelivery(
+    orderId,
+    store.companyId,
+    store.userId,
+    order.items.map((item) => ({
+      orderItemId: item.id,
+      quantityAccepted: item.quantityOrdered.toFixed(3),
+      quantityDefective: '0.000',
+    })),
+  );
+  return orderId;
+}
 
 async function createCompany(options: {
   phone: string;
@@ -689,6 +757,59 @@ async function main() {
   const admin = await prisma.adminUser.findFirstOrThrow({ where: { role: 'SUPERADMIN' } });
   await assignPlan(admin.id, store.companyId, 'START', 0);
   await assignPlan(admin.id, grocery.companyId, 'BUSINESS', 3);
+
+  // Лицензируемый товар: пиво у поставщика напитков. Лицензия есть у него и у магазина
+  // в Таразе, у магазина в Алматы её нет — там пиво в каталоге не видно (раздел 2 ТЗ).
+  await fillCatalog(drinks.companyId, EXCISE);
+  await prisma.product.updateMany({
+    where: { barcode: { in: EXCISE.map((item) => item.barcode) } },
+    data: { isExcise: true, isMarked: true, isLicensed: true },
+  });
+  await saveLicense(drinks.companyId, { number: 'ТЕСТ-ЛИЦ-0001', validUntil: '2027-12-31' });
+  await saveLicense(store.companyId, { number: 'ТЕСТ-УВЕД-0002', validUntil: '2027-12-31' });
+  const beer = await prisma.supplierOffer.findFirstOrThrow({
+    where: { supplierId: drinks.companyId, product: { barcode: EXCISE[0]!.barcode } },
+  });
+  await deliverAndAccept(store, drinks, [beer.id]);
+
+  // Касса: розничные цены от себестоимости с наценкой 25%, чтобы на кассе было что продавать.
+  await setMarkup(store.companyId, null, '25');
+  await repriceAll(store.companyId, store.userId);
+
+  // Замена от поставщика (раздел 3.4 ТЗ): первой позиции нет, предложен другой товар.
+  const dairyOffers = await prisma.supplierOffer.findMany({
+    where: { supplierId: dairy.companyId },
+    orderBy: { id: 'asc' },
+  });
+  const substituted = await makeOrder(store, dairy.companyId, 3);
+  const substitutedOrder = await prisma.order.findUniqueOrThrow({
+    where: { id: substituted },
+    include: { items: true },
+  });
+  const inOrder = new Set(substitutedOrder.items.map((item) => item.offerId));
+  const replacement = dairyOffers.find((offer) => !inOrder.has(offer.id))!;
+  await confirmOrder(
+    substituted,
+    dairy.companyId,
+    dairy.userId,
+    substitutedOrder.items.map((item, index) =>
+      index === 0
+        ? {
+            orderItemId: item.id,
+            quantityConfirmed: '0',
+            substituteOfferId: replacement.id,
+            substituteQuantity: item.quantityOrdered.toFixed(3),
+          }
+        : { orderItemId: item.id, quantityConfirmed: item.quantityOrdered.toFixed(3) },
+    ),
+  );
+
+  // Кредитный лимит бакалеи: у магазина в Алматы просроченный долг, новая заявка встанет на паузу.
+  await savePaymentTerms(grocery.companyId, {
+    paymentTerms: 'DEFERRED',
+    deferralDays: '7',
+    creditLimit: '30000',
+  });
 
   // Каналы уведомлений: у молочного поставщика только мессенджеры.
   await prisma.company.update({

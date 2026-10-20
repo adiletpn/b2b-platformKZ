@@ -295,9 +295,34 @@ QR на отрендеренной форме сверен внешним дек
 Попутно исправлено: свайп брал смещение из устаревшего состояния React; e2e свайпа на 375 px
 жал мимо карточки; тест приёмки зависел от порядка позиций.
 
+## Сверка с полным ТЗ: недостающее и дизайн, 20.10.2026
+
+| Что проверено                                                                     | Тесты                                                                                                                                                                                                                                                                                                  |
+| :-------------------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Касса: скидки на позицию и чек до копейки, лимит скидки кассира                   | `line_and_receipt_discounts_sum_exactly_to_kopecks`, `discounts_lower_total_and_respect_cashier_limit`, e2e `cashier_sells_with_discount_and_gets_change`                                                                                                                                              |
+| Касса: смешанная оплата, сдача, внесение/изъятие, X-отчёт, отчёт по кассирам      | `mixed_payment_must_match_total_and_cash_gives_change`, `cash_in_and_out_change_drawer_and_cannot_take_more`, `refund_of_mixed_receipt_reverses_parts_and_period_report_counts_cashiers`, e2e `mixed_payment_splits_cash_and_card`, `cash_in_and_x_report_show_drawer`, `held_receipt_returns_to_cart` |
+| Касса: маркировка DataMatrix, подакцизный товар, электронный чек                  | `marked_goods_need_one_unique_code_per_unit`, `excise_goods_need_age_confirmation_and_allowed_hours`, `electronic_receipt_only_for_own_company_and_valid_phone`, `pos-restrictions.test.ts`                                                                                                            |
+| Водитель: доставка, накладная, фото подписанной бумаги; магазину действия закрыты | `driver_sees_shipped_order_with_address_and_waybill`, `driver_marks_delivered_and_attaches_signed_waybill_photo`, `store_cannot_use_driver_actions`, e2e `driver_delivers_order_with_photo_of_signed_waybill`                                                                                          |
+| Кредитный лимит ставит заявку на паузу, после оплаты долга она уходит             | `order_over_credit_limit_is_paused_and_not_sent`, `paused_order_is_resent_after_debt_goes_down`, `other_store_cannot_resend_and_limit_is_validated`                                                                                                                                                    |
+| «Нет в наличии» и замена от поставщика с согласием магазина                       | `supplier_offers_substitute_and_store_agrees`, `substitute_must_be_own_new_offer_with_positive_quantity`, e2e `supplier_marks_out_of_stock_and_offers_substitute`                                                                                                                                      |
+| Приёмка сканером штрихкодов и DataMatrix                                          | e2e `store_accepts_delivery_by_scanner`                                                                                                                                                                                                                                                                |
+| Лицензируемые товары видны только при лицензии у обеих сторон                     | `licensed_goods_visible_only_when_both_sides_hold_valid_license`, `license_input_is_validated`                                                                                                                                                                                                         |
+| Документ в Excel совпадает с PDF по итогам, на двух языках                        | `xlsx_matches_document_totals_in_both_languages`                                                                                                                                                                                                                                                       |
+| Чат: шаблоны, поиск, файлы, блокировка, жалоба модератору                         | `chat-extras.test.ts` (5 тестов), e2e `supplier_answers_with_template_and_store_complains`                                                                                                                                                                                                             |
+| Админка: блокировка пользователя, обращения, рассылки по сегменту, отчёты Excel   | `admin-ops.test.ts` (5 тестов), e2e `store_asks_support_and_gets_answer`, `blocked_user_loses_access_and_cannot_log_in`                                                                                                                                                                                |
+
+Дизайн: новая оболочка с боковой панелью и меню на телефоне, лендинг, кабинет со
+статистикой, шкала статусов заявки, экраны кассы, входа и реквизитов собраны из общих
+компонентов. Все e2e идут на 375 и 1280 px с проверкой отсутствия горизонтальной прокрутки.
+
+Попутно закрыто: поставщик видел черновики магазина; `Decimal('0').isPositive()` в decimal.js
+возвращает true — количество замены проверяется через `greaterThan(0)`.
+
+Что осталось по ТЗ — [REMAINING.md](REMAINING.md).
+
 ## Итог по тестам на 20.10.2026
 
-Vitest: 334 теста в 44 файлах. Playwright: 206 тестов, 150 прогоняются, 56 пропускаются
+Vitest: 368 тестов в 52 файлах. Playwright: 226 тестов, 167 прогоняются, 59 пропускаются
 намеренно (сценарии уровня логики гоняются в одном вьюпорте). Typecheck, lint и
 production-сборка — без ошибок.
 

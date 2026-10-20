@@ -40,7 +40,7 @@ export default async function PosPage({ params }: { params: Promise<{ locale: st
           name: locale === 'kk' ? balance.product.nameKk : balance.product.nameRu,
           barcode: balance.product.barcode,
           price: priceByProduct.get(balance.productId)!.toFixed(2),
-          quantity: '1',
+          stock: balance.quantity.toFixed(3),
         }))}
       initialShift={
         shift
@@ -48,6 +48,14 @@ export default async function PosPage({ params }: { params: Promise<{ locale: st
           : null
       }
       initialReport={report}
+      maxDiscount={
+        (
+          await prisma.membership.findUnique({
+            where: { id: access!.membershipId },
+            select: { maxDiscount: true },
+          })
+        )?.maxDiscount?.toFixed(2) ?? null
+      }
     />
   );
 }

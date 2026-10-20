@@ -6,7 +6,7 @@ import { createOfferManually } from '@/lib/catalog/manual';
 import { applyBalanceChange } from '@/lib/stock/balance';
 import { receiveBatch } from '@/lib/stock/batches';
 import { setMarkup, repriceAll } from '@/lib/stock/pricing';
-import { closeShift, getZReport, openShift } from '@/lib/pos/shift';
+import { cashOperation, closeShift, getSalesReport, getZReport, openShift } from '@/lib/pos/shift';
 import { refund, sell } from '@/lib/pos/sale';
 import { testPoolBin } from '@/mocks/bin-registry';
 
@@ -281,5 +281,158 @@ describe('возврат и Z-отчёт', () => {
 
     // Правило 4: чужая смена недоступна.
     expect(await getZReport(other.companyId, opened.shiftId)).toBeNull();
+  });
+});
+
+describe('скидки, оплата и наличные (раздел 4.2 ТЗ)', () => {
+  it('discounts_lower_total_and_respect_cashier_limit', async () => {
+    const shop = await shopReadyToSell(12);
+    await openShift(shop.companyId, shop.userId, shop.locationId);
+    const line = { productId: shop.productId, quantity: '2', discountPercent: '10' };
+
+    // Кассиру разрешено не больше 15%: 10% на позицию и 10% на чек дают 19%.
+    expect(
+      await sell(
+        shop.companyId,
+        shop.userId,
+        shop.locationId,
+        { clientId: 'd-1', paymentType: 'CARD', lines: [line], receiptDiscountPercent: '10' },
+        { maxDiscount: '15.00' },
+      ),
+    ).toEqual({ status: 'discount_too_high', limit: '15.00' });
+    expect(await prisma.receipt.count()).toBe(0);
+
+    const sold = await sell(
+      shop.companyId,
+      shop.userId,
+      shop.locationId,
+      { clientId: 'd-2', paymentType: 'CARD', lines: [line], receiptDiscountPercent: '5' },
+      { maxDiscount: '15.00' },
+    );
+    // 2 × 130 = 260, −10% = 234, −5% = 222.30.
+    expect(sold).toMatchObject({ status: 'ok', total: '222.30', discount: '37.70' });
+    const item = await prisma.receiptItem.findFirstOrThrow();
+    expect(item.discount.toFixed(2)).toBe('37.70');
+    expect(item.total.toFixed(2)).toBe('222.30');
+
+    expect(
+      await sell(shop.companyId, shop.userId, shop.locationId, {
+        clientId: 'd-3',
+        paymentType: 'CARD',
+        lines: [{ ...line, discountPercent: '150' }],
+      }),
+    ).toEqual({ status: 'invalid_discount' });
+  });
+
+  it('mixed_payment_must_match_total_and_cash_gives_change', async () => {
+    const shop = await shopReadyToSell(12);
+    await openShift(shop.companyId, shop.userId, shop.locationId);
+    const lines = [{ productId: shop.productId, quantity: '1' }];
+
+    expect(
+      await sell(shop.companyId, shop.userId, shop.locationId, {
+        clientId: 'm-1',
+        paymentType: 'MIXED',
+        lines,
+        cashAmount: '100.00',
+        cardAmount: '20.00',
+      }),
+    ).toEqual({ status: 'payment_mismatch', total: '130.00' });
+    expect(
+      await sell(shop.companyId, shop.userId, shop.locationId, {
+        clientId: 'm-2',
+        paymentType: 'MIXED',
+        lines,
+        cashAmount: '100.00',
+        cardAmount: '30.00',
+      }),
+    ).toMatchObject({ status: 'ok', total: '130.00' });
+
+    expect(
+      await sell(shop.companyId, shop.userId, shop.locationId, {
+        clientId: 'c-1',
+        paymentType: 'CASH',
+        lines,
+        cashReceived: '100',
+      }),
+    ).toEqual({ status: 'not_enough_cash', total: '130.00' });
+    expect(
+      await sell(shop.companyId, shop.userId, shop.locationId, {
+        clientId: 'c-2',
+        paymentType: 'CASH',
+        lines,
+        cashReceived: '200',
+      }),
+    ).toMatchObject({ status: 'ok', change: '70.00' });
+
+    // В отчёте смешанная оплата делится на наличные и карту.
+    const shift = await prisma.posShift.findFirstOrThrow({ where: { companyId: shop.companyId } });
+    const report = (await getZReport(shop.companyId, shift.id))!;
+    expect(report.byPayment).toEqual({ CASH: '230.00', CARD: '30.00', QR: '0.00' });
+    expect(report.averageCheck).toBe('130.00');
+    expect(report.margin).toBe('60.00');
+  });
+
+  it('cash_in_and_out_change_drawer_and_cannot_take_more', async () => {
+    const shop = await shopReadyToSell(12);
+    await openShift(shop.companyId, shop.userId, shop.locationId, '1000');
+    const op = (type: 'CASH_IN' | 'CASH_OUT', amount: string, reason = 'размен') =>
+      cashOperation(shop.companyId, shop.userId, shop.locationId, { type, amount, reason });
+
+    expect((await op('CASH_IN', '500')).status).toBe('ok');
+    expect((await op('CASH_OUT', '300', 'инкассация')).status).toBe('ok');
+    expect(await op('CASH_OUT', '5000', 'инкассация')).toEqual({
+      status: 'not_enough_cash',
+      available: '1200.00',
+    });
+    expect((await op('CASH_IN', '10', ' ')).status).toBe('reason_required');
+    expect((await op('CASH_IN', '-5')).status).toBe('invalid_amount');
+
+    const shift = await prisma.posShift.findFirstOrThrow({ where: { companyId: shop.companyId } });
+    expect(await getZReport(shop.companyId, shift.id)).toMatchObject({
+      cashIn: '500.00',
+      cashOut: '300.00',
+      expectedCash: '1200.00',
+    });
+    // Без открытой смены операция не проходит.
+    await closeShift(shop.companyId, shop.userId, shift.id);
+    expect((await op('CASH_IN', '10')).status).toBe('no_open_shift');
+  });
+
+  it('refund_of_mixed_receipt_reverses_parts_and_period_report_counts_cashiers', async () => {
+    const shop = await shopReadyToSell(12);
+    await openShift(shop.companyId, shop.userId, shop.locationId);
+    const sold = await sell(shop.companyId, shop.userId, shop.locationId, {
+      clientId: 'r-1',
+      paymentType: 'MIXED',
+      lines: [{ productId: shop.productId, quantity: '2' }],
+      cashAmount: '60.00',
+      cardAmount: '200.00',
+    });
+    if (sold.status !== 'ok') throw new Error(sold.status);
+    await sell(shop.companyId, shop.userId, shop.locationId, {
+      clientId: 'r-2',
+      paymentType: 'QR',
+      lines: [{ productId: shop.productId, quantity: '1' }],
+    });
+    await refund(shop.companyId, shop.userId, sold.receiptId);
+
+    const now = Date.now();
+    const report = await getSalesReport(
+      shop.companyId,
+      new Date(now - 3_600_000),
+      new Date(now + 3_600_000),
+    );
+    expect(report).toMatchObject({ receipts: 2, refunds: 1, total: '130.00' });
+    expect(report.byPayment).toEqual({ CASH: '0.00', CARD: '0.00', QR: '130.00' });
+    expect(report.byCashier).toHaveLength(1);
+    expect(report.topProducts[0]).toMatchObject({ quantity: '1.000', total: '130.00' });
+    // Правило 4: чужая компания отчёта не получит.
+    const other = await getSalesReport(
+      'another-company',
+      new Date(now - 3_600_000),
+      new Date(now + 3_600_000),
+    );
+    expect(other.receipts).toBe(0);
   });
 });

@@ -1,87 +1,161 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useEffect, useMemo, useState } from 'react';
+import { useLocale, useTranslations } from 'next-intl';
+import {
+  Banknote,
+  CreditCard,
+  Minus,
+  PauseCircle,
+  Plus,
+  QrCode,
+  ScanBarcode,
+  Search,
+  Split,
+  Trash2,
+  Wifi,
+  WifiOff,
+} from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Field } from '@/components/ui/field';
-import { Card, CardTitle } from '@/components/ui/card';
+import { Card, CardHint, CardTitle } from '@/components/ui/card';
 import { Page, PageHeader } from '@/components/ui/page';
+import { cn } from '@/lib/utils';
 
-type Item = { productId: string; name: string; barcode: string; price: string; quantity: string };
+type Product = { productId: string; name: string; barcode: string; price: string; stock: string };
+type Line = Product & { quantity: string; discountPercent: string };
 type Shift = { id: string; number: string; openedAt: string } | null;
 type Report = {
   receipts: number;
   refunds: number;
   total: string;
   byPayment: { CASH: string; CARD: string; QR: string };
+  discounts: string;
+  margin: string;
+  averageCheck: string;
+  openingCash: string;
+  cashIn: string;
+  cashOut: string;
   expectedCash: string;
+  byCashier: { name: string; receipts: number; total: string }[];
+  topProducts: { nameRu: string; nameKk: string; quantity: string; total: string }[];
 } | null;
 
 const QUEUE_KEY = 'pos-offline-queue';
-const PAYMENTS = ['CASH', 'CARD', 'QR'] as const;
+const HELD_KEY = 'pos-held-receipts';
+const PAYMENTS = ['CASH', 'CARD', 'QR', 'MIXED'] as const;
+const PAYMENT_ICONS = { CASH: Banknote, CARD: CreditCard, QR: QrCode, MIXED: Split } as const;
 
 type QueuedSale = {
   clientId: string;
   paymentType: (typeof PAYMENTS)[number];
-  lines: { productId: string; quantity: string }[];
+  lines: { productId: string; quantity: string; discountPercent?: string }[];
+  receiptDiscountPercent?: string;
+  cashAmount?: string;
+  cardAmount?: string;
+  cashReceived?: string;
 };
 
-/** Очередь офлайн-чеков переживает перезагрузку: хранится в браузере кассы. */
-function readQueue(): QueuedSale[] {
+type HeldReceipt = { id: string; at: string; lines: Line[]; receiptDiscount: string };
+
+/** Очереди кассы переживают перезагрузку: хранятся в браузере. */
+function readStored<T>(key: string): T[] {
   try {
-    return JSON.parse(localStorage.getItem(QUEUE_KEY) ?? '[]') as QueuedSale[];
+    return JSON.parse(localStorage.getItem(key) ?? '[]') as T[];
   } catch {
     return [];
   }
 }
 
-function writeQueue(queue: QueuedSale[]) {
+function writeStored<T>(key: string, value: T[]) {
   try {
-    localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
+    localStorage.setItem(key, JSON.stringify(value));
   } catch {
     // Приватный режим браузера: очередь живёт только в памяти.
   }
 }
 
-/** Касса (раздел 4.2 ТЗ): продажа, возврат, смена и Z-отчёт, работа без сети. */
+const money = (value: number) => (Math.round(value * 100) / 100).toFixed(2);
+
+/** Предпросмотр суммы в интерфейсе; точный расчёт копеек делает сервер (receipt-math). */
+function previewTotals(lines: Line[], receiptDiscount: string) {
+  const subtotal = lines.reduce((sum, line) => {
+    const gross = Number(line.price) * Number(line.quantity || '0');
+    return sum + gross * (1 - Number(line.discountPercent || '0') / 100);
+  }, 0);
+  const gross = lines.reduce(
+    (sum, line) => sum + Number(line.price) * Number(line.quantity || '0'),
+    0,
+  );
+  const total = subtotal * (1 - Number(receiptDiscount || '0') / 100);
+  return { gross, total: Math.round(total * 100) / 100 };
+}
+
+/**
+ * Касса (раздел 4.2 ТЗ): плитки товаров и сканер, скидки на позицию и чек, наличные со
+ * сдачей, карта, Kaspi QR и смешанная оплата, отложенные чеки, X/Z-отчёт, внесение и
+ * изъятие наличных. Без сети чеки копятся в очереди и уходят по `clientId` без дублей.
+ */
 export function PosScreen({
   products,
   initialShift,
   initialReport,
+  maxDiscount,
 }: {
-  products: Item[];
+  products: Product[];
   initialShift: Shift;
   initialReport: Report;
+  maxDiscount: string | null;
 }) {
   const t = useTranslations('pos');
 
   const [shift, setShift] = useState<Shift>(initialShift);
   const [report, setReport] = useState<Report>(initialReport);
-  const [cart, setCart] = useState<Item[]>([]);
+  const [cart, setCart] = useState<Line[]>([]);
   const [scan, setScan] = useState('');
+  const [query, setQuery] = useState('');
   const [payment, setPayment] = useState<(typeof PAYMENTS)[number]>('CASH');
+  const [receiptDiscount, setReceiptDiscount] = useState('');
+  const [cashReceived, setCashReceived] = useState('');
+  const [mixedCash, setMixedCash] = useState('');
   const [cash, setCash] = useState('0');
+  const [cashOp, setCashOp] = useState<{
+    type: 'CASH_IN' | 'CASH_OUT';
+    amount: string;
+    reason: string;
+  } | null>(null);
+  const [showReport, setShowReport] = useState(false);
+  const [held, setHeld] = useState<HeldReceipt[]>([]);
   const [queued, setQueued] = useState(0);
-  const [notice, setNotice] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [online, setOnline] = useState(true);
+  const [notice, setNotice] = useState<{ key: string; change?: string } | null>(null);
+  const [error, setError] = useState<{ key: string; value?: string } | null>(null);
   const [lastReceipt, setLastReceipt] = useState<{ id: string; number: string } | null>(null);
   const [pending, setPending] = useState(false);
 
   // Очередь офлайн-чеков уходит на сервер, как только появляется связь.
   useEffect(() => {
     const sync = () => {
+      setOnline(navigator.onLine);
+      setHeld(readStored<HeldReceipt>(HELD_KEY));
       void flushQueue();
     };
+    const offline = () => setOnline(false);
     sync();
     window.addEventListener('online', sync);
-    return () => window.removeEventListener('online', sync);
+    window.addEventListener('offline', offline);
+    return () => {
+      window.removeEventListener('online', sync);
+      window.removeEventListener('offline', offline);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /** Отправка отложенных чеков: идентификатор чека делает повтор безопасным. */
   async function flushQueue() {
-    const queue = readQueue();
+    const queue = readStored<QueuedSale>(QUEUE_KEY);
     const left: QueuedSale[] = [];
 
     for (const sale of queue) {
@@ -97,7 +171,7 @@ export function PosScreen({
       }
     }
 
-    writeQueue(left);
+    writeStored(QUEUE_KEY, left);
     setQueued(left.length);
     if (left.length < queue.length) await refresh();
   }
@@ -110,28 +184,88 @@ export function PosScreen({
     setReport(data.report);
   }
 
-  const total = cart.reduce(
-    (sum, item) => sum + Number(item.price) * Number(item.quantity || '0'),
-    0,
-  );
+  const visible = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    return needle
+      ? products.filter(
+          (product) =>
+            product.name.toLowerCase().includes(needle) || product.barcode.includes(needle),
+        )
+      : products;
+  }, [products, query]);
+
+  const totals = previewTotals(cart, receiptDiscount);
+  const change = payment === 'CASH' && cashReceived ? Number(cashReceived) - totals.total : null;
+
+  function add(product: Product) {
+    setError(null);
+    setCart((current) => {
+      const existing = current.find((item) => item.productId === product.productId);
+      if (!existing) return [...current, { ...product, quantity: '1', discountPercent: '' }];
+      return current.map((item) =>
+        item.productId === product.productId
+          ? { ...item, quantity: String(Number(item.quantity) + 1) }
+          : item,
+      );
+    });
+  }
 
   function addByBarcode(code: string) {
     const found = products.find((product) => product.barcode === code.trim());
     setScan('');
     if (!found) {
-      setError('not_found');
+      setError({ key: 'not_found' });
       return;
     }
-    setError(null);
-    setCart((current) => {
-      const existing = current.find((item) => item.productId === found.productId);
-      if (!existing) return [...current, { ...found, quantity: '1' }];
-      return current.map((item) =>
-        item.productId === found.productId
-          ? { ...item, quantity: String(Number(item.quantity) + 1) }
-          : item,
-      );
-    });
+    add(found);
+  }
+
+  function updateLine(productId: string, patch: Partial<Line>) {
+    setCart((current) =>
+      current.map((item) => (item.productId === productId ? { ...item, ...patch } : item)),
+    );
+  }
+
+  function step(productId: string, delta: number) {
+    setCart((current) =>
+      current
+        .map((item) =>
+          item.productId === productId
+            ? { ...item, quantity: String(Math.max(0, Number(item.quantity) + delta)) }
+            : item,
+        )
+        .filter((item) => Number(item.quantity) > 0),
+    );
+  }
+
+  function resetReceipt() {
+    setCart([]);
+    setReceiptDiscount('');
+    setCashReceived('');
+    setMixedCash('');
+  }
+
+  /** Отложенный чек (раздел 4.2 ТЗ): покупатель отошёл — обслуживаем следующего. */
+  function hold() {
+    if (cart.length === 0) return;
+    const next = [
+      ...held,
+      { id: crypto.randomUUID(), at: new Date().toISOString(), lines: cart, receiptDiscount },
+    ];
+    setHeld(next);
+    writeStored(HELD_KEY, next);
+    resetReceipt();
+    setNotice({ key: 'held' });
+  }
+
+  function restore(id: string) {
+    const receipt = held.find((item) => item.id === id);
+    if (!receipt) return;
+    const next = held.filter((item) => item.id !== id);
+    setHeld(next);
+    writeStored(HELD_KEY, next);
+    setCart(receipt.lines);
+    setReceiptDiscount(receipt.receiptDiscount);
   }
 
   async function sell() {
@@ -143,7 +277,15 @@ export function PosScreen({
     const sale: QueuedSale = {
       clientId: crypto.randomUUID(),
       paymentType: payment,
-      lines: cart.map((item) => ({ productId: item.productId, quantity: item.quantity })),
+      lines: cart.map((item) => ({
+        productId: item.productId,
+        quantity: item.quantity,
+        discountPercent: item.discountPercent || undefined,
+      })),
+      receiptDiscountPercent: receiptDiscount || undefined,
+      cashReceived: payment === 'CASH' && cashReceived ? cashReceived : undefined,
+      cashAmount: payment === 'MIXED' ? mixedCash || '0' : undefined,
+      cardAmount: payment === 'MIXED' ? money(totals.total - Number(mixedCash || '0')) : undefined,
     };
 
     try {
@@ -156,71 +298,92 @@ export function PosScreen({
         status?: string;
         number?: string;
         receiptId?: string;
+        change?: string;
+        limit?: string;
+        total?: string;
       };
       if (data.status !== 'ok') {
-        setError(data.status ?? 'unknown');
+        setError({ key: data.status ?? 'unknown', value: data.limit ?? data.total });
         setPending(false);
         return;
       }
       setLastReceipt({ id: data.receiptId!, number: data.number! });
-      setNotice('sold');
-      setCart([]);
+      setNotice({ key: 'sold', change: data.change });
+      resetReceipt();
       await refresh();
     } catch {
       // Связи нет: чек ждёт синхронизации, касса продолжает работать.
-      const queue = [...readQueue(), sale];
-      writeQueue(queue);
+      const queue = [...readStored<QueuedSale>(QUEUE_KEY), sale];
+      writeStored(QUEUE_KEY, queue);
       setQueued(queue.length);
-      setNotice('queued');
-      setCart([]);
+      setNotice({ key: 'queued' });
+      resetReceipt();
     }
     setPending(false);
   }
 
-  async function shiftAction(action: 'open' | 'close') {
+  async function post(path: string, body: unknown) {
     setPending(true);
     setError(null);
-    const response = await fetch('/api/pos/shift', {
+    const response = await fetch(path, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ action, shiftId: shift?.id, cash }),
+      body: JSON.stringify(body),
     });
-    const data = (await response.json()) as { status?: string };
+    const data = (await response.json().catch(() => ({}))) as {
+      status?: string;
+      error?: string;
+      available?: string;
+    };
     setPending(false);
     if (data.status !== 'ok') {
-      setError(data.status ?? 'unknown');
-      return;
+      setError({ key: data.status ?? data.error ?? 'unknown', value: data.available });
+      return false;
     }
     await refresh();
+    return true;
   }
 
   async function refundLast() {
     if (!lastReceipt) return;
-    setPending(true);
-    const response = await fetch('/api/pos/refund', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ receiptId: lastReceipt.id }),
-    });
-    const data = (await response.json()) as { status?: string };
-    setPending(false);
-    if (data.status !== 'ok') {
-      setError(data.status ?? 'unknown');
-      return;
+    if (await post('/api/pos/refund', { receiptId: lastReceipt.id })) {
+      setNotice({ key: 'refunded' });
+      setLastReceipt(null);
     }
-    setNotice('refunded');
-    setLastReceipt(null);
-    await refresh();
+  }
+
+  async function submitCashOp() {
+    if (!cashOp) return;
+    if (await post('/api/pos/cash', cashOp)) {
+      setNotice({ key: cashOp.type === 'CASH_IN' ? 'cashIn' : 'cashOut' });
+      setCashOp(null);
+    }
   }
 
   return (
     <Page width="lg">
-      <PageHeader title={t('title')} description={t('subtitle')} />
+      <PageHeader
+        title={t('title')}
+        description={t('subtitle')}
+        actions={
+          <Badge tone={online ? 'success' : 'warning'} data-testid="pos-online">
+            {online ? (
+              <Wifi aria-hidden className="size-3.5" />
+            ) : (
+              <WifiOff aria-hidden className="size-3.5" />
+            )}
+            {online ? t('online') : t('offline')}
+          </Badge>
+        }
+      />
 
       <Card data-testid="pos-shift">
         <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <CardTitle className="text-sm">
+          <div className="min-w-0">
+            <CardTitle className="flex items-center gap-2 text-sm">
+              <span
+                className={cn('size-2 rounded-full', shift ? 'bg-success' : 'bg-muted-foreground')}
+              />
               {shift ? t('shiftOpen', { number: shift.number }) : t('shiftClosed')}
             </CardTitle>
             {report ? (
@@ -234,7 +397,35 @@ export function PosScreen({
             ) : null}
           </div>
           <div className="flex flex-wrap items-end gap-2">
-            <Field label={t('cash')}>
+            {shift ? (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  data-testid="pos-x-report"
+                  onClick={() => setShowReport((value) => !value)}
+                >
+                  {t('xReport')}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  data-testid="pos-cash-in"
+                  onClick={() => setCashOp({ type: 'CASH_IN', amount: '', reason: '' })}
+                >
+                  {t('cashIn')}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  data-testid="pos-cash-out"
+                  onClick={() => setCashOp({ type: 'CASH_OUT', amount: '', reason: '' })}
+                >
+                  {t('cashOut')}
+                </Button>
+              </>
+            ) : null}
+            <Field label={shift ? t('closingCash') : t('cash')}>
               <Input
                 className="w-28"
                 inputMode="decimal"
@@ -247,121 +438,459 @@ export function PosScreen({
               variant={shift ? 'outline' : 'default'}
               disabled={pending}
               data-testid={shift ? 'close-shift' : 'open-shift'}
-              onClick={() => void shiftAction(shift ? 'close' : 'open')}
+              onClick={() =>
+                void post('/api/pos/shift', {
+                  action: shift ? 'close' : 'open',
+                  shiftId: shift?.id,
+                  cash,
+                }).then((ok) => ok && shift && setShowReport(false))
+              }
             >
               {shift ? t('closeShift') : t('openShift')}
             </Button>
           </div>
         </div>
+
+        {cashOp ? (
+          <div className="border-border mt-4 grid grid-cols-1 items-end gap-3 rounded-lg border border-dashed p-3 sm:grid-cols-[8rem_1fr_auto]">
+            <Field label={cashOp.type === 'CASH_IN' ? t('cashInAmount') : t('cashOutAmount')}>
+              <Input
+                inputMode="decimal"
+                value={cashOp.amount}
+                data-testid="pos-cash-op-amount"
+                onChange={(event) => setCashOp({ ...cashOp, amount: event.target.value })}
+              />
+            </Field>
+            <Field label={t('cashReason')}>
+              <Input
+                value={cashOp.reason}
+                data-testid="pos-cash-op-reason"
+                onChange={(event) => setCashOp({ ...cashOp, reason: event.target.value })}
+              />
+            </Field>
+            <div className="flex gap-2">
+              <Button
+                disabled={pending}
+                data-testid="pos-cash-op-submit"
+                onClick={() => void submitCashOp()}
+              >
+                {t('save')}
+              </Button>
+              <Button variant="ghost" onClick={() => setCashOp(null)}>
+                {t('cancel')}
+              </Button>
+            </div>
+          </div>
+        ) : null}
+
+        {showReport && report ? <ReportPanel report={report} /> : null}
       </Card>
 
-      <Card className="mt-4">
-        <CardTitle className="text-sm">{t('sale')}</CardTitle>
+      <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_24rem]">
+        <Card>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <Field label={t('scan')}>
+              <div className="relative">
+                <ScanBarcode
+                  aria-hidden
+                  className="text-muted-foreground absolute top-3.5 left-3 size-4"
+                />
+                <Input
+                  className="pl-9"
+                  value={scan}
+                  placeholder={t('scanPlaceholder')}
+                  data-testid="pos-scan"
+                  onChange={(event) => setScan(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key !== 'Enter') return;
+                    event.preventDefault();
+                    addByBarcode(scan);
+                  }}
+                />
+              </div>
+            </Field>
+            <Field label={t('search')}>
+              <div className="relative">
+                <Search
+                  aria-hidden
+                  className="text-muted-foreground absolute top-3.5 left-3 size-4"
+                />
+                <Input
+                  className="pl-9"
+                  value={query}
+                  data-testid="pos-search"
+                  onChange={(event) => setQuery(event.target.value)}
+                />
+              </div>
+            </Field>
+          </div>
 
-        <div className="mt-3 flex flex-wrap items-end gap-3">
-          <Field label={t('scan')}>
-            <Input
-              className="w-48"
-              value={scan}
-              placeholder={t('scanPlaceholder')}
-              data-testid="pos-scan"
-              onChange={(event) => setScan(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key !== 'Enter') return;
-                event.preventDefault();
-                addByBarcode(scan);
-              }}
-            />
-          </Field>
-
-          <Field label={t('product')}>
-            <select
-              className="border-border bg-card h-11 rounded-lg border px-3"
-              data-testid="pos-product"
-              defaultValue=""
-              onChange={(event) => {
-                const product = products.find((item) => item.productId === event.target.value);
-                if (product) addByBarcode(product.barcode);
-                event.target.value = '';
-              }}
-            >
-              <option value="">—</option>
-              {products.map((product) => (
-                <option key={product.productId} value={product.productId}>
-                  {product.name} · {product.price} ₸
-                </option>
-              ))}
-            </select>
-          </Field>
-
-          <Field label={t('payment')}>
-            <select
-              className="border-border bg-card h-11 rounded-lg border px-3"
-              value={payment}
-              data-testid="pos-payment"
-              onChange={(event) => setPayment(event.target.value as (typeof PAYMENTS)[number])}
-            >
-              {PAYMENTS.map((type) => (
-                <option key={type} value={type}>
-                  {t(`payments.${type}`)}
-                </option>
-              ))}
-            </select>
-          </Field>
-        </div>
-
-        {cart.length > 0 ? (
-          <ul className="mt-3 space-y-1 text-sm" data-testid="pos-cart">
-            {cart.map((item) => (
-              <li key={item.productId} className="flex flex-wrap justify-between gap-2">
-                <span className="break-words">{item.name}</span>
-                <span className="tabular-nums">
-                  {item.quantity} × {item.price} ₸
-                </span>
+          <ul
+            className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-4"
+            data-testid="pos-tiles"
+          >
+            {visible.map((product) => (
+              <li key={product.productId}>
+                <button
+                  type="button"
+                  className="border-border hover:border-primary hover:bg-primary-soft/40 flex h-full w-full flex-col justify-between gap-2 rounded-lg border p-3 text-left text-sm transition-colors active:scale-[0.98]"
+                  data-testid="pos-tile"
+                  onClick={() => add(product)}
+                >
+                  <span className="line-clamp-2 font-medium break-words">{product.name}</span>
+                  <span className="flex items-baseline justify-between gap-2">
+                    <span className="font-semibold tabular-nums">{product.price} ₸</span>
+                    <span className="text-muted-foreground text-xs tabular-nums">
+                      {product.stock}
+                    </span>
+                  </span>
+                </button>
               </li>
             ))}
           </ul>
-        ) : null}
+          {visible.length === 0 ? (
+            <p className="text-muted-foreground mt-4 text-sm">{t('noProducts')}</p>
+          ) : null}
 
-        <div className="mt-4 flex flex-wrap items-center gap-3">
-          <span className="text-xl font-semibold tabular-nums" data-testid="pos-total">
-            {total.toFixed(2)} ₸
-          </span>
-          <Button
-            disabled={pending || cart.length === 0}
-            data-testid="pos-sell"
-            onClick={() => void sell()}
+          <div className="mt-4">
+            <Field label={t('product')}>
+              <select
+                className="border-border bg-card h-11 w-full rounded-lg border px-3"
+                data-testid="pos-product"
+                defaultValue=""
+                onChange={(event) => {
+                  const product = products.find((item) => item.productId === event.target.value);
+                  if (product) add(product);
+                  event.target.value = '';
+                }}
+              >
+                <option value="">—</option>
+                {products.map((product) => (
+                  <option key={product.productId} value={product.productId}>
+                    {product.name} · {product.price} ₸
+                  </option>
+                ))}
+              </select>
+            </Field>
+          </div>
+        </Card>
+
+        <Card className="flex flex-col lg:sticky lg:top-4 lg:self-start">
+          <div className="flex items-center justify-between gap-2">
+            <CardTitle className="text-sm">{t('sale')}</CardTitle>
+            {cart.length > 0 ? (
+              <Button variant="ghost" size="sm" data-testid="pos-clear" onClick={resetReceipt}>
+                <Trash2 aria-hidden />
+                {t('clear')}
+              </Button>
+            ) : null}
+          </div>
+          {maxDiscount ? <CardHint>{t('discountLimit', { limit: maxDiscount })}</CardHint> : null}
+
+          {cart.length === 0 ? (
+            <p className="text-muted-foreground mt-6 mb-4 text-center text-sm">{t('emptyCart')}</p>
+          ) : (
+            <ul className="divide-border mt-3 divide-y text-sm" data-testid="pos-cart">
+              {cart.map((item) => (
+                <li key={item.productId} className="space-y-1.5 py-2">
+                  <div className="flex justify-between gap-2">
+                    <span className="min-w-0 break-words">{item.name}</span>
+                    <span className="tabular-nums">{item.price} ₸</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="size-8"
+                      aria-label={t('less')}
+                      onClick={() => step(item.productId, -1)}
+                    >
+                      <Minus aria-hidden />
+                    </Button>
+                    <Input
+                      className="h-8 w-16 px-2 text-center"
+                      inputMode="decimal"
+                      value={item.quantity}
+                      aria-label={t('quantity')}
+                      onChange={(event) =>
+                        updateLine(item.productId, { quantity: event.target.value })
+                      }
+                    />
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="size-8"
+                      aria-label={t('more')}
+                      onClick={() => step(item.productId, 1)}
+                    >
+                      <Plus aria-hidden />
+                    </Button>
+                    <Input
+                      className="ml-auto h-8 w-20 px-2 text-right"
+                      inputMode="decimal"
+                      placeholder={t('discountShort')}
+                      value={item.discountPercent}
+                      aria-label={t('lineDiscount')}
+                      data-testid="pos-line-discount"
+                      onChange={(event) =>
+                        updateLine(item.productId, { discountPercent: event.target.value })
+                      }
+                    />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-8"
+                      aria-label={t('removeLine')}
+                      data-testid="pos-remove-line"
+                      onClick={() => step(item.productId, -Number(item.quantity))}
+                    >
+                      <Trash2 aria-hidden />
+                    </Button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <Field label={t('receiptDiscount')}>
+              <Input
+                inputMode="decimal"
+                value={receiptDiscount}
+                placeholder="0"
+                data-testid="pos-receipt-discount"
+                onChange={(event) => setReceiptDiscount(event.target.value)}
+              />
+            </Field>
+            {payment === 'CASH' ? (
+              <Field label={t('cashReceived')}>
+                <Input
+                  inputMode="decimal"
+                  value={cashReceived}
+                  data-testid="pos-cash-received"
+                  onChange={(event) => setCashReceived(event.target.value)}
+                />
+              </Field>
+            ) : payment === 'MIXED' ? (
+              <Field label={t('mixedCash')}>
+                <Input
+                  inputMode="decimal"
+                  value={mixedCash}
+                  data-testid="pos-mixed-cash"
+                  onChange={(event) => setMixedCash(event.target.value)}
+                />
+              </Field>
+            ) : null}
+          </div>
+
+          <div
+            className="mt-3 grid grid-cols-4 gap-1.5"
+            role="radiogroup"
+            aria-label={t('payment')}
           >
-            {t('sell')}
-          </Button>
-          {lastReceipt ? (
-            <Button
-              variant="outline"
-              disabled={pending}
-              data-testid="pos-refund"
-              onClick={() => void refundLast()}
-            >
-              {t('refund', { number: lastReceipt.number })}
-            </Button>
-          ) : null}
-          {queued > 0 ? (
-            <span className="text-muted-foreground text-sm" data-testid="pos-queued">
-              {t('queued', { count: queued })}
-            </span>
-          ) : null}
-        </div>
+            {PAYMENTS.map((type) => {
+              const Icon = PAYMENT_ICONS[type];
+              return (
+                <button
+                  key={type}
+                  type="button"
+                  role="radio"
+                  aria-checked={payment === type}
+                  data-testid={`pos-pay-${type}`}
+                  className={cn(
+                    'flex flex-col items-center gap-1 rounded-lg border px-1 py-2 text-[11px] transition-colors',
+                    payment === type
+                      ? 'border-primary bg-primary-soft text-primary'
+                      : 'border-border hover:bg-muted',
+                  )}
+                  onClick={() => setPayment(type)}
+                >
+                  <Icon aria-hidden className="size-4" />
+                  {t(`payments.${type}`)}
+                </button>
+              );
+            })}
+          </div>
+          <select
+            hidden
+            data-testid="pos-payment"
+            value={payment}
+            onChange={(event) => setPayment(event.target.value as (typeof PAYMENTS)[number])}
+          >
+            {PAYMENTS.map((type) => (
+              <option key={type} value={type}>
+                {type}
+              </option>
+            ))}
+          </select>
 
-        {notice ? (
-          <p className="text-muted-foreground mt-2 text-sm" data-testid="pos-notice">
-            {t(`notices.${notice}` as 'notices.sold')}
-          </p>
-        ) : null}
-        {error ? (
-          <p className="mt-2 text-sm text-red-600" role="alert" data-testid="pos-error">
-            {t(`errors.${error}` as 'errors.unknown')}
-          </p>
-        ) : null}
-      </Card>
+          <div className="border-border mt-4 space-y-1 border-t pt-3 text-sm">
+            {totals.gross !== totals.total ? (
+              <p className="text-muted-foreground flex justify-between">
+                <span>{t('discount')}</span>
+                <span className="tabular-nums">−{money(totals.gross - totals.total)} ₸</span>
+              </p>
+            ) : null}
+            {payment === 'MIXED' && cart.length > 0 ? (
+              <p
+                className="text-muted-foreground flex justify-between"
+                data-testid="pos-mixed-card"
+              >
+                <span>{t('mixedCard')}</span>
+                <span className="tabular-nums">
+                  {money(totals.total - Number(mixedCash || '0'))} ₸
+                </span>
+              </p>
+            ) : null}
+            {change !== null && change >= 0 ? (
+              <p className="flex justify-between font-medium" data-testid="pos-change">
+                <span>{t('change')}</span>
+                <span className="tabular-nums">{money(change)} ₸</span>
+              </p>
+            ) : null}
+            <p className="flex items-baseline justify-between">
+              <span>{t('total')}</span>
+              <span className="text-2xl font-semibold tabular-nums" data-testid="pos-total">
+                {money(totals.total)} ₸
+              </span>
+            </p>
+          </div>
+
+          <div className="mt-3 flex gap-2">
+            <Button
+              size="lg"
+              className="flex-1"
+              disabled={pending || cart.length === 0}
+              data-testid="pos-sell"
+              onClick={() => void sell()}
+            >
+              {t('sell')}
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              disabled={cart.length === 0}
+              aria-label={t('hold')}
+              title={t('hold')}
+              data-testid="pos-hold"
+              onClick={hold}
+            >
+              <PauseCircle aria-hidden />
+            </Button>
+          </div>
+
+          {held.length > 0 ? (
+            <div className="mt-3">
+              <p className="text-muted-foreground text-xs">{t('heldTitle')}</p>
+              <ul className="mt-1 flex flex-wrap gap-1.5" data-testid="pos-held">
+                {held.map((receipt) => (
+                  <li key={receipt.id}>
+                    <Button variant="secondary" size="sm" onClick={() => restore(receipt.id)}>
+                      {t('heldItem', {
+                        time: new Date(receipt.at).toLocaleTimeString('ru-RU', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        }),
+                        count: receipt.lines.length,
+                      })}
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            {lastReceipt ? (
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={pending}
+                data-testid="pos-refund"
+                onClick={() => void refundLast()}
+              >
+                {t('refund', { number: lastReceipt.number })}
+              </Button>
+            ) : null}
+            {queued > 0 ? (
+              <span className="text-muted-foreground text-sm" data-testid="pos-queued">
+                {t('queued', { count: queued })}
+              </span>
+            ) : null}
+          </div>
+
+          {notice ? (
+            <p className="text-success mt-2 text-sm" data-testid="pos-notice">
+              {t(`notices.${notice.key}` as 'notices.sold')}
+              {notice.change && notice.change !== '0.00'
+                ? ` ${t('changeGiven', { change: notice.change })}`
+                : ''}
+            </p>
+          ) : null}
+          {error ? (
+            <p className="text-danger mt-2 text-sm" role="alert" data-testid="pos-error">
+              {t(`errors.${error.key}` as 'errors.unknown', { value: error.value ?? '' })}
+            </p>
+          ) : null}
+        </Card>
+      </div>
     </Page>
+  );
+}
+
+/** X-отчёт открытой смены: итоги, наличные в ящике, кассиры и товары. */
+function ReportPanel({ report }: { report: NonNullable<Report> }) {
+  const t = useTranslations('pos.report');
+  const locale = useLocale();
+  const rows: [string, string][] = [
+    [t('total'), `${report.total} ₸`],
+    [t('receipts'), `${report.receipts} / ${report.refunds}`],
+    [t('averageCheck'), `${report.averageCheck} ₸`],
+    [t('discounts'), `${report.discounts} ₸`],
+    [t('margin'), `${report.margin} ₸`],
+    [t('cash'), `${report.byPayment.CASH} ₸`],
+    [t('card'), `${report.byPayment.CARD} ₸`],
+    [t('qr'), `${report.byPayment.QR} ₸`],
+    [t('opening'), `${report.openingCash} ₸`],
+    [t('cashIn'), `${report.cashIn} ₸`],
+    [t('cashOut'), `${report.cashOut} ₸`],
+    [t('expectedCash'), `${report.expectedCash} ₸`],
+  ];
+  return (
+    <div
+      className="border-border mt-4 grid grid-cols-1 gap-4 border-t pt-4 md:grid-cols-3"
+      data-testid="pos-x-report-panel"
+    >
+      <dl className="space-y-1 text-sm md:col-span-1">
+        {rows.map(([label, value]) => (
+          <div key={label} className="flex justify-between gap-3">
+            <dt className="text-muted-foreground">{label}</dt>
+            <dd className="tabular-nums">{value}</dd>
+          </div>
+        ))}
+      </dl>
+      <div className="text-sm">
+        <p className="font-medium">{t('byCashier')}</p>
+        <ul className="mt-1 space-y-1">
+          {report.byCashier.map((row) => (
+            <li key={row.name} className="flex justify-between gap-3">
+              <span className="truncate">{row.name}</span>
+              <span className="tabular-nums">{row.total} ₸</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+      <div className="text-sm">
+        <p className="font-medium">{t('topProducts')}</p>
+        <ul className="mt-1 space-y-1">
+          {report.topProducts.map((row) => (
+            <li key={row.nameRu} className="flex justify-between gap-3">
+              <span className="truncate">{locale === 'kk' ? row.nameKk : row.nameRu}</span>
+              <span className="tabular-nums">{row.total} ₸</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
   );
 }

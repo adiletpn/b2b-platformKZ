@@ -30,6 +30,8 @@ export async function getSession() {
     include: { user: { include: { memberships: { include: { company: true } } } } },
   });
   if (!session || session.expiresAt < new Date()) return null;
+  // Раздел 3.13 ТЗ: заблокированный администратором пользователь теряет доступ сразу.
+  if (session.user.blockedAt) return null;
 
   return session;
 }

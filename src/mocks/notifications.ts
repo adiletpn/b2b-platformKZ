@@ -19,7 +19,9 @@ export type NotificationEvent =
   | 'rating_received'
   | 'message_received'
   | 'owner_transferred'
-  | 'document_corrected';
+  | 'document_corrected'
+  | 'support_reply'
+  | 'platform_broadcast';
 
 export async function notify(
   companyId: string,

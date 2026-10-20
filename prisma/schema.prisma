@@ -72,6 +72,8 @@ model User {
   createdAt         DateTime  @default(now())
   /// Закон РК №94-V: согласие на обработку персональных данных (раздел 3.11 ТЗ).
   consentAcceptedAt DateTime?
+  /// Блокировка пользователя администратором (раздел 3.13 ТЗ): вход и сессии закрыты.
+  blockedAt         DateTime?
 
   memberships     Membership[]
   sessions        Session[]
@@ -85,6 +87,7 @@ model User {
   auditLogs       AuditLog[]
   attachments     Attachment[]
   messages        Message[]
+  supportTickets  SupportTicket[]
 
   @@map("users")
 }
@@ -222,6 +225,11 @@ model Company {
   supplierChats        Chat[]                 @relation("SupplierChats")
   sentMessages         Message[]              @relation("SentMessages")
   attachments          Attachment[]
+  chatTemplates        ChatTemplate[]
+  chatComplaints       ChatComplaint[]
+  chatBlocksMade       ChatBlock[]            @relation("ChatBlocker")
+  chatBlocksReceived   ChatBlock[]            @relation("ChatBlocked")
+  supportTickets       SupportTicket[]
 
   @@map("companies")
 }
@@ -1042,6 +1050,9 @@ model Attachment {
   company      Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
   orderId      String?
   order        Order?          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  /// Файл или фото в чате (раздел 3.7 ТЗ): видят обе стороны переписки.
+  messageId    String?
+  message      Message?        @relation(fields: [messageId], references: [id], onDelete: Cascade)
   kind         AttachmentKind
   fileName     String
   /// Тип определяется по содержимому файла, а не по заявлению браузера.
@@ -1247,11 +1258,13 @@ model AdminUser {
   isActive       Boolean   @default(true)
   createdAt      DateTime  @default(now())
 
-  sessions       AdminSession[]
-  decisions      VerificationRequest[]
-  auditEntries   AdminAuditLog[]
-  impersonations ImpersonationLog[]
-  templates      DocumentTemplate[]
+  sessions        AdminSession[]
+  decisions       VerificationRequest[]
+  auditEntries    AdminAuditLog[]
+  impersonations  ImpersonationLog[]
+  templates       DocumentTemplate[]
+  ticketsAssigned SupportTicket[]
+  broadcasts      Broadcast[]
 
   @@map("admin_users")
 }
@@ -1407,6 +1420,9 @@ model Message {
   readAt          DateTime?
   createdAt       DateTime  @default(now())
 
+  attachments Attachment[]
+  complaints  ChatComplaint[]
+
   @@index([chatId, createdAt])
   @@map("messages")
 }
@@ -1449,4 +1465,106 @@ model PriceRule {
 
   @@index([offerId])
   @@map("price_rules")
+}
+
+/// Шаблон быстрого ответа в чате (раздел 3.7 ТЗ): свой у каждой компании.
+model ChatTemplate {
+  id        String   @id @default(cuid())
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  text      String
+  createdAt DateTime @default(now())
+
+  @@index([companyId])
+  @@map("chat_templates")
+}
+
+enum ComplaintStatus {
+  OPEN
+  RESOLVED
+}
+
+/// Жалоба на сообщение (разделы 3.7 и 3.13 ТЗ): разбирает модератор платформы.
+model ChatComplaint {
+  id         String          @id @default(cuid())
+  messageId  String
+  message    Message         @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  companyId  String
+  company    Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  reason     String
+  status     ComplaintStatus @default(OPEN)
+  resolution String?
+  resolvedAt DateTime?
+  createdAt  DateTime        @default(now())
+
+  @@unique([messageId, companyId])
+  @@index([status, createdAt])
+  @@map("chat_complaints")
+}
+
+/// Блокировка собеседника: заблокированная компания не может писать этой (раздел 3.7 ТЗ).
+model ChatBlock {
+  id               String   @id @default(cuid())
+  blockerCompanyId String
+  blocker          Company  @relation("ChatBlocker", fields: [blockerCompanyId], references: [id], onDelete: Cascade)
+  blockedCompanyId String
+  blocked          Company  @relation("ChatBlocked", fields: [blockedCompanyId], references: [id], onDelete: Cascade)
+  createdAt        DateTime @default(now())
+
+  @@unique([blockerCompanyId, blockedCompanyId])
+  @@map("chat_blocks")
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  CLOSED
+}
+
+/// Обращение в поддержку из приложения (раздел 3.13 ТЗ): ответственный, статус, переписка.
+model SupportTicket {
+  id         String           @id @default(cuid())
+  companyId  String
+  company    Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  userId     String?
+  user       User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
+  subject    String
+  status     TicketStatus     @default(OPEN)
+  assigneeId String?
+  assignee   AdminUser?       @relation(fields: [assigneeId], references: [id], onDelete: SetNull)
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+  messages   SupportMessage[]
+
+  @@index([status, updatedAt])
+  @@index([companyId, updatedAt])
+  @@map("support_tickets")
+}
+
+model SupportMessage {
+  id        String        @id @default(cuid())
+  ticketId  String
+  ticket    SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  /// Ответ платформы или сообщение компании.
+  fromAdmin Boolean       @default(false)
+  text      String
+  createdAt DateTime      @default(now())
+
+  @@index([ticketId, createdAt])
+  @@map("support_messages")
+}
+
+/// Массовая рассылка по сегменту (раздел 3.13 ТЗ): уходит уведомлением в выбранные компанией каналы.
+model Broadcast {
+  id         String       @id @default(cuid())
+  adminId    String
+  admin      AdminUser    @relation(fields: [adminId], references: [id])
+  text       String
+  cityId     String?
+  type       CompanyType?
+  planCode   String?
+  recipients Int
+  createdAt  DateTime     @default(now())
+
+  @@map("broadcasts")
 }

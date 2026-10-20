@@ -14,10 +14,17 @@ async function getBrowser(): Promise<Browser> {
   return globalForPdf.pdfBrowser;
 }
 
+/**
+ * Шаблоны печатных форм правит администратор платформы (раздел 3.13 ТЗ), поэтому HTML
+ * рендерится без JavaScript и без сети: всё нужное (QR, штрихкод) встроено в разметку.
+ */
 export async function renderPdf(html: string): Promise<Buffer> {
   const browser = await getBrowser();
-  const context = await browser.newContext();
+  const context = await browser.newContext({ javaScriptEnabled: false });
   try {
+    await context.route('**/*', (route) =>
+      route.request().url().startsWith('data:') ? route.continue() : route.abort(),
+    );
     const page = await context.newPage();
     await page.setContent(html, { waitUntil: 'load' });
     return await page.pdf({

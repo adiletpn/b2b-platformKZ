@@ -4,6 +4,7 @@ import { getActiveCompany } from '@/lib/auth/active-company';
 import { documentHtml } from '@/lib/documents/templates';
 import { renderPdf } from '@/lib/documents/pdf';
 import { documentForPrint } from '@/lib/documents/versions';
+import { appBaseUrl, verificationUrl } from '@/lib/documents/verification';
 
 export const maxDuration = 120;
 
@@ -31,7 +32,15 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   const { document } = printable;
 
   const locale = search.get('locale') === 'kk' ? 'kk' : 'ru';
-  const html = documentHtml(document.type, printable.payload, locale);
+  // QR ведёт на страницу проверки именно этой версии: по старой бумаге видно, что есть новая.
+  const html = documentHtml(document.type, printable.payload, locale, {
+    verifyUrl: verificationUrl(
+      appBaseUrl(request),
+      locale,
+      document.verificationCode,
+      printable.version,
+    ),
+  });
   const pdf = await renderPdf(html);
 
   // Номера документов кириллические («З-2-2026-…»), а заголовки допускают только latin-1:

@@ -1,6 +1,10 @@
+import { qrSvg } from '@/lib/qr/qr';
 import type { DocumentPayload, DocumentParty } from './payload';
 
 type Locale = 'ru' | 'kk';
+
+/** Ссылка на страницу проверки документа для QR (раздел 4.4 ТЗ). */
+export type PrintOptions = { verifyUrl?: string };
 
 const LABELS = {
   ru: {
@@ -46,6 +50,7 @@ const LABELS = {
     difference: 'Разница суммы',
     actNote: 'Сумма к оплате уменьшена на величину расхождений',
     correction: 'Исправление',
+    verify: 'Проверка документа',
     correctionReason: 'Причина',
     currency: '₸',
   },
@@ -92,6 +97,7 @@ const LABELS = {
     difference: 'Сома айырмасы',
     actNote: 'Төлеуге арналған сома алшақтық мөлшеріне азайтылды',
     correction: 'Түзету',
+    verify: 'Құжатты тексеру',
     correctionReason: 'Себебі',
     currency: '₸',
   },
@@ -142,6 +148,9 @@ const STYLES = `
   tfoot td { font-weight: 600; }
   .note { margin-top: 3mm; font-size: 9pt; }
   .correction { border-left: 1mm solid #b45309; padding-left: 2mm; }
+  .head { display: flex; justify-content: space-between; gap: 6mm; align-items: flex-start; }
+  .verify { flex: none; text-align: center; font-size: 7pt; color: #555; }
+  .verify svg { display: block; }
   .signatures { display: flex; gap: 10mm; margin-top: 10mm; font-size: 9pt; }
   .signature { flex: 1; border-top: 0.3mm solid #666; padding-top: 1.5mm; }
 `;
@@ -193,11 +202,29 @@ function linesTable(payload: DocumentPayload, locale: Locale) {
     </table>`;
 }
 
-function header(title: string, form: string | null, payload: DocumentPayload, locale: Locale) {
+function verifyBlock(locale: Locale, options: PrintOptions) {
+  if (!options.verifyUrl) return '';
+  const svg = qrSvg(options.verifyUrl, { size: 104 });
+  if (!svg) return '';
+  return `<div class="verify">${svg}<div>${LABELS[locale].verify}</div></div>`;
+}
+
+function header(
+  title: string,
+  form: string | null,
+  payload: DocumentPayload,
+  locale: Locale,
+  options: PrintOptions,
+) {
   const t = LABELS[locale];
   return `
-    <h1>${title} № ${escapeHtml(payload.number)}</h1>
-    ${form ? `<div class="form">${form}</div>` : ''}
+    <div class="head">
+      <div>
+        <h1>${title} № ${escapeHtml(payload.number)}</h1>
+        ${form ? `<div class="form">${form}</div>` : ''}
+      </div>
+      ${verifyBlock(locale, options)}
+    </div>
     <div class="meta">
       ${t.date}: ${escapeHtml(payload.issuedAt)} · ${t.order}: ${escapeHtml(payload.orderNumber)}
     </div>
@@ -221,12 +248,12 @@ function vatNote(payload: DocumentPayload, locale: Locale) {
 }
 
 /** Накладная формы З-2 (раздел 2 ТЗ, первичные документы). */
-export function waybillHtml(payload: DocumentPayload, locale: Locale) {
+export function waybillHtml(payload: DocumentPayload, locale: Locale, options: PrintOptions = {}) {
   const t = LABELS[locale];
   return page(
     `${t.waybillTitle} ${payload.number}`,
     `
-      ${header(t.waybillTitle, t.waybillForm, payload, locale)}
+      ${header(t.waybillTitle, t.waybillForm, payload, locale, options)}
       ${linesTable(payload, locale)}
       ${vatNote(payload, locale)}
       <div class="signatures">
@@ -236,12 +263,12 @@ export function waybillHtml(payload: DocumentPayload, locale: Locale) {
   );
 }
 
-export function invoiceHtml(payload: DocumentPayload, locale: Locale) {
+export function invoiceHtml(payload: DocumentPayload, locale: Locale, options: PrintOptions = {}) {
   const t = LABELS[locale];
   return page(
     `${t.invoiceTitle} ${payload.number}`,
     `
-      ${header(t.invoiceTitle, null, payload, locale)}
+      ${header(t.invoiceTitle, null, payload, locale, options)}
       ${linesTable(payload, locale)}
       ${vatNote(payload, locale)}
       <div class="note">${t.payTo}: ${escapeHtml(
@@ -253,7 +280,11 @@ export function invoiceHtml(payload: DocumentPayload, locale: Locale) {
 }
 
 /** Акт расхождений: что отгрузили, что приняли, на сколько уменьшилась сумма. */
-export function discrepancyActHtml(payload: DocumentPayload, locale: Locale) {
+export function discrepancyActHtml(
+  payload: DocumentPayload,
+  locale: Locale,
+  options: PrintOptions = {},
+) {
   const t = LABELS[locale];
   const rows = (payload.discrepancies ?? [])
     .map(
@@ -273,7 +304,7 @@ export function discrepancyActHtml(payload: DocumentPayload, locale: Locale) {
   return page(
     `${t.actTitle} ${payload.number}`,
     `
-      ${header(t.actTitle, null, payload, locale)}
+      ${header(t.actTitle, null, payload, locale, options)}
       <table>
         <thead>
           <tr>
@@ -297,12 +328,16 @@ export function discrepancyActHtml(payload: DocumentPayload, locale: Locale) {
 }
 
 /** Возвратная накладная: та же форма, другой заголовок и направление движения. */
-export function returnWaybillHtml(payload: DocumentPayload, locale: Locale) {
+export function returnWaybillHtml(
+  payload: DocumentPayload,
+  locale: Locale,
+  options: PrintOptions = {},
+) {
   const t = LABELS[locale];
   return page(
     `${t.returnTitle} ${payload.number}`,
     `
-      ${header(t.returnTitle, null, payload, locale)}
+      ${header(t.returnTitle, null, payload, locale, options)}
       ${linesTable(payload, locale)}
       ${vatNote(payload, locale)}
       <div class="signatures">
@@ -316,9 +351,10 @@ export function documentHtml(
   type: 'WAYBILL' | 'INVOICE' | 'DISCREPANCY_ACT' | 'RETURN_WAYBILL' | 'SETTLEMENT_ACT',
   payload: DocumentPayload,
   locale: Locale,
+  options: PrintOptions = {},
 ) {
-  if (type === 'WAYBILL') return waybillHtml(payload, locale);
-  if (type === 'INVOICE') return invoiceHtml(payload, locale);
-  if (type === 'RETURN_WAYBILL') return returnWaybillHtml(payload, locale);
-  return discrepancyActHtml(payload, locale);
+  if (type === 'WAYBILL') return waybillHtml(payload, locale, options);
+  if (type === 'INVOICE') return invoiceHtml(payload, locale, options);
+  if (type === 'RETURN_WAYBILL') return returnWaybillHtml(payload, locale, options);
+  return discrepancyActHtml(payload, locale, options);
 }

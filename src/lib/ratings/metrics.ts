@@ -18,6 +18,8 @@ export type SupplierMetrics = {
   fulfilledShare: string;
   onTimeShare: string;
   discrepancyShare: string;
+  /** Медиана минут до ответа в чате; null — пока не на что отвечать. */
+  chatResponseMinutes: string | null;
 };
 
 export type StoreMetrics = {
@@ -40,14 +42,58 @@ function share(part: number, total: number): string {
   return new Decimal(part).div(total).times(100).toDecimalPlaces(2).toFixed(2);
 }
 
+/**
+ * Скорость ответа поставщика в чате (раздел 3.8 ТЗ): от первого неотвеченного сообщения
+ * магазина до следующего сообщения поставщика в том же чате, медиана в минутах.
+ * Считаем круглосуточно: учитывать ли рабочие часы — TODO(open-question).
+ */
+export async function chatResponseMinutes(companyId: string, since: Date) {
+  const messages = await prisma.message.findMany({
+    where: { chat: { supplierId: companyId }, createdAt: { gte: since } },
+    select: { chatId: true, authorCompanyId: true, createdAt: true },
+    orderBy: [{ chatId: 'asc' }, { createdAt: 'asc' }],
+  });
+
+  const waits: number[] = [];
+  let chatId: string | null = null;
+  let waitingSince: Date | null = null;
+  for (const message of messages) {
+    if (message.chatId !== chatId) {
+      chatId = message.chatId;
+      waitingSince = null;
+    }
+    if (message.authorCompanyId !== companyId) {
+      waitingSince ??= message.createdAt;
+    } else if (waitingSince) {
+      waits.push(message.createdAt.getTime() - waitingSince.getTime());
+      waitingSince = null;
+    }
+  }
+  if (waits.length === 0) return null;
+
+  waits.sort((left, right) => left - right);
+  const middle = Math.floor(waits.length / 2);
+  const median =
+    waits.length % 2 === 1
+      ? new Decimal(waits[middle]!)
+      : new Decimal(waits[middle - 1]!).plus(waits[middle]!).div(2);
+  return median.div(60_000).toDecimalPlaces(0).toFixed(0);
+}
+
 /** Автоматические метрики поставщика: их нельзя накрутить вручную. */
 async function supplierMetrics(companyId: string, since: Date): Promise<SupplierMetrics> {
   const orders = await prisma.order.findMany({
     where: { supplierId: companyId, createdAt: { gte: since } },
     include: { items: true, statusLogs: true },
   });
+  const responseMinutes = await chatResponseMinutes(companyId, since);
   if (orders.length === 0) {
-    return { fulfilledShare: '0.00', onTimeShare: '0.00', discrepancyShare: '0.00' };
+    return {
+      fulfilledShare: '0.00',
+      onTimeShare: '0.00',
+      discrepancyShare: '0.00',
+      chatResponseMinutes: responseMinutes,
+    };
   }
 
   let ordered = new Decimal(0);
@@ -77,6 +123,7 @@ async function supplierMetrics(companyId: string, since: Date): Promise<Supplier
       : confirmed.div(ordered).times(100).toDecimalPlaces(2).toFixed(2),
     onTimeShare: share(onTime, withDelivery),
     discrepancyShare: share(withDiscrepancy, orders.length),
+    chatResponseMinutes: responseMinutes,
   };
 }
 

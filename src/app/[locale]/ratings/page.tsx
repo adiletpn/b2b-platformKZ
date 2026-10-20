@@ -69,6 +69,14 @@ export default async function RatingsPage({ params }: { params: Promise<{ locale
                 <dt className="text-muted-foreground">{t('discrepancyShare')}</dt>
                 <dd className="tabular-nums">{rating.supplier.discrepancyShare}%</dd>
               </div>
+              <div className="flex justify-between gap-3">
+                <dt className="text-muted-foreground">{t('chatResponse')}</dt>
+                <dd className="tabular-nums" data-testid="metric-chat-response">
+                  {rating.supplier.chatResponseMinutes === null
+                    ? '—'
+                    : t('minutes', { count: rating.supplier.chatResponseMinutes })}
+                </dd>
+              </div>
             </>
           ) : null}
 

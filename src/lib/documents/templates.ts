@@ -3,12 +3,12 @@ import { qrSvg } from '@/lib/qr/qr';
 import type { DocumentPayload, DocumentParty } from './payload';
 import { renderTemplate } from './template-engine';
 
-type Locale = 'ru' | 'kk';
+export type Locale = 'ru' | 'kk';
 
 /** Ссылка на страницу проверки документа для QR (раздел 4.4 ТЗ). */
 export type PrintOptions = { verifyUrl?: string };
 
-const LABELS = {
+export const LABELS = {
   ru: {
     waybillTitle: 'Накладная на отпуск запасов на сторону',
     waybillForm: 'Форма З-2',

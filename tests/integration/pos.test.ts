@@ -7,7 +7,7 @@ import { applyBalanceChange } from '@/lib/stock/balance';
 import { receiveBatch } from '@/lib/stock/batches';
 import { setMarkup, repriceAll } from '@/lib/stock/pricing';
 import { cashOperation, closeShift, getSalesReport, getZReport, openShift } from '@/lib/pos/shift';
-import { refund, sell } from '@/lib/pos/sale';
+import { refund, sell, sendElectronicReceipt } from '@/lib/pos/sale';
 import { testPoolBin } from '@/mocks/bin-registry';
 
 const prisma = createTestPrisma();
@@ -434,5 +434,99 @@ describe('скидки, оплата и наличные (раздел 4.2 ТЗ)
       new Date(now + 3_600_000),
     );
     expect(other.receipts).toBe(0);
+  });
+});
+
+describe('маркировка, акциз и электронный чек (раздел 4.2 ТЗ)', () => {
+  /** Код DataMatrix: «01» + GTIN-14 из штрихкода + серийный номер. */
+  async function codeFor(productId: string, serial: string) {
+    const product = await prisma.product.findUniqueOrThrow({ where: { id: productId } });
+    return `01${product.barcode.padStart(14, '0')}21${serial}`;
+  }
+
+  it('marked_goods_need_one_unique_code_per_unit', async () => {
+    const shop = await shopReadyToSell(13);
+    await prisma.product.update({ where: { id: shop.productId }, data: { isMarked: true } });
+    await openShift(shop.companyId, shop.userId, shop.locationId);
+    const [first, second] = [
+      await codeFor(shop.productId, 'AAA111'),
+      await codeFor(shop.productId, 'BBB222'),
+    ];
+    const sale = (clientId: string, markingCodes?: string[]) =>
+      sell(shop.companyId, shop.userId, shop.locationId, {
+        clientId,
+        paymentType: 'CARD',
+        lines: [{ productId: shop.productId, quantity: '2', markingCodes }],
+      });
+
+    // Без кодов, с одним кодом на две единицы и с чужим GTIN продать нельзя.
+    expect(await sale('m-1')).toEqual({ status: 'marking_required', productId: shop.productId });
+    expect(await sale('m-2', [first])).toMatchObject({ status: 'marking_required' });
+    expect(await sale('m-3', [first, '0100000000000000021XYZ'])).toMatchObject({
+      status: 'marking_required',
+    });
+    expect(await sale('m-4', [first, first])).toMatchObject({ status: 'marking_required' });
+    expect(await quantityOf(shop.locationId, shop.productId)).toBe('10.000');
+
+    expect(await sale('m-5', [first, second])).toMatchObject({ status: 'ok' });
+    const item = await prisma.receiptItem.findFirstOrThrow();
+    expect(item.markingCodes).toEqual([first, second]);
+
+    // Тот же код второй раз не пробивается.
+    const third = await codeFor(shop.productId, 'CCC333');
+    expect(await sale('m-6', [first, third])).toEqual({
+      status: 'marking_reused',
+      productId: shop.productId,
+    });
+  });
+
+  it('excise_goods_need_age_confirmation_and_allowed_hours', async () => {
+    const shop = await shopReadyToSell(14);
+    await prisma.product.update({ where: { id: shop.productId }, data: { isExcise: true } });
+    await openShift(shop.companyId, shop.userId, shop.locationId);
+    const input = (clientId: string, ageConfirmed?: boolean) => ({
+      clientId,
+      paymentType: 'CARD' as const,
+      lines: [{ productId: shop.productId, quantity: '1' }],
+      ageConfirmed,
+    });
+    // 12:00 и 02:00 по Алматы (UTC+5).
+    const noon = new Date('2026-10-20T07:00:00Z');
+    const night = new Date('2026-10-20T21:00:00Z');
+
+    expect(
+      await sell(shop.companyId, shop.userId, shop.locationId, input('x-1'), { now: noon }),
+    ).toEqual({ status: 'age_not_confirmed' });
+    expect(
+      await sell(shop.companyId, shop.userId, shop.locationId, input('x-2', true), { now: night }),
+    ).toEqual({ status: 'restricted_hours', hours: '08:00-23:00' });
+    expect(
+      await sell(shop.companyId, shop.userId, shop.locationId, input('x-3', true), { now: noon }),
+    ).toMatchObject({ status: 'ok' });
+    const receipt = await prisma.receipt.findFirstOrThrow();
+    expect(receipt.ageConfirmed).toBe(true);
+  });
+
+  it('electronic_receipt_only_for_own_company_and_valid_phone', async () => {
+    const shop = await shopReadyToSell(13);
+    const other = await shopReadyToSell(14);
+    await openShift(shop.companyId, shop.userId, shop.locationId);
+    const sold = await sell(shop.companyId, shop.userId, shop.locationId, {
+      clientId: 'e-1',
+      paymentType: 'CASH',
+      lines: [{ productId: shop.productId, quantity: '1' }],
+    });
+    if (sold.status !== 'ok') throw new Error(sold.status);
+
+    expect(await sendElectronicReceipt(shop.companyId, sold.receiptId, '123', 'sms')).toEqual({
+      status: 'invalid_phone',
+    });
+    // Правило 4: чужая компания не может разослать чек.
+    expect(
+      await sendElectronicReceipt(other.companyId, sold.receiptId, '+77010000000', 'sms'),
+    ).toEqual({ status: 'not_found' });
+    expect(
+      await sendElectronicReceipt(shop.companyId, sold.receiptId, '+77010000000', 'whatsapp'),
+    ).toEqual({ status: 'ok' });
   });
 });

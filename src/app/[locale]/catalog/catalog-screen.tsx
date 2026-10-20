@@ -5,8 +5,7 @@ import { useTranslations } from 'next-intl';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Field } from '@/components/ui/field';
-import { Link } from '@/i18n/navigation';
-import { Page } from '@/components/ui/page';
+import { Page, PageHeader } from '@/components/ui/page';
 import { ManualOfferForm } from './manual-offer-form';
 
 type City = { id: string; name: string };
@@ -50,7 +49,6 @@ export function CatalogScreen({
   defaultVatCode: string;
 }) {
   const t = useTranslations('catalog');
-  const tDashboard = useTranslations('dashboard');
   const [file, setFile] = useState<File | null>(null);
   const [result, setResult] = useState<ImportResult | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -128,13 +126,7 @@ export function CatalogScreen({
 
   return (
     <Page width="lg">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold">{t('title')}</h1>
-        <Link href="/dashboard" className={buttonVariants({ variant: 'outline', size: 'sm' })}>
-          {tDashboard('title')}
-        </Link>
-      </header>
-      <p className="text-muted-foreground mt-2 text-sm">{t('subtitle')}</p>
+      <PageHeader title={t('title')} description={t('subtitle')} />
 
       <section className="border-border bg-card mt-6 space-y-3 rounded-lg border p-4">
         <a

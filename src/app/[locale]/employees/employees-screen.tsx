@@ -2,11 +2,11 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Link, useRouter } from '@/i18n/navigation';
-import { Button, buttonVariants } from '@/components/ui/button';
+import { useRouter } from '@/i18n/navigation';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Field } from '@/components/ui/field';
-import { Page } from '@/components/ui/page';
+import { Page, PageHeader } from '@/components/ui/page';
 import { PERMISSION_ACTIONS, PERMISSION_SECTIONS } from '@/lib/employees/permission-matrix';
 
 type Role = { id: string; code: string; name: string; isTemplate: boolean };
@@ -45,7 +45,6 @@ export function EmployeesScreen({
   isOwner: boolean;
 }) {
   const t = useTranslations('employees');
-  const tDashboard = useTranslations('dashboard');
   const router = useRouter();
 
   const [phone, setPhone] = useState('+7');
@@ -191,13 +190,7 @@ export function EmployeesScreen({
 
   return (
     <Page width="md">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold">{t('title')}</h1>
-        <Link href="/dashboard" className={buttonVariants({ variant: 'outline', size: 'sm' })}>
-          {tDashboard('title')}
-        </Link>
-      </header>
-      <p className="text-muted-foreground mt-2 text-sm">{t('hint')}</p>
+      <PageHeader title={t('title')} description={t('hint')} />
 
       <form className="mt-5 flex flex-wrap items-end gap-3" onSubmit={invite}>
         <div className="min-w-48 flex-1">
@@ -563,24 +556,24 @@ export function EmployeesScreen({
         </section>
       ) : null}
 
-      <section className="mt-6">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <h2 className="text-muted-foreground text-sm font-medium">{t('auditTitle')}</h2>
-          <Field label={t('employee')}>
-            <Input
-              value={actor}
-              className="h-9"
-              data-testid="audit-filter"
-              onChange={(event) => setActor(event.target.value)}
-            />
-          </Field>
+      <section className="border-border bg-card shadow-card mt-6 rounded-xl border p-4 sm:p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-base font-semibold">{t('auditTitle')}</h2>
+          <Input
+            value={actor}
+            className="h-9 w-full sm:w-56"
+            placeholder={t('employee')}
+            aria-label={t('employee')}
+            data-testid="audit-filter"
+            onChange={(event) => setActor(event.target.value)}
+          />
         </div>
         {visibleAudit.length === 0 ? (
-          <p className="text-muted-foreground mt-2 text-sm">{t('auditEmpty')}</p>
+          <p className="text-muted-foreground mt-3 text-sm">{t('auditEmpty')}</p>
         ) : (
-          <ul className="mt-2 space-y-1 text-sm" data-testid="audit-log">
+          <ul className="divide-border mt-3 divide-y text-sm" data-testid="audit-log">
             {visibleAudit.map((entry) => (
-              <li key={entry.id} className="flex flex-wrap justify-between gap-2">
+              <li key={entry.id} className="flex flex-wrap justify-between gap-2 py-2">
                 <span>{t(`actions.${entry.action}` as 'actions.employee_invited')}</span>
                 <span className="text-muted-foreground font-mono text-xs">{entry.actorPhone}</span>
                 <span className="text-muted-foreground text-xs">{entry.createdAt}</span>

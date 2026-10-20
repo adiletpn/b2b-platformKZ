@@ -2,11 +2,12 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Link } from '@/i18n/navigation';
-import { Button, buttonVariants } from '@/components/ui/button';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Field } from '@/components/ui/field';
-import { Page } from '@/components/ui/page';
+import { Page, PageHeader } from '@/components/ui/page';
+import { Card, CardHint, CardTitle, IconBadge } from '@/components/ui/card';
+import { BellRing, Calculator, Landmark } from 'lucide-react';
 
 const CHANNELS = ['whatsapp', 'telegram', 'email'] as const;
 
@@ -23,7 +24,6 @@ export function RequisitesForm({
   extra?: React.ReactNode;
 }) {
   const t = useTranslations('requisites');
-  const tDashboard = useTranslations('dashboard');
   const [values, setValues] = useState(initial);
   const [channels, setChannels] = useState<string[]>(initialChannels);
   const [channelsSaved, setChannelsSaved] = useState(false);
@@ -97,110 +97,129 @@ export function RequisitesForm({
   }
 
   return (
-    <Page width="sm">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold">{t('title')}</h1>
-        <Link href="/dashboard" className={buttonVariants({ variant: 'outline', size: 'sm' })}>
-          {tDashboard('title')}
-        </Link>
-      </header>
-      <p className="text-muted-foreground mt-2 text-sm">{t('hint')}</p>
+    <Page width="md">
+      <PageHeader title={t('title')} description={t('hint')} />
 
-      <form className="mt-6 space-y-4" onSubmit={save}>
-        <Field label={t('iik')}>
-          <Input
-            value={values.iik}
-            data-testid="iik-input"
-            placeholder="KZ00XXXX0000000000"
-            onChange={(event) => setValues((current) => ({ ...current, iik: event.target.value }))}
-          />
-        </Field>
-        <Field label={t('bik')}>
-          <Input
-            value={values.bik}
-            data-testid="bik-input"
-            placeholder="HSBKKZKX"
-            onChange={(event) => setValues((current) => ({ ...current, bik: event.target.value }))}
-          />
-        </Field>
-        <Field label={t('bankName')}>
-          <Input
-            value={values.bankName}
-            data-testid="bank-input"
-            onChange={(event) =>
-              setValues((current) => ({ ...current, bankName: event.target.value }))
-            }
-          />
-        </Field>
-
-        <Button type="submit" className="w-full" disabled={pending} data-testid="save-requisites">
-          {t('save')}
-        </Button>
-      </form>
-
-      <section className="border-border mt-6 rounded-lg border border-dashed p-4">
-        <h2 className="text-muted-foreground text-sm font-medium">{t('costMethodTitle')}</h2>
-        <p className="text-muted-foreground mt-1 text-xs">{t('costMethodHint')}</p>
-        <select
-          className="border-border bg-card mt-2 h-11 rounded-lg border px-3"
-          value={costMethod}
-          data-testid="cost-method"
-          onChange={(event) => void saveCostMethod(event.target.value as 'AVERAGE' | 'FIFO')}
-        >
-          {(['AVERAGE', 'FIFO'] as const).map((value) => (
-            <option key={value} value={value}>
-              {t(`costMethods.${value}`)}
-            </option>
-          ))}
-        </select>
-        {costSaved ? (
-          <p className="text-muted-foreground mt-2 text-sm" data-testid="cost-method-saved">
-            {t('costMethodSaved')}
-          </p>
-        ) : null}
-      </section>
-
-      <section className="border-border mt-6 rounded-lg border border-dashed p-4">
-        <h2 className="text-muted-foreground text-sm font-medium">{t('channelsTitle')}</h2>
-        <p className="text-muted-foreground mt-1 text-xs">{t('channelsHint')}</p>
-
-        <div className="mt-3 space-y-2" data-testid="notification-channels">
-          {CHANNELS.map((channel) => (
-            <label key={channel} className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={channels.includes(channel)}
-                data-testid={`channel-${channel}`}
+      <Card>
+        <div className="flex items-start gap-3">
+          <IconBadge icon={Landmark} />
+          <CardTitle className="mt-1.5">{t('bankTitle')}</CardTitle>
+        </div>
+        <form className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2" onSubmit={save}>
+          <Field label={t('iik')}>
+            <Input
+              value={values.iik}
+              data-testid="iik-input"
+              placeholder="KZ00XXXX0000000000"
+              onChange={(event) =>
+                setValues((current) => ({ ...current, iik: event.target.value }))
+              }
+            />
+          </Field>
+          <Field label={t('bik')}>
+            <Input
+              value={values.bik}
+              data-testid="bik-input"
+              placeholder="HSBKKZKX"
+              onChange={(event) =>
+                setValues((current) => ({ ...current, bik: event.target.value }))
+              }
+            />
+          </Field>
+          <div className="sm:col-span-2">
+            <Field label={t('bankName')}>
+              <Input
+                value={values.bankName}
+                data-testid="bank-input"
                 onChange={(event) =>
-                  void saveChannels(
-                    event.target.checked
-                      ? [...channels, channel]
-                      : channels.filter((item) => item !== channel),
-                  )
+                  setValues((current) => ({ ...current, bankName: event.target.value }))
                 }
               />
-              {t(`channels.${channel}`)}
-            </label>
-          ))}
-        </div>
+            </Field>
+          </div>
 
-        {channelsSaved ? (
-          <p className="text-muted-foreground mt-2 text-sm" data-testid="channels-saved">
-            {t('channelsSaved')}
-          </p>
-        ) : null}
-      </section>
+          <div className="flex flex-wrap items-center gap-3 sm:col-span-2">
+            <Button type="submit" disabled={pending} data-testid="save-requisites">
+              {t('save')}
+            </Button>
+            {saved ? (
+              <span className="text-success text-sm" data-testid="requisites-saved">
+                {t('saved')}
+              </span>
+            ) : null}
+            {error ? (
+              <span className="text-danger text-sm" role="alert" data-testid="requisites-error">
+                {t(`errors.${error}` as 'errors.unknown')}
+              </span>
+            ) : null}
+          </div>
+        </form>
+      </Card>
 
-      {saved ? (
-        <p className="text-muted-foreground mt-3 text-sm" data-testid="requisites-saved">
-          {t('saved')}
-        </p>
-      ) : null}
-      {error ? (
-        <p className="mt-3 text-sm text-red-600" role="alert" data-testid="requisites-error">
-          {t(`errors.${error}` as 'errors.unknown')}
-        </p>
-      ) : null}
+      <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <Card>
+          <div className="flex items-start gap-3">
+            <IconBadge icon={Calculator} tone="accent" />
+            <div>
+              <CardTitle>{t('costMethodTitle')}</CardTitle>
+              <CardHint>{t('costMethodHint')}</CardHint>
+            </div>
+          </div>
+          <select
+            className="border-border bg-card mt-4 h-11 w-full rounded-lg border px-3"
+            value={costMethod}
+            data-testid="cost-method"
+            onChange={(event) => void saveCostMethod(event.target.value as 'AVERAGE' | 'FIFO')}
+          >
+            {(['AVERAGE', 'FIFO'] as const).map((value) => (
+              <option key={value} value={value}>
+                {t(`costMethods.${value}`)}
+              </option>
+            ))}
+          </select>
+          {costSaved ? (
+            <p className="text-muted-foreground mt-2 text-sm" data-testid="cost-method-saved">
+              {t('costMethodSaved')}
+            </p>
+          ) : null}
+        </Card>
+
+        <Card>
+          <div className="flex items-start gap-3">
+            <IconBadge icon={BellRing} tone="success" />
+            <div>
+              <CardTitle>{t('channelsTitle')}</CardTitle>
+              <CardHint>{t('channelsHint')}</CardHint>
+            </div>
+          </div>
+
+          <div className="mt-4 space-y-2" data-testid="notification-channels">
+            {CHANNELS.map((channel) => (
+              <label key={channel} className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={channels.includes(channel)}
+                  data-testid={`channel-${channel}`}
+                  onChange={(event) =>
+                    void saveChannels(
+                      event.target.checked
+                        ? [...channels, channel]
+                        : channels.filter((item) => item !== channel),
+                    )
+                  }
+                />
+                {t(`channels.${channel}`)}
+              </label>
+            ))}
+          </div>
+
+          {channelsSaved ? (
+            <p className="text-muted-foreground mt-2 text-sm" data-testid="channels-saved">
+              {t('channelsSaved')}
+            </p>
+          ) : null}
+        </Card>
+      </div>
       {extra}
     </Page>
   );

@@ -1,9 +1,8 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { Link, redirect } from '@/i18n/navigation';
+import { redirect } from '@/i18n/navigation';
 import { getStoreContext } from '@/lib/auth/store-context';
 import { prisma } from '@/lib/prisma';
-import { buttonVariants } from '@/components/ui/button';
-import { Page } from '@/components/ui/page';
+import { Page, PageHeader } from '@/components/ui/page';
 import { getAccess } from '@/lib/auth/permissions';
 import { StockDocuments } from './stock-documents';
 import { ReplenishmentPanel } from './replenishment-panel';
@@ -84,17 +83,10 @@ export default async function StockPage({ params }: { params: Promise<{ locale: 
   }
 
   const t = await getTranslations('stock');
-  const tDashboard = await getTranslations('dashboard');
 
   return (
     <Page width="md">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold">{t('title')}</h1>
-        <Link href="/dashboard" className={buttonVariants({ variant: 'outline', size: 'sm' })}>
-          {tDashboard('title')}
-        </Link>
-      </header>
-      <p className="text-muted-foreground mt-1 text-xs">{t('hint')}</p>
+      <PageHeader title={t('title')} description={t('hint')} />
 
       {balances.length === 0 ? (
         <p className="text-muted-foreground mt-6 text-sm" data-testid="stock-empty">

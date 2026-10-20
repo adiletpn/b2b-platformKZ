@@ -10,6 +10,8 @@ const PREFIXES: Record<string, string> = {
   transfer: 'ПЕРЕМ',
   writeoff: 'СПИС',
   stocktake: 'ИНВ',
+  shift: 'СМЕНА',
+  receipt: 'ЧЕК',
 };
 
 /** Нумерация отдельная у каждой компании и года (раздел 3.5 ТЗ). */

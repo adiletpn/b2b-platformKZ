@@ -78,6 +78,8 @@ model User {
   accessRequests  CompanyAccessRequest[]
   orderStatusLogs OrderStatusLog[]
   stockDocuments  StockDocument[]
+  shiftsOpened    PosShift[]             @relation("ShiftsOpened")
+  receipts        Receipt[]
   approvedOrders  Order[]                @relation("ApprovedOrders")
   createdOrders   Order[]                @relation("CreatedOrders")
   auditLogs       AuditLog[]
@@ -203,6 +205,8 @@ model Company {
   roles                Role[]
   subscriptions        Subscription[]
   stockDocuments       StockDocument[]
+  posShifts            PosShift[]
+  receipts             Receipt[]
   markupRules          MarkupRule[]
   retailPrices         RetailPrice[]
   invitations          Invitation[]
@@ -282,6 +286,8 @@ model Location {
   stockDocuments  StockDocument[] @relation("StockDocumentLocation")
   stockDocTargets StockDocument[] @relation("StockDocumentTarget")
   stockBatches    StockBatch[]
+  posShifts       PosShift[]
+  receipts        Receipt[]
 
   @@index([companyId])
   @@index([cityId])
@@ -382,6 +388,7 @@ model Product {
   stockDocLines  StockDocumentLine[]
   stockBatches   StockBatch[]
   retailPrices   RetailPrice[]
+  receiptItems   ReceiptItem[]
 
   @@index([categoryId])
   @@map("products")
@@ -728,6 +735,94 @@ model StockDocumentLine {
 
   @@index([documentId])
   @@map("stock_document_lines")
+}
+
+// ---------- Касса POS (этап 2, раздел 4.2 ТЗ) ----------
+
+enum ShiftStatus {
+  OPEN
+  CLOSED
+}
+
+/// Кассовая смена: открывается на точке, закрывается Z-отчётом (раздел 4.2 ТЗ).
+model PosShift {
+  id          String      @id @default(cuid())
+  number      String
+  companyId   String
+  company     Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  locationId  String
+  location    Location    @relation(fields: [locationId], references: [id])
+  status      ShiftStatus @default(OPEN)
+  openingCash Decimal     @default(0) @db.Decimal(14, 2)
+  closingCash Decimal?    @db.Decimal(14, 2)
+  openedById  String?
+  openedBy    User?       @relation("ShiftsOpened", fields: [openedById], references: [id])
+  openedAt    DateTime    @default(now())
+  closedAt    DateTime?
+
+  receipts Receipt[]
+
+  @@unique([companyId, number])
+  @@index([locationId, status])
+  @@map("pos_shifts")
+}
+
+enum ReceiptPaymentType {
+  CASH
+  CARD
+  QR
+}
+
+enum ReceiptStatus {
+  PAID
+  REFUNDED
+}
+
+/// Чек кассы. `clientId` даёт идемпотентность при синхронизации офлайн-продаж.
+model Receipt {
+  id          String             @id @default(cuid())
+  number      String
+  clientId    String
+  shiftId     String
+  shift       PosShift           @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  companyId   String
+  company     Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  locationId  String
+  location    Location           @relation(fields: [locationId], references: [id])
+  paymentType ReceiptPaymentType
+  status      ReceiptStatus      @default(PAID)
+  total       Decimal            @db.Decimal(14, 2)
+  costTotal   Decimal            @default(0) @db.Decimal(14, 2)
+  /// Ответ онлайн-кассы: номер фискального документа и ссылка в ОФД (в демо — мок).
+  fiscalId    String?
+  fiscalUrl   String?
+  userId      String?
+  user        User?              @relation(fields: [userId], references: [id])
+  createdAt   DateTime           @default(now())
+
+  items    ReceiptItem[]
+  refundOf String?
+  refund   Receipt?      @relation("ReceiptRefund", fields: [refundOf], references: [id])
+  refunds  Receipt[]     @relation("ReceiptRefund")
+
+  @@unique([companyId, clientId])
+  @@index([shiftId])
+  @@map("receipts")
+}
+
+model ReceiptItem {
+  id        String  @id @default(cuid())
+  receiptId String
+  receipt   Receipt @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  quantity  Decimal @db.Decimal(12, 3)
+  price     Decimal @db.Decimal(14, 2)
+  costPrice Decimal @db.Decimal(14, 2)
+  total     Decimal @db.Decimal(14, 2)
+
+  @@index([receiptId])
+  @@map("receipt_items")
 }
 
 /// Правило наценки: по категории или общее для компании (раздел 4.1 ТЗ).

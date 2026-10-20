@@ -164,7 +164,17 @@ export async function getMessages(chatId: string, companyId: string) {
       messages: {
         orderBy: { createdAt: 'asc' },
         take: 200,
-        include: { attachments: { select: { id: true, mimeType: true } } },
+        include: {
+          attachments: { select: { id: true, mimeType: true } },
+          offer: {
+            select: {
+              id: true,
+              priceWithVat: true,
+              product: { select: { nameRu: true, nameKk: true, barcode: true } },
+            },
+          },
+          document: { select: { id: true, type: true, number: true } },
+        },
       },
     },
   });
@@ -187,6 +197,16 @@ export async function getMessages(chatId: string, companyId: string) {
             image: message.attachments[0].mimeType.startsWith('image/'),
           }
         : null,
+      offer: message.offer
+        ? {
+            id: message.offer.id,
+            nameRu: message.offer.product.nameRu,
+            nameKk: message.offer.product.nameKk,
+            barcode: message.offer.product.barcode,
+            price: message.offer.priceWithVat.toFixed(2),
+          }
+        : null,
+      document: message.document,
     })),
   };
 }

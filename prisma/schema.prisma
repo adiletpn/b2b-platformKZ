@@ -430,6 +430,7 @@ model SupplierOffer {
   cartItems       CartItem[]
   orderItems      OrderItem[]
   priceRules      PriceRule[]
+  messages        Message[]
 
   @@unique([supplierId, productId])
   @@index([supplierId])
@@ -694,6 +695,7 @@ model Document {
   payments   Payment[]
   signatures DocumentSignature[]
   versions   DocumentVersion[]
+  messages   Message[]
 
   @@unique([issuerId, type, number])
   @@index([orderId])
@@ -1418,17 +1420,22 @@ model Chat {
 }
 
 model Message {
-  id              String    @id @default(cuid())
+  id              String         @id @default(cuid())
   chatId          String
-  chat            Chat      @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  chat            Chat           @relation(fields: [chatId], references: [id], onDelete: Cascade)
   authorCompanyId String
-  authorCompany   Company   @relation("SentMessages", fields: [authorCompanyId], references: [id], onDelete: Cascade)
+  authorCompany   Company        @relation("SentMessages", fields: [authorCompanyId], references: [id], onDelete: Cascade)
   authorUserId    String?
-  authorUser      User?     @relation(fields: [authorUserId], references: [id])
+  authorUser      User?          @relation(fields: [authorUserId], references: [id])
   text            String
+  /// Карточка товара или документ в сообщении (раздел 3.7 ТЗ). Текст хранит подпись для поиска.
+  offerId         String?
+  offer           SupplierOffer? @relation(fields: [offerId], references: [id], onDelete: SetNull)
+  documentId      String?
+  document        Document?      @relation(fields: [documentId], references: [id], onDelete: SetNull)
   /// Статус прочтения второй стороной (раздел 3.7 ТЗ).
   readAt          DateTime?
-  createdAt       DateTime  @default(now())
+  createdAt       DateTime       @default(now())
 
   attachments Attachment[]
   complaints  ChatComplaint[]

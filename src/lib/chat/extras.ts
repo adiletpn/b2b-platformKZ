@@ -183,6 +183,114 @@ export async function sendFile(input: {
   return result;
 }
 
+// ---------- Карточки товара и документы ----------
+
+/** Что можно отправить в этот чат: товары поставщика пары и документы заявок пары. */
+export async function listShareables(chatId: string, companyId: string, rawQuery = '') {
+  const chat = await ownChat(chatId, companyId);
+  if (!chat) return null;
+  const query = rawQuery.trim().slice(0, 100);
+  const [offers, documents] = await Promise.all([
+    prisma.supplierOffer.findMany({
+      where: {
+        supplierId: chat.supplierId,
+        isActive: true,
+        ...(query
+          ? {
+              product: {
+                OR: [
+                  { nameRu: { contains: query, mode: 'insensitive' as const } },
+                  { nameKk: { contains: query, mode: 'insensitive' as const } },
+                  { barcode: { startsWith: query } },
+                ],
+              },
+            }
+          : {}),
+      },
+      include: { product: { select: { nameRu: true, nameKk: true } } },
+      orderBy: { product: { nameRu: 'asc' } },
+      take: 20,
+    }),
+    prisma.document.findMany({
+      where: { order: { storeId: chat.storeId, supplierId: chat.supplierId } },
+      select: { id: true, type: true, number: true, issuedAt: true },
+      orderBy: { issuedAt: 'desc' },
+      take: 20,
+    }),
+  ]);
+  return {
+    offers: offers.map((offer) => ({
+      id: offer.id,
+      nameRu: offer.product.nameRu,
+      nameKk: offer.product.nameKk,
+      price: offer.priceWithVat.toFixed(2),
+    })),
+    documents: documents.map((document) => ({
+      id: document.id,
+      type: document.type,
+      number: document.number,
+      issuedAt: document.issuedAt.toISOString(),
+    })),
+  };
+}
+
+export type CardResult =
+  | { status: 'ok'; messageId: string }
+  | { status: 'not_found' }
+  | { status: 'blocked' };
+
+/**
+ * Карточка товара или документ в чат (раздел 3.7 ТЗ). Отправить можно только товар
+ * поставщика этой пары и документ заявки этой пары (правило 4).
+ */
+export async function sendCard(input: {
+  chatId: string;
+  companyId: string;
+  userId: string;
+  offerId?: string;
+  documentId?: string;
+}): Promise<CardResult> {
+  const chat = await ownChat(input.chatId, input.companyId);
+  if (!chat) return { status: 'not_found' };
+  const counterpartyId = chat.storeId === input.companyId ? chat.supplierId : chat.storeId;
+  if (await isBlocked(input.companyId, counterpartyId)) return { status: 'blocked' };
+
+  let text: string | null = null;
+  if (input.offerId) {
+    const offer = await prisma.supplierOffer.findFirst({
+      where: { id: input.offerId, supplierId: chat.supplierId },
+      include: { product: { select: { nameRu: true } } },
+    });
+    if (offer) text = offer.product.nameRu;
+  } else if (input.documentId) {
+    const document = await prisma.document.findFirst({
+      where: {
+        id: input.documentId,
+        order: { storeId: chat.storeId, supplierId: chat.supplierId },
+      },
+    });
+    if (document) text = `№ ${document.number}`;
+  }
+  if (!text) return { status: 'not_found' };
+
+  const message = await prisma.$transaction(async (tx) => {
+    const created = await tx.message.create({
+      data: {
+        chatId: chat.id,
+        authorCompanyId: input.companyId,
+        authorUserId: input.userId,
+        text: text.slice(0, 200),
+        offerId: input.offerId ? input.offerId : null,
+        documentId: input.offerId ? null : (input.documentId ?? null),
+      },
+    });
+    await tx.chat.update({ where: { id: chat.id }, data: { updatedAt: new Date() } });
+    return created;
+  });
+  await notify(counterpartyId, 'message_received', { number: '', text: message.text.slice(0, 80) });
+  return { status: 'ok', messageId: message.id };
+}
+
 // ---------- Жалобы ----------
 
 export type ComplaintResult =

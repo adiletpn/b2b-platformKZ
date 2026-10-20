@@ -77,6 +77,8 @@ export async function searchDocuments(
 
   return documents.map((document) => {
     const outgoing = document.issuerId === companyId;
+    // Подписи прошлых версий остаются в истории, отметка — только по текущей.
+    const signatures = document.signatures.filter((row) => row.version === document.version);
     return {
       id: document.id,
       type: document.type,
@@ -87,12 +89,12 @@ export async function searchDocuments(
       totalWithVat: document.totalWithVat.toFixed(2),
       version: document.version,
       outgoing,
-      signatures: document.signatures.map((signature) => ({
+      signatures: signatures.map((signature) => ({
         signerName: signature.signerName,
         signedAt: formatDateTime(signature.signedAt),
         certificate: signature.certificate,
       })),
-      signedByMe: document.signatures.some((signature) => signature.companyId === companyId),
+      signedByMe: signatures.some((signature) => signature.companyId === companyId),
     };
   });
 }

@@ -8,6 +8,8 @@ export function LogoutButton({ label }: { label: string }) {
 
   async function logout() {
     await fetch('/api/auth/logout', { method: 'POST' });
+    // Сохранённая для работы без сети страница кассы не должна пережить выход (public/sw.js).
+    if ('caches' in window) await caches.delete('b2b-pages-v1').catch(() => false);
     router.push('/login');
     router.refresh();
   }

@@ -35,14 +35,25 @@ type Product = {
   isMarked: boolean;
   /** Подакцизный: часы продажи и подтверждение возраста. */
   isExcise: boolean;
+  /** Продажа поштучно из упаковки: штук в упаковке и цена штуки (разделы 4.1 и 4.2 ТЗ). */
+  piecesPerPack: number | null;
+  piecePrice: string | null;
 };
-type Line = Product & { quantity: string; discountPercent: string; markingCodes: string[] };
+type Line = Product & {
+  /** Товар может лежать в чеке дважды: упаковкой и штуками. */
+  key: string;
+  byPiece: boolean;
+  quantity: string;
+  discountPercent: string;
+  markingCodes: string[];
+};
 type Shift = { id: string; number: string; openedAt: string } | null;
 type Report = {
   receipts: number;
   refunds: number;
   total: string;
-  byPayment: { CASH: string; CARD: string; QR: string };
+  byPayment: { CASH: string; CARD: string; QR: string; BONUS: string };
+  bonusEarned: string;
   discounts: string;
   margin: string;
   averageCheck: string;
@@ -67,8 +78,11 @@ type QueuedSale = {
     quantity: string;
     discountPercent?: string;
     markingCodes?: string[];
+    byPiece?: boolean;
   }[];
   ageConfirmed?: boolean;
+  customerPhone?: string;
+  bonusRedeem?: string;
   receiptDiscountPercent?: string;
   cashAmount?: string;
   cardAmount?: string;
@@ -143,6 +157,14 @@ export function PosScreen({
   const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [codeDrafts, setCodeDrafts] = useState<Record<string, string>>({});
   const [receiptPhone, setReceiptPhone] = useState('');
+  // Программа лояльности (этап 3 ТЗ): телефон покупателя, баланс и сколько списать.
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [customer, setCustomer] = useState<{
+    phone: string;
+    balance: string;
+    maxRedeemShare: string;
+  } | null>(null);
+  const [bonusRedeem, setBonusRedeem] = useState('');
   const [cash, setCash] = useState('0');
   const [cashOp, setCashOp] = useState<{
     type: 'CASH_IN' | 'CASH_OUT';
@@ -153,7 +175,9 @@ export function PosScreen({
   const [held, setHeld] = useState<HeldReceipt[]>([]);
   const [queued, setQueued] = useState(0);
   const [online, setOnline] = useState(true);
-  const [notice, setNotice] = useState<{ key: string; change?: string } | null>(null);
+  const [notice, setNotice] = useState<{ key: string; change?: string; bonus?: string } | null>(
+    null,
+  );
   const [error, setError] = useState<{ key: string; value?: string } | null>(null);
   const [lastReceipt, setLastReceipt] = useState<{ id: string; number: string } | null>(null);
   // Возврат без права «Касса → изменение» подтверждает старший кодом (разделы 4.2 и 3.12 ТЗ).
@@ -224,18 +248,46 @@ export function PosScreen({
   }, [products, query]);
 
   const totals = previewTotals(cart, receiptDiscount);
-  const change = payment === 'CASH' && cashReceived ? Number(cashReceived) - totals.total : null;
+  const redeemValue = customer ? Number(bonusRedeem || '0') : 0;
+  const toPay = Math.round((totals.total - redeemValue) * 100) / 100;
+  const change = payment === 'CASH' && cashReceived ? Number(cashReceived) - toPay : null;
 
-  function add(product: Product) {
+  async function findCustomer() {
     setError(null);
+    const response = await fetch(`/api/pos/loyalty?phone=${encodeURIComponent(customerPhone)}`);
+    const data = (await response.json().catch(() => ({}))) as {
+      status?: string;
+      phone?: string;
+      balance?: string;
+      maxRedeemShare?: string;
+    };
+    if (data.status !== 'ok') {
+      setCustomer(null);
+      setError({ key: data.status ?? 'unknown' });
+      return;
+    }
+    setCustomer({
+      phone: data.phone!,
+      balance: data.balance!,
+      maxRedeemShare: data.maxRedeemShare!,
+    });
+  }
+
+  function add(product: Product, byPiece = false) {
+    setError(null);
+    const key = byPiece ? `${product.productId}:piece` : product.productId;
     setCart((current) => {
-      const existing = current.find((item) => item.productId === product.productId);
+      const existing = current.find((item) => item.key === key);
       // Маркированный товар добавляется сканированием кода: количество = числу кодов.
       if (!existing) {
         return [
           ...current,
           {
             ...product,
+            // Поштучно цена — за штуку, количество — число штук.
+            price: byPiece ? product.piecePrice! : product.price,
+            key,
+            byPiece,
             quantity: product.isMarked ? '0' : '1',
             discountPercent: '',
             markingCodes: [],
@@ -244,9 +296,7 @@ export function PosScreen({
       }
       if (product.isMarked) return current;
       return current.map((item) =>
-        item.productId === product.productId
-          ? { ...item, quantity: String(Number(item.quantity) + 1) }
-          : item,
+        item.key === key ? { ...item, quantity: String(Number(item.quantity) + 1) } : item,
       );
     });
   }
@@ -261,21 +311,19 @@ export function PosScreen({
     add(found);
   }
 
-  function updateLine(productId: string, patch: Partial<Line>) {
-    setCart((current) =>
-      current.map((item) => (item.productId === productId ? { ...item, ...patch } : item)),
-    );
+  function updateLine(key: string, patch: Partial<Line>) {
+    setCart((current) => current.map((item) => (item.key === key ? { ...item, ...patch } : item)));
   }
 
-  function step(productId: string, delta: number) {
+  function step(key: string, delta: number) {
     setCart((current) =>
       current
         .map((item) =>
-          item.productId === productId
+          item.key === key
             ? { ...item, quantity: String(Math.max(0, Number(item.quantity) + delta)) }
             : item,
         )
-        .filter((item) => item.productId !== productId || Number(item.quantity) > 0),
+        .filter((item) => item.key !== key || Number(item.quantity) > 0),
     );
   }
 
@@ -317,6 +365,9 @@ export function PosScreen({
     setReceiptDiscount('');
     setCashReceived('');
     setMixedCash('');
+    setCustomerPhone('');
+    setCustomer(null);
+    setBonusRedeem('');
   }
 
   /** Отложенный чек (раздел 4.2 ТЗ): покупатель отошёл — обслуживаем следующего. */
@@ -356,12 +407,15 @@ export function PosScreen({
         quantity: item.quantity,
         discountPercent: item.discountPercent || undefined,
         markingCodes: item.isMarked ? item.markingCodes : undefined,
+        byPiece: item.byPiece || undefined,
       })),
       ageConfirmed: ageConfirmed || undefined,
       receiptDiscountPercent: receiptDiscount || undefined,
       cashReceived: payment === 'CASH' && cashReceived ? cashReceived : undefined,
       cashAmount: payment === 'MIXED' ? mixedCash || '0' : undefined,
-      cardAmount: payment === 'MIXED' ? money(totals.total - Number(mixedCash || '0')) : undefined,
+      cardAmount: payment === 'MIXED' ? money(toPay - Number(mixedCash || '0')) : undefined,
+      customerPhone: customerPhone.trim() || undefined,
+      bonusRedeem: customer && bonusRedeem ? bonusRedeem : undefined,
     };
 
     try {
@@ -379,18 +433,20 @@ export function PosScreen({
         total?: string;
         hours?: string;
         productId?: string;
+        available?: string;
+        bonusEarned?: string;
       };
       if (data.status !== 'ok') {
         const product = cart.find((item) => item.productId === data.productId)?.name;
         setError({
           key: data.status ?? 'unknown',
-          value: data.limit ?? data.total ?? data.hours ?? product,
+          value: data.limit ?? data.total ?? data.hours ?? data.available ?? product,
         });
         setPending(false);
         return;
       }
       setLastReceipt({ id: data.receiptId!, number: data.number! });
-      setNotice({ key: 'sold', change: data.change });
+      setNotice({ key: 'sold', change: data.change, bonus: data.bonusEarned });
       resetReceipt();
       await refresh();
     } catch {
@@ -698,6 +754,17 @@ export function PosScreen({
                     </span>
                   </span>
                 </button>
+                {product.piecesPerPack && product.piecePrice && !product.isMarked ? (
+                  <button
+                    type="button"
+                    className="border-border hover:border-primary mt-1 flex w-full items-baseline justify-between gap-2 rounded-lg border border-dashed px-3 py-1.5 text-left text-xs"
+                    data-testid="pos-tile-piece"
+                    onClick={() => add(product, true)}
+                  >
+                    <span>{t('byPiece')}</span>
+                    <span className="font-semibold tabular-nums">{product.piecePrice} ₸</span>
+                  </button>
+                ) : null}
               </li>
             ))}
           </ul>
@@ -745,13 +812,18 @@ export function PosScreen({
           ) : (
             <ul className="divide-border mt-3 divide-y text-sm" data-testid="pos-cart">
               {cart.map((item) => (
-                <li key={item.productId} className="space-y-1.5 py-2">
+                <li key={item.key} className="space-y-1.5 py-2">
                   <div className="flex justify-between gap-2">
                     <span className="min-w-0 break-words">
                       {item.name}
                       {item.isExcise ? (
                         <Badge tone="warning" className="ml-1.5">
                           {t('exciseBadge')}
+                        </Badge>
+                      ) : null}
+                      {item.byPiece ? (
+                        <Badge tone="info" className="ml-1.5" data-testid="pos-line-piece">
+                          {t('byPieceBadge', { pieces: item.piecesPerPack ?? 0 })}
                         </Badge>
                       ) : null}
                     </span>
@@ -808,7 +880,7 @@ export function PosScreen({
                       className="size-8"
                       aria-label={t('less')}
                       disabled={item.isMarked}
-                      onClick={() => step(item.productId, -1)}
+                      onClick={() => step(item.key, -1)}
                     >
                       <Minus aria-hidden />
                     </Button>
@@ -818,9 +890,7 @@ export function PosScreen({
                       value={item.quantity}
                       readOnly={item.isMarked}
                       aria-label={t('quantity')}
-                      onChange={(event) =>
-                        updateLine(item.productId, { quantity: event.target.value })
-                      }
+                      onChange={(event) => updateLine(item.key, { quantity: event.target.value })}
                     />
                     <Button
                       variant="outline"
@@ -828,7 +898,7 @@ export function PosScreen({
                       className="size-8"
                       aria-label={t('more')}
                       disabled={item.isMarked}
-                      onClick={() => step(item.productId, 1)}
+                      onClick={() => step(item.key, 1)}
                     >
                       <Plus aria-hidden />
                     </Button>
@@ -840,7 +910,7 @@ export function PosScreen({
                       aria-label={t('lineDiscount')}
                       data-testid="pos-line-discount"
                       onChange={(event) =>
-                        updateLine(item.productId, { discountPercent: event.target.value })
+                        updateLine(item.key, { discountPercent: event.target.value })
                       }
                     />
                     <Button
@@ -849,7 +919,7 @@ export function PosScreen({
                       className="size-8"
                       aria-label={t('removeLine')}
                       data-testid="pos-remove-line"
-                      onClick={() => step(item.productId, -Number(item.quantity))}
+                      onClick={() => step(item.key, -Number(item.quantity))}
                     >
                       <Trash2 aria-hidden />
                     </Button>
@@ -887,6 +957,54 @@ export function PosScreen({
                   onChange={(event) => setMixedCash(event.target.value)}
                 />
               </Field>
+            ) : null}
+          </div>
+
+          <div
+            className="border-border mt-3 rounded-lg border border-dashed p-3"
+            data-testid="pos-loyalty"
+          >
+            <p className="text-muted-foreground text-xs">{t('loyalty.title')}</p>
+            <div className="mt-1.5 flex gap-2">
+              <Input
+                className="h-9 min-w-0 flex-1"
+                inputMode="tel"
+                placeholder={t('loyalty.phone')}
+                aria-label={t('loyalty.phone')}
+                value={customerPhone}
+                data-testid="pos-customer-phone"
+                onChange={(event) => {
+                  setCustomerPhone(event.target.value);
+                  setCustomer(null);
+                  setBonusRedeem('');
+                }}
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={!customerPhone.trim()}
+                data-testid="pos-customer-find"
+                onClick={() => void findCustomer()}
+              >
+                {t('loyalty.find')}
+              </Button>
+            </div>
+            {customer ? (
+              <div className="mt-2 flex flex-wrap items-end gap-2 text-sm">
+                <p className="w-full" data-testid="pos-customer-balance">
+                  {t('loyalty.balance', { phone: customer.phone, balance: customer.balance })}
+                </p>
+                <Field label={t('loyalty.redeem', { share: customer.maxRedeemShare })}>
+                  <Input
+                    className="h-9 w-28"
+                    inputMode="decimal"
+                    value={bonusRedeem}
+                    placeholder="0"
+                    data-testid="pos-bonus-redeem"
+                    onChange={(event) => setBonusRedeem(event.target.value)}
+                  />
+                </Field>
+              </div>
             ) : null}
           </div>
 
@@ -950,15 +1068,22 @@ export function PosScreen({
                 <span className="tabular-nums">−{money(totals.gross - totals.total)} ₸</span>
               </p>
             ) : null}
+            {redeemValue > 0 ? (
+              <p
+                className="text-muted-foreground flex justify-between"
+                data-testid="pos-bonus-line"
+              >
+                <span>{t('loyalty.paidByBonus')}</span>
+                <span className="tabular-nums">−{money(redeemValue)} ₸</span>
+              </p>
+            ) : null}
             {payment === 'MIXED' && cart.length > 0 ? (
               <p
                 className="text-muted-foreground flex justify-between"
                 data-testid="pos-mixed-card"
               >
                 <span>{t('mixedCard')}</span>
-                <span className="tabular-nums">
-                  {money(totals.total - Number(mixedCash || '0'))} ₸
-                </span>
+                <span className="tabular-nums">{money(toPay - Number(mixedCash || '0'))} ₸</span>
               </p>
             ) : null}
             {change !== null && change >= 0 ? (
@@ -970,7 +1095,7 @@ export function PosScreen({
             <p className="flex items-baseline justify-between">
               <span>{t('total')}</span>
               <span className="text-2xl font-semibold tabular-nums" data-testid="pos-total">
-                {money(totals.total)} ₸
+                {money(toPay)} ₸
               </span>
             </p>
           </div>
@@ -1138,6 +1263,9 @@ export function PosScreen({
               {notice.change && notice.change !== '0.00'
                 ? ` ${t('changeGiven', { change: notice.change })}`
                 : ''}
+              {notice.bonus && notice.bonus !== '0.00'
+                ? ` ${t('loyalty.earned', { bonus: notice.bonus })}`
+                : ''}
             </p>
           ) : null}
           {error ? (
@@ -1164,6 +1292,8 @@ function ReportPanel({ report }: { report: NonNullable<Report> }) {
     [t('cash'), `${report.byPayment.CASH} ₸`],
     [t('card'), `${report.byPayment.CARD} ₸`],
     [t('qr'), `${report.byPayment.QR} ₸`],
+    [t('bonus'), `${report.byPayment.BONUS} ₸`],
+    [t('bonusEarned'), `${report.bonusEarned} ₸`],
     [t('opening'), `${report.openingCash} ₸`],
     [t('cashIn'), `${report.cashIn} ₸`],
     [t('cashOut'), `${report.cashOut} ₸`],

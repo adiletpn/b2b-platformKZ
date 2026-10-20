@@ -4,6 +4,7 @@ import { redirect } from '@/i18n/navigation';
 import { getAccess, hasPermission } from '@/lib/auth/permissions';
 import { prisma } from '@/lib/prisma';
 import { formatDateTime } from '@/lib/format';
+import { maskPhone } from '@/lib/phone';
 import { PrintButton } from './print-button';
 
 /**
@@ -29,6 +30,7 @@ export default async function ReceiptPrintPage({
       company: { select: { name: true, bin: true } },
       location: { select: { address: true } },
       user: { select: { name: true } },
+      loyaltyCustomer: { select: { phone: true } },
       items: { include: { product: { select: { nameRu: true, nameKk: true } } } },
     },
   });
@@ -71,10 +73,17 @@ export default async function ReceiptPrintPage({
               <p>{locale === 'kk' ? item.product.nameKk : item.product.nameRu}</p>
               <p className="flex justify-between gap-2">
                 <span>
-                  {item.quantity.toFixed(3)} × {item.price.toFixed(2)}
+                  {item.pieces
+                    ? t('pieces', { pieces: item.pieces, price: item.price.toFixed(2) })
+                    : `${item.quantity.toFixed(3)} × ${item.price.toFixed(2)}`}
                 </span>
                 <span>{item.total.toFixed(2)}</span>
               </p>
+              {item.pieces ? (
+                <p data-testid="receipt-piece">
+                  {t('pieceShare', { share: item.quantity.abs().toFixed(3) })}
+                </p>
+              ) : null}
               {item.discount.isZero() ? null : (
                 <p className="flex justify-between gap-2">
                   <span>{t('discount')}</span>
@@ -89,10 +98,35 @@ export default async function ReceiptPrintPage({
           <span>{t('total')}</span>
           <span>{receipt.total.toFixed(2)} ₸</span>
         </p>
+        {receipt.bonusRedeemed.isZero() ? null : (
+          <>
+            <p className="flex justify-between gap-2" data-testid="receipt-bonus">
+              <span>{t('bonusRedeemed')}</span>
+              <span>−{receipt.bonusRedeemed.toFixed(2)}</span>
+            </p>
+            <p className="flex justify-between gap-2 font-bold">
+              <span>{t('toPay')}</span>
+              <span>{receipt.total.minus(receipt.bonusRedeemed).toFixed(2)} ₸</span>
+            </p>
+          </>
+        )}
         <p className="flex justify-between gap-2">
           <span>{t('payment')}</span>
           <span>{tPay(`payment_${receipt.paymentType}`)}</span>
         </p>
+        {receipt.loyaltyCustomer ? (
+          <>
+            <p>
+              {t('customer')}: {maskPhone(receipt.loyaltyCustomer.phone)}
+            </p>
+            {receipt.bonusEarned.isZero() ? null : (
+              <p className="flex justify-between gap-2">
+                <span>{t('bonusEarned')}</span>
+                <span>{receipt.bonusEarned.toFixed(2)}</span>
+              </p>
+            )}
+          </>
+        ) : null}
         {receipt.fiscalId ? (
           <>
             <hr className="my-2 border-dashed" />

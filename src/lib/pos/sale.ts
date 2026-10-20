@@ -11,6 +11,14 @@ import { isWithinHours, markingCodeFits } from './restrictions';
 import { getSetting } from '@/lib/admin/settings';
 import { normalizePhone } from '@/lib/phone';
 import { sendReceiptLink } from '@/mocks/sms';
+import {
+  applyLoyalty,
+  earnedFor,
+  loyaltySettings,
+  maxRedeemFor,
+  NotEnoughBonusError,
+  revertLoyalty,
+} from './loyalty';
 
 export type SaleLine = {
   productId: string;
@@ -37,6 +45,9 @@ export type SaleInput = {
   cashReceived?: string;
   /** Кассир проверил документ покупателя подакцизного товара. */
   ageConfirmed?: boolean;
+  /** Программа лояльности: телефон покупателя и сколько бонусов списать. */
+  customerPhone?: string;
+  bonusRedeem?: string;
 };
 
 export type SaleResult =
@@ -49,6 +60,10 @@ export type SaleResult =
       change: string;
       fiscalId: string | null;
       replayed: boolean;
+      /** К оплате деньгами, списано и начислено бонусами. */
+      toPay: string;
+      bonusRedeemed: string;
+      bonusEarned: string;
     }
   | { status: 'no_open_shift' }
   | { status: 'empty_receipt' }
@@ -63,7 +78,11 @@ export type SaleResult =
   | { status: 'marking_reused'; productId: string }
   | { status: 'age_not_confirmed' }
   | { status: 'restricted_hours'; hours: string }
-  | { status: 'not_enough_stock'; productId: string };
+  | { status: 'not_enough_stock'; productId: string }
+  | { status: 'invalid_phone' }
+  | { status: 'invalid_bonus' }
+  | { status: 'bonus_limit'; limit: string }
+  | { status: 'not_enough_bonus'; available: string };
 
 /**
  * Доля упаковки, которую списывает поштучная продажа. Остаток хранится с тремя знаками
@@ -112,6 +131,7 @@ export async function sell(
     where: { companyId, clientId: input.clientId },
   });
   if (existing) {
+    const paid = new Decimal(existing.total.toString()).minus(existing.bonusRedeemed.toString());
     return {
       status: 'ok',
       receiptId: existing.id,
@@ -119,10 +139,13 @@ export async function sell(
       total: existing.total.toFixed(2),
       discount: existing.discountTotal.toFixed(2),
       change: existing.cashReceived
-        ? new Decimal(existing.cashReceived.toString()).minus(existing.total.toString()).toFixed(2)
+        ? new Decimal(existing.cashReceived.toString()).minus(paid).toFixed(2)
         : '0.00',
       fiscalId: existing.fiscalId,
       replayed: true,
+      toPay: paid.toFixed(2),
+      bonusRedeemed: existing.bonusRedeemed.toFixed(2),
+      bonusEarned: existing.bonusEarned.toFixed(2),
     };
   }
 
@@ -249,21 +272,40 @@ export async function sell(
     }
   }
 
-  // Оплата: смешанная сходится с итогом, наличных хватает на чек.
+  // Лояльность: телефон покупателя, списание не больше доли чека (этап 3 ТЗ).
+  let customerPhone: string | null = null;
+  let redeem = new Decimal(0);
+  if (input.customerPhone || input.bonusRedeem) {
+    customerPhone = normalizePhone(input.customerPhone ?? '');
+    if (!customerPhone) return { status: 'invalid_phone' };
+  }
+  const loyalty = customerPhone ? await loyaltySettings() : null;
+  if (input.bonusRedeem) {
+    const parsed = parseMoney(input.bonusRedeem);
+    if (!parsed) return { status: 'invalid_bonus' };
+    const limit = maxRedeemFor(receipt.total, loyalty!);
+    if (parsed.greaterThan(limit)) return { status: 'bonus_limit', limit: limit.toFixed(2) };
+    redeem = parsed;
+  }
+  // Списание уменьшает сумму к оплате деньгами.
+  const toPay = receipt.total.minus(redeem);
+  const earned = loyalty ? earnedFor(toPay, loyalty) : new Decimal(0);
+
+  // Оплата: смешанная сходится с суммой к оплате, наличных хватает на чек.
   let cashAmount: Decimal | null = null;
   let cardAmount: Decimal | null = null;
   let cashReceived: Decimal | null = null;
   if (input.paymentType === 'MIXED') {
     cashAmount = parseMoney(input.cashAmount);
     cardAmount = parseMoney(input.cardAmount);
-    if (!cashAmount || !cardAmount || !cashAmount.plus(cardAmount).equals(receipt.total)) {
-      return { status: 'payment_mismatch', total: receipt.total.toFixed(2) };
+    if (!cashAmount || !cardAmount || !cashAmount.plus(cardAmount).equals(toPay)) {
+      return { status: 'payment_mismatch', total: toPay.toFixed(2) };
     }
   }
   if (input.paymentType === 'CASH' && input.cashReceived) {
     cashReceived = parseMoney(input.cashReceived);
-    if (!cashReceived || cashReceived.lessThan(receipt.total)) {
-      return { status: 'not_enough_cash', total: receipt.total.toFixed(2) };
+    if (!cashReceived || cashReceived.lessThan(toPay)) {
+      return { status: 'not_enough_cash', total: toPay.toFixed(2) };
     }
   }
 
@@ -276,7 +318,7 @@ export async function sell(
     );
   }
 
-  const result = await prisma.$transaction(async (tx) => {
+  const transaction = prisma.$transaction(async (tx) => {
     for (const [productId, needed] of neededByProduct) {
       const balance = await currentBalance(tx, locationId, productId);
       if (balance.quantity.lessThan(needed)) {
@@ -349,13 +391,27 @@ export async function sell(
       costTotal = costTotal.plus(lineCost);
     }
 
-    const fiscal = fiscalize(number, receipt.total.toFixed(2));
+    // Начисление и списание бонусов — в той же транзакции, что и остатки.
+    const loyaltyCustomerId = customerPhone
+      ? await applyLoyalty(tx, {
+          companyId,
+          receiptId: created.id,
+          phone: customerPhone,
+          redeem,
+          earned,
+        })
+      : null;
+
+    const fiscal = fiscalize(number, toPay.toFixed(2), { bonus: redeem.toFixed(2) });
     await tx.receipt.update({
       where: { id: created.id },
       data: {
         costTotal: costTotal.toFixed(2),
         fiscalId: fiscal.fiscalId,
         fiscalUrl: fiscal.fiscalUrl,
+        loyaltyCustomerId,
+        bonusRedeemed: redeem.toFixed(2),
+        bonusEarned: earned.toFixed(2),
       },
     });
 
@@ -365,13 +421,23 @@ export async function sell(
       number,
       total: receipt.total.toFixed(2),
       discount: receipt.discount.toFixed(2),
-      change: cashReceived ? cashReceived.minus(receipt.total).toFixed(2) : '0.00',
+      change: cashReceived ? cashReceived.minus(toPay).toFixed(2) : '0.00',
       fiscalId: fiscal.fiscalId,
       replayed: false,
+      toPay: toPay.toFixed(2),
+      bonusRedeemed: redeem.toFixed(2),
+      bonusEarned: earned.toFixed(2),
     };
   }, LONG_TRANSACTION);
 
-  return result;
+  try {
+    return await transaction;
+  } catch (error) {
+    if (error instanceof NotEnoughBonusError) {
+      return { status: 'not_enough_bonus', available: error.available };
+    }
+    throw error;
+  }
 }
 
 export type RefundResult =
@@ -424,8 +490,21 @@ export async function refund(
         refundOf: receipt.id,
         userId,
         approvedById,
+        loyaltyCustomerId: receipt.loyaltyCustomerId,
+        bonusRedeemed: new Decimal(receipt.bonusRedeemed.toString()).negated().toFixed(2),
+        bonusEarned: new Decimal(receipt.bonusEarned.toString()).negated().toFixed(2),
       },
     });
+    // Возврат откатывает и начисление, и списание бонусов.
+    await revertLoyalty(
+      tx,
+      {
+        loyaltyCustomerId: receipt.loyaltyCustomerId,
+        bonusRedeemed: new Decimal(receipt.bonusRedeemed.toString()),
+        bonusEarned: new Decimal(receipt.bonusEarned.toString()),
+      },
+      created.id,
+    );
 
     for (const item of receipt.items) {
       const quantity = new Decimal(item.quantity.toString());

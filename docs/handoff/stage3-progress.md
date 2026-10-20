@@ -19,12 +19,31 @@
 - A5 баннеры: модель `Banner`, `src/lib/admin/banners.ts`, `/api/admin/banners`, панель админки,
   `CabinetBanners` на главной кабинета (закрытие в localStorage).
 
+## Сделано (коммит «B6 лояльность»)
+
+- Миграция `20261020140000_s3b_loyalty`: `LoyaltyCustomer`, `LoyaltyMovement`, поля чека
+  `loyaltyCustomerId`, `bonusRedeemed`, `bonusEarned`.
+- `src/lib/pos/loyalty.ts`: настройки `loyalty_earn_percent`=5 и `loyalty_max_redeem_share`=50
+  (TODO(open-question)), начисление с оплаченного деньгами вниз до копейки, списание условным
+  обновлением в транзакции чека, откат при возврате (баланс может уйти в минус — TODO).
+- `Receipt.total` — полная сумма чека, к оплате деньгами `total − bonusRedeemed`; в Z-отчёте
+  строка `BONUS` и `bonusEarned`; фискальный мок получает оплату деньгами и бонусами.
+- Касса: блок «Бонусы покупателя», маршрут `/api/pos/loyalty?phone=`, печатный чек.
+- Касса: плитка «Поштучно» (`pos-tile-piece`), строка чека по ключу `key`, штуки в печатном чеке.
+- Тесты: `tests/integration/loyalty-pieces.test.ts`, e2e `tests/e2e/f2-loyalty.spec.ts`.
+
+## Как гонять e2e в этом контейнере
+
+Node 22.22 падает при загрузке спек («module not been linked»). Рабочий способ: собрать
+`npm run build`, поднять `DATABASE_URL=$TEST_DATABASE_URL npm run start -- --port 3100`,
+подготовить базу любым `npx vitest run tests/unit/barcode.test.ts` и запускать
+`NODE_OPTIONS=--no-experimental-require-module npx playwright test -c pw.local.config.ts`
+(локальный конфиг без webServer и globalSetup, в git не попадает).
+
 ## Не доделано
 
-- Касса: кнопка/плитка «поштучно» в `pos-screen.tsx` (сервер готов: строка `byPiece: true`,
-  `quantity` = число штук), вывод штук в печатном чеке `pos/receipt/[id]/page.tsx`.
-- Интеграционные тесты блока A и e2e объединения дублей.
-- Блок B целиком: 6 лояльность, 7 аналитика, 8 торговые представители, 9 маршруты водителей.
+- Интеграционные тесты дублей и баннеров, e2e объединения дублей.
+- Блок B: 7 аналитика, 8 торговые представители, 9 маршруты водителей.
   План по каждому пункту был такой:
   - 6: `LoyaltyCustomer(companyId, phone, balance)`, `LoyaltyMovement`, поля чека
     `bonusRedeemed/bonusEarned/loyaltyCustomerId`; «к оплате» = total − бонусы, в Z-отчёте строка

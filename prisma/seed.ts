@@ -335,6 +335,10 @@ const SETTINGS = [
   // Разделы 4.1 и 4.2 ТЗ: доля упаковки при продаже штуками округляется до 3 знаков.
   // TODO(open-question): способ округления (half_up, up, down) подтверждает заказчик.
   { key: 'piece_sale_rounding', value: 'half_up' },
+  // Этап 3 ТЗ, лояльность: начисление 5% от оплаченного деньгами, списание до 50% чека.
+  // TODO(open-question): процент и доля — значения по умолчанию, подтверждает заказчик.
+  { key: 'loyalty_earn_percent', value: '5' },
+  { key: 'loyalty_max_redeem_share', value: '50' },
 ];
 
 async function main() {

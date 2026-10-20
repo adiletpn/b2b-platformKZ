@@ -30,6 +30,7 @@ export default async function PosPage({ params }: { params: Promise<{ locale: st
   ]);
 
   const priceByProduct = new Map(prices.map((price) => [price.productId, price.price]));
+  const retailByProduct = new Map(prices.map((price) => [price.productId, price]));
   const report = shift ? await getZReport(access!.companyId, shift.id) : null;
 
   return (
@@ -44,6 +45,8 @@ export default async function PosPage({ params }: { params: Promise<{ locale: st
           stock: balance.quantity.toFixed(3),
           isMarked: balance.product.isMarked,
           isExcise: balance.product.isExcise,
+          piecesPerPack: retailByProduct.get(balance.productId)!.piecesPerPack,
+          piecePrice: retailByProduct.get(balance.productId)!.piecePrice?.toFixed(2) ?? null,
         }))}
       initialShift={
         shift

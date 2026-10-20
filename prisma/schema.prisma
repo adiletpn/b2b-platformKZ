@@ -230,6 +230,7 @@ model Company {
   chatBlocksMade       ChatBlock[]            @relation("ChatBlocker")
   chatBlocksReceived   ChatBlock[]            @relation("ChatBlocked")
   supportTickets       SupportTicket[]
+  loyaltyCustomers     LoyaltyCustomer[]
 
   license CompanyLicense?
 
@@ -834,35 +835,42 @@ model CashOperation {
 
 /// Чек кассы. `clientId` даёт идемпотентность при синхронизации офлайн-продаж.
 model Receipt {
-  id            String             @id @default(cuid())
-  number        String
-  clientId      String
-  shiftId       String
-  shift         PosShift           @relation(fields: [shiftId], references: [id], onDelete: Cascade)
-  companyId     String
-  company       Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  locationId    String
-  location      Location           @relation(fields: [locationId], references: [id])
-  paymentType   ReceiptPaymentType
-  status        ReceiptStatus      @default(PAID)
-  total         Decimal            @db.Decimal(14, 2)
-  costTotal     Decimal            @default(0) @db.Decimal(14, 2)
+  id                String             @id @default(cuid())
+  number            String
+  clientId          String
+  shiftId           String
+  shift             PosShift           @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  companyId         String
+  company           Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  locationId        String
+  location          Location           @relation(fields: [locationId], references: [id])
+  paymentType       ReceiptPaymentType
+  status            ReceiptStatus      @default(PAID)
+  total             Decimal            @db.Decimal(14, 2)
+  costTotal         Decimal            @default(0) @db.Decimal(14, 2)
   /// Скидки чека: сумма скидок по позициям и на весь чек (раздел 4.2 ТЗ).
-  discountTotal Decimal            @default(0) @db.Decimal(14, 2)
+  discountTotal     Decimal            @default(0) @db.Decimal(14, 2)
   /// Части смешанной оплаты и полученные наличные — для сдачи и ящика кассы.
-  cashAmount    Decimal?           @db.Decimal(14, 2)
-  cardAmount    Decimal?           @db.Decimal(14, 2)
-  cashReceived  Decimal?           @db.Decimal(14, 2)
+  cashAmount        Decimal?           @db.Decimal(14, 2)
+  cardAmount        Decimal?           @db.Decimal(14, 2)
+  cashReceived      Decimal?           @db.Decimal(14, 2)
   /// Кассир подтвердил возраст покупателя подакцизного товара (раздел 4.2 ТЗ).
-  ageConfirmed  Boolean            @default(false)
+  ageConfirmed      Boolean            @default(false)
   /// Ответ онлайн-кассы: номер фискального документа и ссылка в ОФД (в демо — мок).
-  fiscalId      String?
-  fiscalUrl     String?
-  userId        String?
-  user          User?              @relation(fields: [userId], references: [id])
+  fiscalId          String?
+  fiscalUrl         String?
+  userId            String?
+  user              User?              @relation(fields: [userId], references: [id])
   /// Старший, подтвердивший возврат кодом (разделы 4.2 и 3.12 ТЗ).
-  approvedById  String?
-  createdAt     DateTime           @default(now())
+  approvedById      String?
+  /// Программа лояльности (этап 3): покупатель по телефону, списано и начислено бонусами.
+  /// К оплате деньгами — `total − bonusRedeemed`.
+  loyaltyCustomerId String?
+  loyaltyCustomer   LoyaltyCustomer?   @relation(fields: [loyaltyCustomerId], references: [id])
+  bonusRedeemed     Decimal            @default(0) @db.Decimal(14, 2)
+  bonusEarned       Decimal            @default(0) @db.Decimal(14, 2)
+  loyaltyMovements  LoyaltyMovement[]
+  createdAt         DateTime           @default(now())
 
   items    ReceiptItem[]
   refundOf String?
@@ -1646,4 +1654,46 @@ model Banner {
 
   @@index([startsOn, endsOn])
   @@map("banners")
+}
+
+// ---------- Программа лояльности на кассе (этап 3, раздел 4.2 ТЗ) ----------
+
+/// Покупатель магазина по номеру телефона. У каждой компании свои покупатели.
+/// Баланс меняется только движением бонусного счёта в транзакции чека (по образцу правила 3).
+model LoyaltyCustomer {
+  id        String   @id @default(cuid())
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  phone     String
+  balance   Decimal  @default(0) @db.Decimal(14, 2)
+  createdAt DateTime @default(now())
+
+  receipts  Receipt[]
+  movements LoyaltyMovement[]
+
+  @@unique([companyId, phone])
+  @@map("loyalty_customers")
+}
+
+/// Движение бонусного счёта: начисление, списание и их откат при возврате чека.
+enum LoyaltyMovementType {
+  EARN
+  REDEEM
+  EARN_REVERSAL
+  REDEEM_REVERSAL
+}
+
+model LoyaltyMovement {
+  id         String              @id @default(cuid())
+  customerId String
+  customer   LoyaltyCustomer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  receiptId  String
+  receipt    Receipt             @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+  type       LoyaltyMovementType
+  /// Со знаком: начисление плюсом, списание минусом.
+  amount     Decimal             @db.Decimal(14, 2)
+  createdAt  DateTime            @default(now())
+
+  @@index([customerId, createdAt])
+  @@map("loyalty_movements")
 }

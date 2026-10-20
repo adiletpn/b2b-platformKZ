@@ -1614,7 +1614,10 @@
       "invalid_code": "Неверный или просроченный код",
       "sms_failed": "Не удалось отправить SMS старшему. Попробуйте ещё раз через минуту",
       "too_many_requests": "Код уже отправлен. Новый можно запросить через минуту",
-      "piece_sale_unavailable": "Товар {value} нельзя продать поштучно"
+      "piece_sale_unavailable": "Товар {value} нельзя продать поштучно",
+      "invalid_bonus": "Проверьте сумму бонусов",
+      "bonus_limit": "Бонусами можно оплатить не больше {value} ₸",
+      "not_enough_bonus": "У покупателя только {value} ₸ бонусов"
     },
     "online": "В сети",
     "offline": "Без сети",
@@ -1663,7 +1666,9 @@
       "cashOut": "Изъято",
       "expectedCash": "В ящике сейчас",
       "byCashier": "По кассирам",
-      "topProducts": "Лидеры продаж"
+      "topProducts": "Лидеры продаж",
+      "bonus": "Бонусами",
+      "bonusEarned": "Начислено бонусов"
     },
     "exciseBadge": "акциз",
     "markingPlaceholder": "Отсканируйте код DataMatrix",
@@ -1686,7 +1691,18 @@
     "approvalCode": "Код",
     "approvalConfirm": "Подтвердить возврат",
     "approvalIssued": "Демо: код отправлен старшему — {code}",
-    "approvalSmsSent": "Код отправлен старшему по SMS"
+    "approvalSmsSent": "Код отправлен старшему по SMS",
+    "byPiece": "Поштучно",
+    "byPieceBadge": "поштучно, {pieces} шт в упак.",
+    "loyalty": {
+      "title": "Бонусы покупателя",
+      "phone": "Телефон покупателя",
+      "find": "Найти",
+      "balance": "{phone}: бонусов {balance} ₸",
+      "redeem": "Списать бонусами (до {share}% чека)",
+      "paidByBonus": "Оплата бонусами",
+      "earned": "Начислено бонусов: {bonus} ₸"
+    }
   },
   "files": {
     "orderTitle": "Файлы заявки",
@@ -1814,7 +1830,13 @@
     "payment": "Оплата",
     "fiscal": "Фискальный признак",
     "thanks": "Спасибо за покупку!",
-    "print": "Печать"
+    "print": "Печать",
+    "pieces": "{pieces} шт × {price}",
+    "pieceShare": "поштучно, {share} упак.",
+    "bonusRedeemed": "Оплачено бонусами",
+    "toPay": "К ОПЛАТЕ",
+    "bonusEarned": "Начислено бонусов",
+    "customer": "Покупатель"
   },
   "camera": {
     "open": "Сканировать камерой",

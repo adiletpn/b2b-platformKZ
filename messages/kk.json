@@ -1614,7 +1614,10 @@
       "invalid_code": "Код қате немесе мерзімі өткен",
       "sms_failed": "Аға қызметкерге SMS жіберу мүмкін болмады. Бір минуттан соң қайталаңыз",
       "too_many_requests": "Код жіберілді. Жаңасын бір минуттан соң сұрауға болады",
-      "piece_sale_unavailable": "{value} тауарын даналап сатуға болмайды"
+      "piece_sale_unavailable": "{value} тауарын даналап сатуға болмайды",
+      "invalid_bonus": "Бонус сомасын тексеріңіз",
+      "bonus_limit": "Бонуспен {value} ₸-ден артық төлеуге болмайды",
+      "not_enough_bonus": "Сатып алушыда тек {value} ₸ бонус бар"
     },
     "online": "Желіде",
     "offline": "Желісіз",
@@ -1663,7 +1666,9 @@
       "cashOut": "Алынды",
       "expectedCash": "Қазір жәшікте",
       "byCashier": "Кассирлер бойынша",
-      "topProducts": "Сату көшбасшылары"
+      "topProducts": "Сату көшбасшылары",
+      "bonus": "Бонуспен",
+      "bonusEarned": "Есептелген бонус"
     },
     "exciseBadge": "акциз",
     "markingPlaceholder": "DataMatrix кодын сканерлеңіз",
@@ -1686,7 +1691,18 @@
     "approvalCode": "Код",
     "approvalConfirm": "Қайтаруды растау",
     "approvalIssued": "Демо: код аға қызметкерге жіберілді — {code}",
-    "approvalSmsSent": "Код аға қызметкерге SMS арқылы жіберілді"
+    "approvalSmsSent": "Код аға қызметкерге SMS арқылы жіберілді",
+    "byPiece": "Даналап",
+    "byPieceBadge": "даналап, қаптамада {pieces} дана",
+    "loyalty": {
+      "title": "Сатып алушы бонустары",
+      "phone": "Сатып алушы телефоны",
+      "find": "Табу",
+      "balance": "{phone}: бонус {balance} ₸",
+      "redeem": "Бонуспен төлеу (чектің {share}%-ына дейін)",
+      "paidByBonus": "Бонуспен төлем",
+      "earned": "Бонус есептелді: {bonus} ₸"
+    }
   },
   "files": {
     "orderTitle": "Өтінім файлдары",
@@ -1814,7 +1830,13 @@
     "payment": "Төлем",
     "fiscal": "Фискалдық белгі",
     "thanks": "Сатып алғаныңызға рахмет!",
-    "print": "Басып шығару"
+    "print": "Басып шығару",
+    "pieces": "{pieces} дана × {price}",
+    "pieceShare": "даналап, {share} қаптама",
+    "bonusRedeemed": "Бонуспен төленді",
+    "toPay": "ТӨЛЕУГЕ",
+    "bonusEarned": "Есептелген бонус",
+    "customer": "Сатып алушы"
   },
   "camera": {
     "open": "Камерамен сканерлеу",

@@ -41,6 +41,8 @@ export async function POST(request: Request) {
       cardAmount: body.cardAmount,
       cashReceived: body.cashReceived,
       ageConfirmed: body.ageConfirmed === true,
+      customerPhone: body.customerPhone || undefined,
+      bonusRedeem: body.bonusRedeem || undefined,
     },
     { maxDiscount: membership?.maxDiscount?.toFixed(2) ?? null },
   );

@@ -63,6 +63,8 @@ type ReceiptWithDetails = {
   discountTotal: { toString(): string };
   cashAmount: { toString(): string } | null;
   cardAmount: { toString(): string } | null;
+  bonusRedeemed: { toString(): string };
+  bonusEarned: { toString(): string };
   user: { name: string | null; phone: string } | null;
   items: {
     quantity: { toString(): string };
@@ -75,7 +77,9 @@ export type SalesSummary = {
   receipts: number;
   refunds: number;
   total: string;
-  byPayment: { CASH: string; CARD: string; QR: string };
+  /** BONUS — оплачено бонусами программы лояльности: CASH + CARD + QR + BONUS = total. */
+  byPayment: { CASH: string; CARD: string; QR: string; BONUS: string };
+  bonusEarned: string;
   discounts: string;
   cost: string;
   margin: string;
@@ -96,7 +100,8 @@ function cashierName(user: ReceiptWithDetails['user']) {
  */
 export function summarize(receipts: ReceiptWithDetails[]): SalesSummary {
   const zero = new Decimal(0);
-  const byPayment = { CASH: zero, CARD: zero, QR: zero };
+  const byPayment = { CASH: zero, CARD: zero, QR: zero, BONUS: zero };
+  let bonusEarned = zero;
   const cashiers = new Map<string, { receipts: number; total: Decimal }>();
   const products = new Map<
     string,
@@ -113,11 +118,15 @@ export function summarize(receipts: ReceiptWithDetails[]): SalesSummary {
     total = total.plus(amount);
     cost = cost.plus(receipt.costTotal.toString());
     discounts = discounts.plus(receipt.discountTotal.toString());
+    // Списанные бонусы — отдельная строка оплаты: деньгами оплачено total − бонусы.
+    const bonus = new Decimal(receipt.bonusRedeemed.toString());
+    byPayment.BONUS = byPayment.BONUS.plus(bonus);
+    bonusEarned = bonusEarned.plus(receipt.bonusEarned.toString());
     if (receipt.paymentType === 'MIXED') {
       byPayment.CASH = byPayment.CASH.plus(receipt.cashAmount?.toString() ?? '0');
       byPayment.CARD = byPayment.CARD.plus(receipt.cardAmount?.toString() ?? '0');
     } else {
-      byPayment[receipt.paymentType] = byPayment[receipt.paymentType].plus(amount);
+      byPayment[receipt.paymentType] = byPayment[receipt.paymentType].plus(amount.minus(bonus));
     }
     if (receipt.status === 'REFUNDED') refunds += 1;
 
@@ -153,7 +162,9 @@ export function summarize(receipts: ReceiptWithDetails[]): SalesSummary {
       CASH: byPayment.CASH.toFixed(2),
       CARD: byPayment.CARD.toFixed(2),
       QR: byPayment.QR.toFixed(2),
+      BONUS: byPayment.BONUS.toFixed(2),
     },
+    bonusEarned: bonusEarned.toFixed(2),
     discounts: discounts.toFixed(2),
     cost: cost.toFixed(2),
     margin: total.minus(cost).toFixed(2),

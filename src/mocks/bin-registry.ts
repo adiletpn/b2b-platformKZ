@@ -2,6 +2,8 @@
  * Мок государственного реестра БИН. Интерфейс как у реального справочника:
  * по БИН возвращает название, форму и юридический адрес.
  * Правило 12: данные вымышленные, реальных компаний здесь нет.
+ * БИН, которого здесь нет, не ошибка: реквизиты вводит пользователь (register-company.ts).
+ * TODO(open-question): настоящий реестр подключается вместо lookupBin, источник выбирает заказчик.
  */
 export type BinRegistryEntry = {
   bin: string;
@@ -114,6 +116,8 @@ const ENTRIES: readonly BinRegistryEntry[] = [
 /**
  * Пул для автотестов: каждый прогон занимает БИН безвозвратно, а именованных
  * компаний выше хватает только на показ. Генерируется с валидной контрольной суммой.
+ * Месяц регистрации в БИН — «00», такого у настоящих компаний нет: пул не перехватит
+ * настоящий БИН и не подставит ему тестовое название.
  */
 const FIRST_WEIGHTS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
 const SECOND_WEIGHTS = [3, 4, 5, 6, 7, 8, 9, 10, 11, 1, 2];
@@ -132,7 +136,7 @@ function checkDigit(firstEleven: string): number | null {
 function buildTestPool(count: number): BinRegistryEntry[] {
   const pool: BinRegistryEntry[] = [];
   for (let index = 0; pool.length < count; index += 1) {
-    const prefix = `24014${String(index).padStart(6, '0')}`;
+    const prefix = `24004${String(index).padStart(6, '0')}`;
     const digit = checkDigit(prefix);
     if (digit === null) continue;
 
@@ -163,6 +167,18 @@ export function lookupBin(bin: string): BinRegistryEntry | null {
 /** Полный реестр: именованные компании плюс пул для автотестов. */
 export function listBinRegistry(): readonly BinRegistryEntry[] {
   return [...ENTRIES, ...TEST_POOL];
+}
+
+const ALL_BINS = new Set([...ENTRIES, ...TEST_POOL].map((entry) => entry.bin));
+
+/** Компания из мок-реестра — тестовая: её прячет флаг `hide_demo_companies`. */
+export function isRegistryBin(bin: string): boolean {
+  return ALL_BINS.has(bin);
+}
+
+/** Все БИН мок-реестра — для фильтра тестовых компаний в запросах. */
+export function registryBins(): string[] {
+  return [...ALL_BINS];
 }
 
 /** Что показывать подсказкой в онбординге: только именованные компании. */

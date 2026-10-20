@@ -6,13 +6,22 @@ import { useRouter } from '@/i18n/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Field } from '@/components/ui/field';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardTitle } from '@/components/ui/card';
 import type { DashboardMetrics, DisputeRow, DisputeResolution } from '@/lib/admin/dashboard';
 import type { PlanRow, SubscriptionRow } from '@/lib/admin/tariffs';
 import type { ReferenceData, ReferenceKind } from '@/lib/admin/reference';
 import { Page } from '@/components/ui/page';
 
-type QueueItem = { id: string; companyName: string; bin: string };
+type QueueItem = {
+  id: string;
+  companyName: string;
+  bin: string;
+  legalAddress: string;
+  /** false — название и адрес ввёл пользователь, в реестре БИН их нет. */
+  fromRegistry: boolean;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+};
 type AuditItem = {
   id: string;
   action: string;
@@ -280,6 +289,17 @@ export function AdminPanel({
                   <p className="text-muted-foreground font-mono text-xs">
                     {t('bin')}: {item.bin}
                   </p>
+                  <p className="text-muted-foreground text-xs break-words">{item.legalAddress}</p>
+                  <div className="mt-1 flex flex-wrap gap-1.5">
+                    {item.fromRegistry ? null : (
+                      <Badge tone="warning" data-testid={`queue-manual-${item.id}`}>
+                        {t('notFromRegistry')}
+                      </Badge>
+                    )}
+                    {item.status === 'APPROVED' ? (
+                      <Badge tone="info">{t('autoApproved')}</Badge>
+                    ) : null}
+                  </div>
                 </div>
 
                 <div className="min-w-40 flex-1">

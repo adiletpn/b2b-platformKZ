@@ -7,34 +7,42 @@ export type TemplateReference = {
   vatRates: { code: string; name: string; rate: string }[];
 };
 
-/** Шаблон каталога для поставщика: лист с данными и лист со справочниками. */
+/**
+ * Шаблон каталога для поставщика: пустой лист для товаров, лист с примером и лист
+ * со справочниками. Пример лежит отдельно: загружается только первый лист, и
+ * поставщик, не стерев пример, не получит в каталоге чужое молоко.
+ */
 export async function buildCatalogTemplate(
   reference: TemplateReference,
   locale: 'ru' | 'kk',
 ): Promise<Buffer> {
   const workbook = new ExcelJS.Workbook();
-  const sheet = workbook.addWorksheet(locale === 'kk' ? 'Каталог' : 'Каталог');
+  const sheet = workbook.addWorksheet('Каталог');
+  const exampleSheet = workbook.addWorksheet(locale === 'kk' ? 'Мысал' : 'Пример');
 
-  sheet.columns = CATALOG_COLUMNS.map((column) => ({
-    header: locale === 'kk' ? column.titleKk : column.titleRu,
-    key: column.key,
-    width: column.width,
-  }));
+  for (const target of [sheet, exampleSheet]) {
+    target.columns = CATALOG_COLUMNS.map((column) => ({
+      header: locale === 'kk' ? column.titleKk : column.titleRu,
+      key: column.key,
+      width: column.width,
+    }));
 
-  const header = sheet.getRow(1);
-  header.font = { bold: true };
-  header.alignment = { wrapText: true, vertical: 'middle' };
-  header.height = 32;
+    const header = target.getRow(1);
+    header.font = { bold: true };
+    header.alignment = { wrapText: true, vertical: 'middle' };
+    header.height = 32;
 
-  CATALOG_COLUMNS.forEach((column, index) => {
-    if (column.required) {
-      sheet.getCell(1, index + 1).fill = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: 'FFE8F0FE' },
-      };
-    }
-  });
+    // Обязательные колонки подсвечены — на это ссылается подсказка на экране каталога.
+    CATALOG_COLUMNS.forEach((column, index) => {
+      if (column.required) {
+        target.getCell(1, index + 1).fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFE8F0FE' },
+        };
+      }
+    });
+  }
 
   const example = {
     barcode: '4870204391234',
@@ -43,7 +51,7 @@ export async function buildCatalogTemplate(
     sku: 'MLK-001',
     brand: 'Дала',
     categoryCode: reference.categories[0]?.code ?? '',
-    manufacturer: 'ТОО «Дала Сут» (тест)',
+    manufacturer: 'ТОО «Пример»',
     country: 'Казахстан',
     unitCode: reference.units[0]?.code ?? '',
     packSize: 12,
@@ -58,9 +66,9 @@ export async function buildCatalogTemplate(
     isLicensed: 'нет',
     tnvedCode: '0401201100',
   };
-  sheet.addRow(example);
+  exampleSheet.addRow(example);
 
-  const refSheet = workbook.addWorksheet('Справочники');
+  const refSheet = workbook.addWorksheet(locale === 'kk' ? 'Анықтамалықтар' : 'Справочники');
   refSheet.columns = [
     { header: 'Тип', key: 'kind', width: 18 },
     { header: 'Код', key: 'code', width: 18 },

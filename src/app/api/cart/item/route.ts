@@ -22,10 +22,12 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: 'invalid_request' }, { status: 400 });
   }
 
-  const quantity = new Decimal(body.quantity.replace(',', '.') || '0');
-  if (quantity.isNaN() || quantity.isNegative()) {
+  // Decimal бросает исключение на «abc»: проверяем формат до разбора.
+  const raw = String(body.quantity).replace(/\s/g, '').replace(',', '.') || '0';
+  if (!/^\d+(\.\d+)?$/.test(raw)) {
     return NextResponse.json({ error: 'invalid_quantity' }, { status: 400 });
   }
+  const quantity = new Decimal(raw);
 
   const result = await setCartItem(store.locationId, body.offerId, quantity);
   return NextResponse.json({

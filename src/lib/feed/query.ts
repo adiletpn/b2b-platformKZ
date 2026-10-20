@@ -1,3 +1,4 @@
+import { visibleSupplierWhere } from '@/lib/admin/settings';
 import { licensedOfferFilter } from '@/lib/licenses/licenses';
 import { prisma } from '@/lib/prisma';
 import { windowStart as ratingWindowStart } from '@/lib/ratings/metrics';
@@ -63,7 +64,9 @@ export async function getFeed(
   cityId: string,
   options: { forSwipe: boolean; filters?: FeedFilters; limit?: number },
 ) {
-  const zones = await prisma.deliveryZone.findMany({ where: { cityId } });
+  const zones = await prisma.deliveryZone.findMany({
+    where: { cityId, supplier: await visibleSupplierWhere() },
+  });
   const supplierIds = zones.map((zone) => zone.supplierId);
   if (supplierIds.length === 0) return [];
 
@@ -206,10 +209,7 @@ export async function getFeed(
     if (filters.onlyNew && !item.isNew) return false;
     // «Доставка завтра» — срок не больше дня и завтра у поставщика день доставки.
     // Время отсечки заказа у поставщиков не заведено — TODO(open-question).
-    if (
-      filters.onlyTomorrow &&
-      (item.leadTimeDays > 1 || !deliversTomorrow.has(item.supplierId))
-    ) {
+    if (filters.onlyTomorrow && (item.leadTimeDays > 1 || !deliversTomorrow.has(item.supplierId))) {
       return false;
     }
     if (filters.minRating && Number(item.supplierRating ?? 0) < Number(filters.minRating)) {

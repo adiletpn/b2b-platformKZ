@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,11 +10,13 @@ import { formatPhone } from '@/lib/phone';
 import { Card } from '@/components/ui/card';
 import { FileCheck2, ShieldCheck, Zap } from 'lucide-react';
 
-type Step = { name: 'phone' } | { name: 'code'; phone: string; demoCode: string };
+/** demoCode есть только у мока SMS; с настоящим провайдером код приходит в SMS. */
+type Step = { name: 'phone' } | { name: 'code'; phone: string; demoCode: string | null };
 
 export function LoginForm() {
   const t = useTranslations('auth');
   const router = useRouter();
+  const locale = useLocale();
   const [step, setStep] = useState<Step>({ name: 'phone' });
   const [phoneInput, setPhoneInput] = useState('+7');
   const [code, setCode] = useState('');
@@ -28,15 +30,15 @@ export function LoginForm() {
     const response = await fetch('/api/auth/request-code', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ phone: phoneInput }),
+      body: JSON.stringify({ phone: phoneInput, locale }),
     });
     const data = (await response.json()) as { phone?: string; code?: string; error?: string };
     setPending(false);
-    if (!response.ok || !data.phone || !data.code) {
+    if (!response.ok || !data.phone) {
       setError(data.error ?? 'unknown');
       return;
     }
-    setStep({ name: 'code', phone: data.phone, demoCode: data.code });
+    setStep({ name: 'code', phone: data.phone, demoCode: data.code ?? null });
   }
 
   async function verify(event: React.FormEvent) {
@@ -111,20 +113,23 @@ export function LoginForm() {
             <p className="text-muted-foreground text-sm">
               {t('codeSentTo', { phone: formatPhone(step.phone) })}
             </p>
-            <DemoHint title={t('demoCodeTitle')}>
-              {t('demoCodeHint')}:{' '}
-              <span
-                className="text-foreground font-mono text-base font-semibold"
-                data-testid="demo-code"
-              >
-                {step.demoCode}
-              </span>
-            </DemoHint>
+            {step.demoCode ? (
+              <DemoHint title={t('demoCodeTitle')}>
+                {t('demoCodeHint')}:{' '}
+                <span
+                  className="text-foreground font-mono text-base font-semibold"
+                  data-testid="demo-code"
+                >
+                  {step.demoCode}
+                </span>
+              </DemoHint>
+            ) : null}
             <Field label={t('codeLabel')}>
               <Input
                 name="code"
                 inputMode="numeric"
                 maxLength={6}
+                autoComplete="one-time-code"
                 data-testid="code-input"
                 value={code}
                 onChange={(event) => setCode(event.target.value)}

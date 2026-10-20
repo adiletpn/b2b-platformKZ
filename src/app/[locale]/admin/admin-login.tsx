@@ -11,6 +11,7 @@ export function AdminLogin() {
   const t = useTranslations('admin');
   const router = useRouter();
   const [phone, setPhone] = useState('+7');
+  // null — код ещё не запрошен; пустая строка — код ушёл по SMS, показывать нечего.
   const [demoCode, setDemoCode] = useState<string | null>(null);
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -25,11 +26,11 @@ export function AdminLogin() {
       body: JSON.stringify({ phone }),
     });
     const data = (await response.json()) as { code?: string; error?: string };
-    if (!response.ok || !data.code) {
+    if (!response.ok) {
       setError(data.error ?? 'unknown');
       return;
     }
-    setDemoCode(data.code);
+    setDemoCode(data.code ?? '');
   }
 
   async function verify(event: React.FormEvent) {
@@ -69,14 +70,18 @@ export function AdminLogin() {
         </form>
       ) : (
         <form className="space-y-3" onSubmit={verify}>
-          <DemoHint title={t('loginHint')}>
-            <span
-              className="text-foreground font-mono text-base font-semibold"
-              data-testid="admin-demo-code"
-            >
-              {demoCode}
-            </span>
-          </DemoHint>
+          {demoCode ? (
+            <DemoHint title={t('loginHint')}>
+              <span
+                className="text-foreground font-mono text-base font-semibold"
+                data-testid="admin-demo-code"
+              >
+                {demoCode}
+              </span>
+            </DemoHint>
+          ) : (
+            <p className="text-muted-foreground text-sm">{t('codeSentBySms')}</p>
+          )}
           <Field label={t('code')}>
             <Input
               inputMode="numeric"

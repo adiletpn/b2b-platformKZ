@@ -139,7 +139,7 @@ export function EmployeesScreen({
       setError(data.status ?? 'unknown');
       return;
     }
-    // Код в демо показывается на экране: реальной отправки SMS нет.
+    // У мока SMS код приходит в ответе и показывается на экране.
     setTransfer({ id: data.transferId, code: data.code ?? '' });
   }
 
@@ -421,10 +421,16 @@ export function EmployeesScreen({
           {transfer ? (
             <div className="mt-3 flex flex-wrap items-end gap-3">
               <p className="text-muted-foreground text-sm">
-                {t('ownerTransferDemoCode')}:{' '}
-                <span className="font-mono" data-testid="transfer-demo-code">
-                  {transfer.code}
-                </span>
+                {transfer.code ? (
+                  <>
+                    {t('ownerTransferDemoCode')}:{' '}
+                    <span className="font-mono" data-testid="transfer-demo-code">
+                      {transfer.code}
+                    </span>
+                  </>
+                ) : (
+                  t('ownerTransferSmsSent')
+                )}
               </p>
               <Field label={t('ownerTransferCode')}>
                 <Input

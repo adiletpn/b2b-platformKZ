@@ -1,3 +1,4 @@
+import { visibleSupplierWhere } from '@/lib/admin/settings';
 import { prisma } from '@/lib/prisma';
 
 export type CityPoint = {
@@ -26,6 +27,8 @@ export type Geography = { points: CityPoint[]; nearby: NearbySupplier[] };
 export async function getGeography(cityId: string): Promise<Geography> {
   const city = await prisma.city.findUnique({ where: { id: cityId } });
   if (!city) return { points: [], nearby: [] };
+  // Флаг hide_demo_companies прячет тестовые компании и с карты.
+  const visible = await visibleSupplierWhere();
 
   const deliveringIds = new Set(
     (await prisma.deliveryZone.findMany({ where: { cityId }, select: { supplierId: true } })).map(
@@ -34,7 +37,7 @@ export async function getGeography(cityId: string): Promise<Geography> {
   );
 
   const locations = await prisma.location.findMany({
-    where: { cityId, company: { type: { not: 'STORE' } } },
+    where: { cityId, company: { type: { not: 'STORE' }, ...visible } },
     include: { company: { select: { id: true, name: true } } },
     orderBy: { createdAt: 'asc' },
     take: 50,
@@ -58,6 +61,7 @@ export async function getGeography(cityId: string): Promise<Geography> {
         where: {
           cityId: { in: neighbourCities.map((item) => item.id) },
           supplierId: { notIn: [...deliveringIds] },
+          supplier: visible,
         },
         include: {
           supplier: { select: { id: true, name: true } },

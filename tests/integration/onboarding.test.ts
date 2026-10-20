@@ -118,7 +118,7 @@ describe('передача прав Владельца', () => {
       store.companyId,
       store.ownerId,
       requested.transferId,
-      requested.code,
+      requested.code!,
     );
     expect(confirmed).toEqual({ status: 'ok', newOwnerMembershipId: employee.membershipId });
 
@@ -182,7 +182,7 @@ describe('передача прав Владельца', () => {
         store.companyId,
         store.ownerId,
         requested.transferId,
-        requested.code,
+        requested.code!,
       ),
     ).toEqual({ status: 'expired' });
   });

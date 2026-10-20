@@ -1,3 +1,4 @@
+import { visibleSupplierWhere } from '@/lib/admin/settings';
 import { licensedOfferFilter } from '@/lib/licenses/licenses';
 import { prisma } from '@/lib/prisma';
 import { effectivePrices } from '@/lib/pricing/price';
@@ -48,7 +49,9 @@ export async function getOfferDetails(
   cityId: string,
   offerId: string,
 ): Promise<OfferDetails | null> {
-  const zones = await prisma.deliveryZone.findMany({ where: { cityId } });
+  const zones = await prisma.deliveryZone.findMany({
+    where: { cityId, supplier: await visibleSupplierWhere() },
+  });
   const supplierIds = zones.map((zone) => zone.supplierId);
   // Правило 4 и раздел 3.9: товар виден только если поставщик возит в город точки.
   if (supplierIds.length === 0) return null;

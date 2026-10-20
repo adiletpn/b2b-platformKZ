@@ -25,7 +25,10 @@ export async function decideVerification(
 ): Promise<ModerationResult> {
   const request = await prisma.verificationRequest.findUnique({ where: { id: requestId } });
   if (!request) return { status: 'not_found' };
-  if (request.status !== 'PENDING') return { status: 'already_decided' };
+  // Реквизиты не из реестра администратор сверяет и после автопроверки.
+  const awaitsReview =
+    request.status === 'PENDING' || (!request.fromRegistry && !request.decidedById);
+  if (!awaitsReview) return { status: 'already_decided' };
   if (!approve && !reason?.trim()) return { status: 'reason_required' };
 
   const decision = approve ? 'APPROVED' : 'REJECTED';

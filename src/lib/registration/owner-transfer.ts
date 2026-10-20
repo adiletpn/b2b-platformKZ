@@ -1,18 +1,20 @@
 import { prisma } from '@/lib/prisma';
 import { writeAudit } from '@/lib/auth/permissions';
-import { sendLoginCode } from '@/mocks/sms';
+import { sendCodeSms } from '@/lib/sms/sms';
 import { notify } from '@/mocks/notifications';
 
 const CODE_TTL_MINUTES = 10;
 
 export type TransferRequest =
-  | { status: 'ok'; transferId: string; code: string }
+  /** code есть только у мока SMS: тогда его показывает интерфейс демо. */
+  | { status: 'ok'; transferId: string; code?: string }
+  | { status: 'sms_failed' }
   | { status: 'not_owner' }
   | { status: 'not_found' };
 
 /**
  * Раздел 3.11 ТЗ: права Владельца передаются другому сотруднику с подтверждением кодом.
- * Код в демо показывается в интерфейсе, реальной отправки нет.
+ * Код уходит Владельцу по SMS; у мока SMS он показывается в интерфейсе.
  */
 export async function requestOwnerTransfer(
   companyId: string,
@@ -31,6 +33,9 @@ export async function requestOwnerTransfer(
   if (!target || target.id === owner.id) return { status: 'not_found' };
 
   const code = String(Math.floor(100000 + Math.random() * 900000));
+  const sent = await sendCodeSms(owner.user.phone, code);
+  if (!sent.ok) return { status: 'sms_failed' };
+
   const transfer = await prisma.ownerTransfer.create({
     data: {
       companyId,
@@ -41,10 +46,13 @@ export async function requestOwnerTransfer(
     },
   });
 
-  sendLoginCode(owner.user.phone, code);
   await writeAudit(companyId, actorId, 'owner_transfer_requested', 'Membership', target.id);
 
-  return { status: 'ok', transferId: transfer.id, code };
+  return {
+    status: 'ok',
+    transferId: transfer.id,
+    ...(sent.showCodeInUi ? { code } : {}),
+  };
 }
 
 export type TransferResult =

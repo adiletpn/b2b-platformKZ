@@ -81,4 +81,10 @@ export async function resetPlatformFlags(prisma: PrismaClient) {
     update: { value: 'true' },
     create: { key: 'auto_verify_companies', value: 'true' },
   });
+  // По умолчанию тестовые компании видны: на них построены демо-сценарий и e2e.
+  await prisma.platformSetting.upsert({
+    where: { key: 'hide_demo_companies' },
+    update: { value: 'false' },
+    create: { key: 'hide_demo_companies', value: 'false' },
+  });
 }

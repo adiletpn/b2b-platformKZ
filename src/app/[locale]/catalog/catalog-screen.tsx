@@ -6,10 +6,19 @@ import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Field } from '@/components/ui/field';
 import { Page, PageHeader } from '@/components/ui/page';
+import { Notice } from '@/components/ui/field';
+import { CATALOG_COLUMNS } from '@/lib/catalog/columns';
 import { ManualOfferForm } from './manual-offer-form';
 
 type City = { id: string; name: string };
-type Zone = { cityId: string; minOrderAmount: string; leadTimeDays: number };
+/** Поля держим строками: так их можно стереть и набрать заново, проверяет API. */
+type Zone = {
+  cityId: string;
+  minOrderAmount: string;
+  leadTimeDays: string;
+  deliveryDays: number[];
+};
+const WEEKDAYS = [1, 2, 3, 4, 5, 6, 7] as const;
 type Offer = {
   id: string;
   barcode: string;
@@ -25,6 +34,14 @@ type Offer = {
 };
 type Reference = { code: string; name: string };
 type ImportError = { row: number; column: string; code: string; hint?: string };
+
+/** Колонка ошибки так, как её видит поставщик в Excel: буква и заголовок. */
+function columnLabel(key: string, locale: 'ru' | 'kk'): string | null {
+  const index = CATALOG_COLUMNS.findIndex((column) => column.key === key);
+  const column = CATALOG_COLUMNS[index];
+  if (!column) return null;
+  return `${String.fromCharCode(65 + index)} «${locale === 'kk' ? column.titleKk : column.titleRu}»`;
+}
 type ImportResult = { created: number; updated: number; errors: ImportError[] };
 
 export function CatalogScreen({
@@ -49,6 +66,7 @@ export function CatalogScreen({
   defaultVatCode: string;
 }) {
   const t = useTranslations('catalog');
+  const tDays = useTranslations('weekdays');
   const [file, setFile] = useState<File | null>(null);
   const [result, setResult] = useState<ImportResult | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -58,6 +76,7 @@ export function CatalogScreen({
   const [total, setTotal] = useState(initialTotal);
   const [zones, setZones] = useState<Zone[]>(selectedZones);
   const [zonesSaved, setZonesSaved] = useState<number | null>(null);
+  const [zonesError, setZonesError] = useState<string | null>(null);
 
   const loadOffers = useCallback(async (query: string) => {
     const response = await fetch(`/api/catalog/offers?search=${encodeURIComponent(query)}`);
@@ -102,7 +121,7 @@ export function CatalogScreen({
     setZones((current) =>
       current.some((zone) => zone.cityId === cityId)
         ? current.filter((zone) => zone.cityId !== cityId)
-        : [...current, { cityId, minOrderAmount: '0.00', leadTimeDays: 1 }],
+        : [...current, { cityId, minOrderAmount: '0.00', leadTimeDays: '1', deliveryDays: [] }],
     );
   }
 
@@ -113,16 +132,41 @@ export function CatalogScreen({
     );
   }
 
+  function toggleDay(zone: Zone, day: number) {
+    const days = zone.deliveryDays.includes(day)
+      ? zone.deliveryDays.filter((value) => value !== day)
+      : [...zone.deliveryDays, day].sort();
+    updateZone(zone.cityId, { deliveryDays: days });
+  }
+
   async function saveZones() {
+    setZonesError(null);
     const response = await fetch('/api/delivery-zones', {
       method: 'PUT',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ zones }),
+      body: JSON.stringify({
+        zones: zones.map((zone) => ({
+          ...zone,
+          // Поставщики часто пишут сумму с пробелами и запятой: «15 000,50».
+          minOrderAmount: zone.minOrderAmount.replace(/\s/g, '').replace(',', '.') || '0',
+          leadTimeDays: Number(zone.leadTimeDays),
+        })),
+      }),
     });
-    if (!response.ok) return;
-    const data = (await response.json()) as { saved: number };
+    const data = (await response.json().catch(() => ({}))) as {
+      saved?: number;
+      error?: string;
+      cityId?: string;
+    };
+    if (!response.ok || data.saved === undefined) {
+      const city = cities.find((item) => item.id === data.cityId)?.name ?? '';
+      setZonesError(t(`zoneErrors.${data.error ?? 'unknown'}` as 'zoneErrors.unknown', { city }));
+      return;
+    }
     setZonesSaved(data.saved);
   }
+
+  const selectedCities = cities.filter((city) => zones.some((zone) => zone.cityId === city.id));
 
   return (
     <Page width="lg">
@@ -172,6 +216,8 @@ export function CatalogScreen({
           </p>
         ) : null}
 
+        <p className="text-muted-foreground text-xs">{t('templateHint')}</p>
+
         {result ? (
           <div className="space-y-2 text-sm" data-testid="import-result">
             <p data-testid="import-created">{t('resultCreated', { count: result.created })}</p>
@@ -179,6 +225,8 @@ export function CatalogScreen({
             <p data-testid="import-errors-count">
               {t('resultErrors', { count: result.errors.length })}
             </p>
+
+            {result.errors.length > 0 ? <Notice tone="warning">{t('errorsHint')}</Notice> : null}
 
             {result.errors.length > 0 ? (
               <div className="border-border mt-2 max-h-72 overflow-y-auto rounded-lg border">
@@ -189,8 +237,14 @@ export function CatalogScreen({
                   {result.errors.map((error, index) => (
                     <li key={`${error.row}-${error.column}-${index}`} className="px-3 py-2">
                       <span className="font-medium">{t('errorRow', { row: error.row })}</span>
-                      {', '}
-                      <span className="text-muted-foreground">{error.column}</span>
+                      {columnLabel(error.column, locale) ? (
+                        <>
+                          {', '}
+                          <span className="text-muted-foreground">
+                            {t('errorColumnLabel', { column: columnLabel(error.column, locale)! })}
+                          </span>
+                        </>
+                      ) : null}
                       {' — '}
                       {t(`errors.${error.code}` as 'errors.unknown', { hint: error.hint ?? '' })}
                     </li>
@@ -269,28 +323,26 @@ export function CatalogScreen({
         <h2 className="text-lg font-medium">{t('zonesTitle')}</h2>
         <p className="text-muted-foreground mt-1 text-xs">{t('zonesHint')}</p>
 
-        <ul className="mt-3 grid max-h-72 grid-cols-1 gap-2 overflow-y-auto">
-          {cities.map((city) => {
-            const zone = zones.find((item) => item.cityId === city.id);
-            return (
-              <li key={city.id} className="flex flex-wrap items-center gap-3">
-                <label className="flex min-w-40 items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    className="size-4"
-                    data-testid={`zone-city-${city.id}`}
-                    checked={Boolean(zone)}
-                    onChange={() => toggleZone(city.id)}
-                  />
-                  {city.name}
-                </label>
-
-                {zone ? (
-                  <>
-                    <label className="text-muted-foreground flex items-center gap-1 text-xs">
+        {selectedCities.length === 0 ? (
+          <Notice tone="warning" className="mt-3">
+            {t('zonesEmpty')}
+          </Notice>
+        ) : (
+          <ul className="mt-3 space-y-3" data-testid="zone-settings">
+            {selectedCities.map((city) => {
+              const zone = zones.find((item) => item.cityId === city.id)!;
+              return (
+                <li
+                  key={city.id}
+                  className="border-border space-y-3 rounded-lg border p-3"
+                  data-testid={`zone-${city.id}`}
+                >
+                  <p className="font-medium">{city.name}</p>
+                  <div className="grid grid-cols-2 gap-3 sm:max-w-md">
+                    <label className="text-muted-foreground block text-xs">
                       {t('zoneMinOrder')}
                       <Input
-                        className="h-9 w-28 text-right"
+                        className="mt-1 h-9 text-right"
                         inputMode="decimal"
                         value={zone.minOrderAmount}
                         data-testid={`zone-min-${city.id}`}
@@ -299,31 +351,79 @@ export function CatalogScreen({
                         }
                       />
                     </label>
-                    <label className="text-muted-foreground flex items-center gap-1 text-xs">
+                    <label className="text-muted-foreground block text-xs">
                       {t('zoneLeadTime')}
                       <Input
-                        className="h-9 w-20 text-right"
+                        className="mt-1 h-9 text-right"
                         inputMode="numeric"
-                        value={String(zone.leadTimeDays)}
+                        value={zone.leadTimeDays}
                         data-testid={`zone-lead-${city.id}`}
                         onChange={(event) =>
-                          updateZone(city.id, { leadTimeDays: Number(event.target.value) || 1 })
+                          updateZone(city.id, {
+                            leadTimeDays: event.target.value.replace(/\D/g, ''),
+                          })
                         }
                       />
                     </label>
-                  </>
-                ) : null}
-              </li>
-            );
-          })}
-        </ul>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground text-xs">{t('zoneDeliveryDays')}</p>
+                    <div className="mt-1 flex flex-wrap gap-1.5">
+                      {WEEKDAYS.map((day) => (
+                        <Button
+                          key={day}
+                          type="button"
+                          size="sm"
+                          variant={zone.deliveryDays.includes(day) ? 'default' : 'outline'}
+                          aria-pressed={zone.deliveryDays.includes(day)}
+                          data-testid={`zone-day-${city.id}-${day}`}
+                          onClick={() => toggleDay(zone, day)}
+                        >
+                          {tDays(String(day) as '1')}
+                        </Button>
+                      ))}
+                    </div>
+                    <p className="text-muted-foreground mt-1 text-xs">
+                      {zone.deliveryDays.length === 0 ? t('zoneEveryDay') : t('zoneDaysHint')}
+                    </p>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
 
-        <Button className="mt-3" variant="outline" onClick={saveZones} data-testid="save-zones">
+        <div className="mt-3">
+          <h3 className="text-sm font-medium">{t('zonesCities')}</h3>
+          <ul className="mt-2 grid max-h-72 grid-cols-1 gap-2 overflow-y-auto sm:grid-cols-3">
+            {cities.map((city) => (
+              <li key={city.id}>
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    className="size-4"
+                    data-testid={`zone-city-${city.id}`}
+                    checked={zones.some((zone) => zone.cityId === city.id)}
+                    onChange={() => toggleZone(city.id)}
+                  />
+                  {city.name}
+                </label>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <Button className="mt-3" onClick={saveZones} data-testid="save-zones">
           {t('zonesSave')}
         </Button>
         {zonesSaved !== null ? (
           <p className="text-muted-foreground mt-2 text-sm" data-testid="zones-saved">
             {t('zonesSaved', { count: zonesSaved })}
+          </p>
+        ) : null}
+        {zonesError ? (
+          <p className="text-danger mt-2 text-sm" role="alert" data-testid="zones-error">
+            {zonesError}
           </p>
         ) : null}
       </section>

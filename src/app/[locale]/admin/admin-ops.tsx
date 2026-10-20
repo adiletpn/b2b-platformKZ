@@ -2,7 +2,15 @@
 
 import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { FileSpreadsheet, LifeBuoy, Megaphone, Plug, Search, UserCog } from 'lucide-react';
+import {
+  FileSpreadsheet,
+  LifeBuoy,
+  Megaphone,
+  Plug,
+  Search,
+  SlidersHorizontal,
+  UserCog,
+} from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardHint, CardTitle, IconBadge } from '@/components/ui/card';
@@ -370,6 +378,61 @@ export function BroadcastPanel({
 }
 
 /** Интеграции: какие сервисы на боевых ключах, какие — моки (раздел 3.13 ТЗ). */
+/** Флаги платформы, которые суперадмин переключает сам (раздел 3.13 ТЗ). */
+export function PlatformFlagsPanel({ initial }: { initial: Record<string, boolean> }) {
+  const t = useTranslations('admin.flags');
+  const [flags, setFlags] = useState(initial);
+  const [failed, setFailed] = useState(false);
+
+  async function toggle(key: string, value: boolean) {
+    setFailed(false);
+    const response = await fetch('/api/admin/settings', {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ key, value: String(value) }),
+    });
+    if (!response.ok) {
+      setFailed(true);
+      return;
+    }
+    setFlags((current) => ({ ...current, [key]: value }));
+  }
+
+  return (
+    <Card data-testid="admin-flags">
+      <Header icon={SlidersHorizontal} title={t('title')} hint={t('hint')} />
+      <ul className="divide-border mt-3 divide-y text-sm">
+        {Object.entries(flags).map(([key, value]) => (
+          <li key={key} className="py-2">
+            <label className="flex items-start gap-2">
+              <input
+                type="checkbox"
+                className="mt-0.5 size-4"
+                checked={value}
+                data-testid={`flag-${key}`}
+                onChange={(event) => void toggle(key, event.target.checked)}
+              />
+              <span>
+                <span className="font-medium">
+                  {t(`items.${key}.title` as 'items.hide_demo_companies.title')}
+                </span>
+                <span className="text-muted-foreground block text-xs">
+                  {t(`items.${key}.hint` as 'items.hide_demo_companies.hint')}
+                </span>
+              </span>
+            </label>
+          </li>
+        ))}
+      </ul>
+      {failed ? (
+        <p className="text-danger mt-2 text-sm" role="alert">
+          {t('failed')}
+        </p>
+      ) : null}
+    </Card>
+  );
+}
+
 export function IntegrationsPanel({
   rows,
 }: {

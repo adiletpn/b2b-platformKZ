@@ -12,7 +12,9 @@ export type ApprovalResult =
   | { status: 'ok'; approverId: string }
   | { status: 'invalid_phone' }
   | { status: 'not_senior' }
-  | { status: 'invalid_code' };
+  | { status: 'invalid_code' }
+  | { status: 'sms_failed' }
+  | { status: 'too_many_requests' };
 
 /** Старший — активный сотрудник этой же компании с правом на изменение в кассе. */
 async function findSenior(companyId: string, rawPhone: string) {
@@ -38,12 +40,13 @@ async function findSenior(companyId: string, rawPhone: string) {
   return { status: 'ok' as const, phone, userId: membership.userId };
 }
 
-/** Код старшему. В демо он возвращается в ответе, как код входа (мок SMS). */
+/** Код старшему. У мока SMS он возвращается в ответе, как код входа. */
 export async function requestApprovalCode(companyId: string, rawPhone: string) {
   const senior = await findSenior(companyId, rawPhone);
   if (senior.status !== 'ok') return senior;
-  const { code } = await issueLoginCode(senior.phone);
-  return { status: 'ok' as const, code };
+  const issued = await issueLoginCode(senior.phone);
+  if (!issued.ok) return { status: issued.error };
+  return { status: 'ok' as const, ...(issued.code ? { code: issued.code } : {}) };
 }
 
 export async function checkApproval(

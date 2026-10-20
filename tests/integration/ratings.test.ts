@@ -10,7 +10,7 @@ import { createWaybillAndInvoice } from '@/lib/documents/create';
 import { acceptDelivery } from '@/lib/acceptance/accept';
 import { recordPayment } from '@/lib/payments/record';
 import { rateOrder, replyToRating } from '@/lib/ratings/rate';
-import { getCompanyRating } from '@/lib/ratings/metrics';
+import { chatResponseMinutes, getCompanyRating } from '@/lib/ratings/metrics';
 import { testPoolBin } from '@/mocks/bin-registry';
 
 const prisma = createTestPrisma();
@@ -322,5 +322,27 @@ describe('рейтинг компании', () => {
     const computed = await getCompanyRating(context.supplierId);
     expect(computed.ratingsCount).toBe(0);
     expect(computed.manualScore).toBeNull();
+  });
+  it('chat_response_speed_is_median_wait_for_supplier_reply', async () => {
+    const context = await scenario(40);
+    const chat = await prisma.chat.create({
+      data: { storeId: context.storeId, supplierId: context.supplierId },
+    });
+    const at = (minutes: number) => new Date(Date.now() - 86_400_000 + minutes * 60_000);
+    const say = (companyId: string, minutes: number) =>
+      prisma.message.create({
+        data: { chatId: chat.id, authorCompanyId: companyId, text: '…', createdAt: at(minutes) },
+      });
+    // Ожидания: 10 минут (от первого из двух вопросов), 30 минут, последний вопрос без ответа.
+    await say(context.storeId, 0);
+    await say(context.storeId, 5);
+    await say(context.supplierId, 10);
+    await say(context.storeId, 20);
+    await say(context.supplierId, 50);
+    await say(context.supplierId, 55);
+    await say(context.storeId, 60);
+
+    expect(await chatResponseMinutes(context.supplierId, at(-1))).toBe('20');
+    expect(await chatResponseMinutes(context.storeId, at(-1))).toBeNull();
   });
 });

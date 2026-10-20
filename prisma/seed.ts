@@ -268,6 +268,12 @@ const ROLE_TEMPLATES = [
 const ADMINS = [
   { phone: '+77009000001', name: 'Админ платформы (тест)', role: 'SUPERADMIN' as const },
   { phone: '+77009000002', name: 'Модератор платформы (тест)', role: 'MODERATOR' as const },
+  // Шаблоны печатных форм и справочники (раздел 3.13 ТЗ).
+  {
+    phone: '+77009000003',
+    name: 'Контент-менеджер платформы (тест)',
+    role: 'CONTENT_MANAGER' as const,
+  },
 ];
 
 /**

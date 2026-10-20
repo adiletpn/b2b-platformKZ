@@ -44,10 +44,13 @@ export function SwipeDeck({
     setDragY(event.clientY - pointerStart.current.y);
   }
 
-  function onPointerUp() {
-    if (pointerStart.current === null) return;
-    const offsetX = dragX;
-    const offsetY = dragY;
+  function onPointerUp(event: React.PointerEvent) {
+    const start = pointerStart.current;
+    if (start === null) return;
+    // Смещение считаем по самому событию: состояние dragX после быстрого жеста
+    // может ещё не обновиться, и свайп принимался за тап.
+    const offsetX = event.clientX - start.x;
+    const offsetY = event.clientY - start.y;
     pointerStart.current = null;
     setDragX(0);
     setDragY(0);

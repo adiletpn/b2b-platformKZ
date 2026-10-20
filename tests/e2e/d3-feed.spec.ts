@@ -155,6 +155,8 @@ test('store_picks_products_by_swiping_on_phone', async () => {
   const firstOffer = await card.getAttribute('data-offer-id');
 
   // Свайп вправо жестом, а не кнопкой.
+  // Жест мышью идёт в координатах экрана: карточка должна быть в видимой области.
+  await card.scrollIntoViewIfNeeded();
   const box = (await card.boundingBox())!;
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.down();
@@ -228,6 +230,8 @@ test('swipe_up_sends_card_to_favorites', async () => {
   const favorite = await card.getAttribute('data-offer-id');
 
   // Свайп вверх жестом: карточка уходит в избранное, а не в корзину.
+  // Жест мышью идёт в координатах экрана: карточка должна быть в видимой области.
+  await card.scrollIntoViewIfNeeded();
   const box = (await card.boundingBox())!;
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.down();

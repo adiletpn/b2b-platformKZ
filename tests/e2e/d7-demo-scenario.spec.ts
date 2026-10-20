@@ -153,6 +153,8 @@ test('criterion_3_store_picks_products_by_swipe_and_in_list', async ({}, testInf
   await expect(card).toBeVisible();
   const firstOffer = await card.getAttribute('data-offer-id');
 
+  // Жест мышью идёт в координатах экрана: карточка должна быть в видимой области.
+  await card.scrollIntoViewIfNeeded();
   const box = (await card.boundingBox())!;
   await storePage.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await storePage.mouse.down();

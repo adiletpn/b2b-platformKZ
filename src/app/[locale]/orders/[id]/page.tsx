@@ -111,6 +111,7 @@ export default async function OrderPage({
           quantityConfirmed: item.quantityConfirmed?.toFixed(3) ?? null,
           priceWithVat: item.priceWithVat.toFixed(2),
           substituteForId: item.substituteForId,
+          barcode: item.offer.product.barcode,
         })),
         statusLogs: order.statusLogs.map((log) => ({
           toStatus: log.toStatus,

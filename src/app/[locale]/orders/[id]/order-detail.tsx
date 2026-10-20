@@ -28,7 +28,15 @@ type Item = {
   priceWithVat: string;
   /** Позиция предложена поставщиком вместо другой (раздел 3.4 ТЗ). */
   substituteForId: string | null;
+  barcode: string;
 };
+
+/** EAN-13 со сканера или DataMatrix маркировки («01» + GTIN-14 + серийный номер). */
+function barcodeFromScan(raw: string) {
+  const value = raw.trim().replace(/\u001d/g, '');
+  if (value.startsWith('01') && value.length >= 18) return value.slice(2, 16).replace(/^0+/, '');
+  return value.replace(/^0+/, '');
+}
 
 type SubstituteOffer = { id: string; name: string; priceWithVat: string };
 
@@ -94,6 +102,9 @@ export function OrderDetail({
   const tRatings = useTranslations('ratings');
   const tChat = useTranslations('chat');
   const router = useRouter();
+  const [scan, setScan] = useState('');
+  const [scanned, setScanned] = useState<Record<string, number>>({});
+  const [scanMiss, setScanMiss] = useState<string | null>(null);
   const [substitutes, setSubstitutes] = useState<
     Record<string, { offerId: string; quantity: string }>
   >({});
@@ -621,6 +632,43 @@ export function OrderDetail({
           <h2 className="text-lg font-medium">{tAcceptance('title')}</h2>
           <p className="text-muted-foreground mt-1 text-xs">{tAcceptance('hint')}</p>
 
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <Input
+              className="h-10 max-w-xs font-mono"
+              placeholder={tAcceptance('scanPlaceholder')}
+              aria-label={tAcceptance('scanPlaceholder')}
+              value={scan}
+              data-testid="acceptance-scan"
+              onChange={(event) => setScan(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key !== 'Enter') return;
+                event.preventDefault();
+                // Раздел 3.5 ТЗ: сверка сканером — каждый скан засчитывает одну единицу.
+                const code = barcodeFromScan(scan);
+                const item = order.items.find(
+                  (row) => row.barcode.replace(/^0+/, '') === code && code.length > 0,
+                );
+                setScan('');
+                if (!item) {
+                  setScanMiss(scan.trim());
+                  return;
+                }
+                setScanMiss(null);
+                const count = (scanned[item.id] ?? 0) + 1;
+                setScanned((current) => ({ ...current, [item.id]: count }));
+                setAcceptance((current) => ({
+                  ...current,
+                  [item.id]: { ...current[item.id]!, accepted: String(count) },
+                }));
+              }}
+            />
+            {scanMiss !== null ? (
+              <span className="text-danger text-sm" role="alert" data-testid="acceptance-scan-miss">
+                {tAcceptance('scanMiss', { code: scanMiss })}
+              </span>
+            ) : null}
+          </div>
+
           <div className="mt-3 overflow-x-auto">
             <table className="w-full min-w-[560px] text-sm">
               <thead className="text-muted-foreground text-left">
@@ -637,6 +685,11 @@ export function OrderDetail({
                   <tr key={item.id}>
                     <td className="py-2 pr-3 break-words">
                       {locale === 'kk' ? item.nameKk : item.nameRu}
+                      {scanned[item.id] ? (
+                        <Badge tone="success" className="ml-2" data-testid={`scanned-${item.id}`}>
+                          {tAcceptance('scanned', { count: scanned[item.id]! })}
+                        </Badge>
+                      ) : null}
                     </td>
                     <td className="py-2 pr-3 text-right tabular-nums">
                       {item.quantityConfirmed ?? item.quantityOrdered}

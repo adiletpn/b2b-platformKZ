@@ -21,7 +21,12 @@ import { decideDiscrepancyAct } from '../src/lib/documents/returns';
 import { assignPlan } from '../src/lib/admin/tariffs';
 import { savePaymentTerms } from '../src/lib/payments/terms';
 import { saveLicense } from '../src/lib/licenses/licenses';
-import { setMarkup, repriceAll } from '../src/lib/stock/pricing';
+import { setMarkup, repriceAll, setPieceSale } from '../src/lib/stock/pricing';
+import { openShift } from '../src/lib/pos/shift';
+import { sell } from '../src/lib/pos/sale';
+import { createBanner } from '../src/lib/admin/banners';
+import { addVisit, assignStore } from '../src/lib/reps/reps';
+import { saveRoute } from '../src/lib/deliveries/routes';
 
 type ProductSeed = {
   barcode: string;
@@ -430,7 +435,12 @@ async function makeOrder(
 
 /** Сотрудник магазина с ролью менеджера по закупкам и лимитом заявки. */
 async function addPurchasingManager(companyId: string, ownerId: string, phone: string) {
-  const invited = await inviteEmployee(companyId, ownerId, phone, 'PURCHASING_MANAGER');
+  return addEmployee(companyId, ownerId, phone, 'PURCHASING_MANAGER');
+}
+
+/** Сотрудник с системной ролью: приглашение и вход по коду, как в жизни. */
+async function addEmployee(companyId: string, ownerId: string, phone: string, role: string) {
+  const invited = await inviteEmployee(companyId, ownerId, phone, role);
   if (invited.status !== 'ok') throw new Error(`приглашение: ${invited.status}`);
 
   const user = await prisma.user.upsert({
@@ -804,6 +814,94 @@ async function main() {
     ),
   );
 
+  // ---------- Этап 3: всё, что можно потыкать на показе ----------
+
+  // Баннер для всех: на демо всё тестовое (решение для показа учредителю).
+  const today = new Date(Date.now() + 5 * 3_600_000).toISOString().slice(0, 10);
+  const yearLater = new Date(Date.now() + 365 * 86_400_000).toISOString().slice(0, 10);
+  await createBanner(admin.id, {
+    textRu: 'Демо-версия: все компании, товары, заявки, чеки и покупатели — тестовые данные',
+    textKk:
+      'Демо нұсқа: барлық компаниялар, тауарлар, тапсырыстар, чектер мен сатып алушылар — тест деректері',
+    audience: 'ALL',
+    startsOn: today,
+    endsOn: yearLater,
+  });
+
+  // Продажа поштучно: первая немаркированная позиция на остатке продаётся и штуками по 10.
+  const shelf = await prisma.stockBalance.findMany({
+    where: { locationId: store.locationId, quantity: { gt: 3 }, product: { isMarked: false } },
+    include: { product: true },
+    orderBy: { product: { nameRu: 'asc' } },
+  });
+  const prices = await prisma.retailPrice.findMany({ where: { companyId: store.companyId } });
+  const priceOf = (productId: string) => prices.find((row) => row.productId === productId)?.price;
+  const loose = shelf.find((row) => priceOf(row.productId));
+  if (loose) {
+    await setPieceSale(store.companyId, store.userId, loose.productId, {
+      piecesPerPack: '10',
+      piecePrice: new Decimal(priceOf(loose.productId)!.toString())
+        .div(10)
+        .times('1.1')
+        .toDecimalPlaces(2, Decimal.ROUND_UP)
+        .toFixed(2),
+    });
+  }
+
+  // Касса: смена и несколько чеков — для аналитики, рекомендаций закупок и бонусов.
+  await openShift(store.companyId, store.userId, store.locationId, '20000');
+  const sellable = shelf.filter((row) => priceOf(row.productId)).slice(0, 4);
+  for (const [index, row] of sellable.entries()) {
+    const sale = await sell(store.companyId, store.userId, store.locationId, {
+      clientId: `demo-receipt-${index + 1}`,
+      paymentType: index % 2 === 0 ? 'CASH' : 'CARD',
+      lines: [{ productId: row.productId, quantity: '2' }],
+      // Тестовый покупатель программы лояльности: бонусы копятся по его телефону.
+      customerPhone: index < 3 ? '+77779990001' : undefined,
+    });
+    if (sale.status !== 'ok') throw new Error(`чек: ${sale.status}`);
+  }
+
+  // Торговый представитель бакалеи: закреплён за магазином в Таразе, есть отметка визита.
+  const rep = await addEmployee(grocery.companyId, grocery.userId, '+77010000022', 'SALES_REP');
+  const assigned = await assignStore(
+    grocery.companyId,
+    grocery.userId,
+    rep.membershipId,
+    store.companyId,
+  );
+  if (assigned.status !== 'ok') throw new Error(`представитель: ${assigned.status}`);
+  await addVisit(
+    grocery.companyId,
+    rep.membershipId,
+    rep.userId,
+    store.companyId,
+    'Тестовый визит: обсудили выкладку и заказ на следующую неделю',
+  );
+
+  // Рейс водителя бакалеи на сегодня из заявки, принятой к отгрузке.
+  const driver = await addEmployee(grocery.companyId, grocery.userId, '+77010000021', 'DRIVER');
+  const forRoute = await makeOrder(store, grocery.companyId, 4);
+  const forRouteOrder = await prisma.order.findUniqueOrThrow({
+    where: { id: forRoute },
+    include: { items: true },
+  });
+  await confirmOrder(
+    forRoute,
+    grocery.companyId,
+    grocery.userId,
+    forRouteOrder.items.map((item) => ({
+      orderItemId: item.id,
+      quantityConfirmed: item.quantityOrdered.toFixed(3),
+    })),
+  );
+  const route = await saveRoute(grocery.companyId, grocery.userId, {
+    date: today,
+    driverMembershipId: driver.membershipId,
+    orderIds: [forRoute],
+  });
+  if (route.status !== 'ok') throw new Error(`рейс: ${route.status}`);
+
   // Кредитный лимит бакалеи: у магазина в Алматы просроченный долг, новая заявка встанет на паузу.
   await savePaymentTerms(grocery.companyId, {
     paymentTerms: 'DEFERRED',
@@ -828,6 +926,8 @@ async function main() {
   console.log('Вход: +7 701 000 00 01 (поставщик бакалеи), +7 702 000 00 01 (магазин в Таразе).');
   console.log('Сотрудник с лимитом заявки: +7 702 000 00 11 (менеджер по закупкам).');
   console.log('Админка: /ru/admin, +7 700 900 00 01 (суперадмин) — там спор и подписки.');
+  console.log('Торговый представитель: +7 701 000 00 22, водитель: +7 701 000 00 21 (бакалея).');
+  console.log('Покупатель с бонусами на кассе: +7 777 999 00 01.');
 }
 
 main()

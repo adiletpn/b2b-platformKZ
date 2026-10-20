@@ -332,6 +332,9 @@ const SETTINGS = [
   // TODO(open-question): часы и возраст сверяются с юристом и местными правилами акимата.
   { key: 'excise_sale_hours', value: '08:00-23:00' },
   { key: 'excise_min_age', value: '21' },
+  // Разделы 4.1 и 4.2 ТЗ: доля упаковки при продаже штуками округляется до 3 знаков.
+  // TODO(open-question): способ округления (half_up, up, down) подтверждает заказчик.
+  { key: 'piece_sale_rounding', value: 'half_up' },
 ];
 
 async function main() {

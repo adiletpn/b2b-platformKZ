@@ -24,6 +24,11 @@ import { listOpenComplaints } from '@/lib/chat/extras';
 import { listTickets } from '@/lib/support/tickets';
 import { integrationStatus } from '@/lib/admin/broadcasts';
 import { ADMIN_FLAGS, getSetting } from '@/lib/admin/settings';
+import { BrandsPanel, ProductMergePanel } from './catalog-panel';
+import { listBrands } from '@/lib/admin/products';
+import { BannersPanel } from './banners-panel';
+import { listBanners } from '@/lib/admin/banners';
+import { kzDayKey } from '@/lib/format';
 
 export default async function AdminPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -133,6 +138,11 @@ export default async function AdminPage({ params }: { params: Promise<{ locale: 
             }))}
             plans={plans.map((plan) => ({ code: plan.code, name: plan.nameRu }))}
           />
+        ) : null}
+        {is('CONTENT_MANAGER') ? <ProductMergePanel /> : null}
+        {is('CONTENT_MANAGER') ? <BrandsPanel initial={await listBrands()} /> : null}
+        {is('CONTENT_MANAGER') ? (
+          <BannersPanel initial={await listBanners()} today={kzDayKey(new Date())} />
         ) : null}
         {templates ? <TemplateEditor initial={templates} /> : null}
         {role === 'SUPERADMIN' ? (

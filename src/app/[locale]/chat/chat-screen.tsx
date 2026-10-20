@@ -1,8 +1,20 @@
 'use client';
 
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { Ban, FileText, Flag, Package, Paperclip, Search, Send, Sparkles, X } from 'lucide-react';
+import {
+  Ban,
+  FileText,
+  Flag,
+  Mic,
+  Package,
+  Paperclip,
+  Search,
+  Send,
+  Sparkles,
+  Square,
+  X,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -24,17 +36,12 @@ type Message = {
   mine: boolean;
   read: boolean;
   createdAt: string;
-  file: { id: string; image: boolean } | null;
+  file: { id: string; image: boolean; voice: boolean; durationMs: number | null } | null;
   offer: { id: string; nameRu: string; nameKk: string; barcode: string; price: string } | null;
   document: { id: string; type: DocumentKind; number: string } | null;
 };
 
-type DocumentKind =
-  | 'WAYBILL'
-  | 'INVOICE'
-  | 'DISCREPANCY_ACT'
-  | 'RETURN_WAYBILL'
-  | 'SETTLEMENT_ACT';
+type DocumentKind = 'WAYBILL' | 'INVOICE' | 'DISCREPANCY_ACT' | 'RETURN_WAYBILL' | 'SETTLEMENT_ACT';
 type Shareables = {
   offers: { id: string; nameRu: string; nameKk: string; price: string }[];
   documents: { id: string; type: DocumentKind; number: string }[];
@@ -61,7 +68,26 @@ const ERRORS = [
   'too_many',
   'reason_required',
   'already_sent',
+  'empty',
+  'mic_unavailable',
 ];
+
+/** Голосовое — не длиннее двух минут (раздел 3.7 ТЗ): запись останавливается сама. */
+const VOICE_MAX_MS = 120_000;
+/** Пока потока событий нет, переписка обновляется прежним запросом. */
+const FALLBACK_POLL_MS = 5_000;
+
+/** Длительность записи «м:сс». */
+function clock(ms: number) {
+  const seconds = Math.max(0, Math.round(ms / 1000));
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+}
+
+/** Формат, который умеет записывать браузер: webm в Chrome и Firefox, mp4 в Safari. */
+function recorderMimeType() {
+  const candidates = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/mp4'];
+  return candidates.find((type) => MediaRecorder.isTypeSupported(type)) ?? '';
+}
 
 /**
  * Чат «магазин — поставщик» и чат заявки (раздел 3.7 ТЗ): статусы прочтения, поиск,
@@ -98,6 +124,11 @@ export function ChatScreen({
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
+  const [live, setLive] = useState(false);
+  const [recordingMs, setRecordingMs] = useState<number | null>(null);
+  const recorder = useRef<{ media: MediaRecorder; startedAt: number; timer: number } | null>(null);
+  const activeRef = useRef(activeId);
+  activeRef.current = activeId;
   const searchTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const fail = (code: string | undefined) =>
@@ -116,6 +147,102 @@ export function ChatScreen({
       current.map((chat) => (chat.id === chatId ? { ...chat, unread: 0 } : chat)),
     );
   }, []);
+
+  /** Счётчики непрочитанного в списке переписок. */
+  const refreshList = useCallback(async () => {
+    const response = await fetch('/api/chats');
+    if (!response.ok) return;
+    const data = (await response.json()) as { chats: ChatSummary[] };
+    setList(
+      data.chats.map((chat) => (chat.id === activeRef.current ? { ...chat, unread: 0 } : chat)),
+    );
+  }, []);
+
+  // Реальное время (разделы 3.7 и 5.3 ТЗ): сервер присылает, какие переписки изменились.
+  // Если поток оборвался, браузер переподключается сам, а пока его нет — опрос запросом.
+  useEffect(() => {
+    if (typeof EventSource === 'undefined') return;
+    const source = new EventSource('/api/chats/stream');
+    source.addEventListener('ready', () => setLive(true));
+    source.addEventListener('chats', (event) => {
+      setLive(true);
+      const { chatIds } = JSON.parse((event as MessageEvent<string>).data) as {
+        chatIds: string[];
+      };
+      if (activeRef.current && chatIds.includes(activeRef.current)) {
+        void loadChat(activeRef.current);
+      }
+      void refreshList();
+    });
+    source.onerror = () => setLive(false);
+    return () => source.close();
+  }, [loadChat, refreshList]);
+
+  useEffect(() => {
+    if (live) return;
+    const timer = window.setInterval(() => {
+      if (activeRef.current) void loadChat(activeRef.current);
+      void refreshList();
+    }, FALLBACK_POLL_MS);
+    return () => window.clearInterval(timer);
+  }, [live, loadChat, refreshList]);
+
+  async function startRecording() {
+    if (!activeId || recorder.current) return;
+    setError(null);
+    let stream: MediaStream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch {
+      setError('mic_unavailable');
+      return;
+    }
+    const mimeType = recorderMimeType();
+    const media = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+    const chunks: Blob[] = [];
+    const startedAt = Date.now();
+    const chatId = activeId;
+    media.ondataavailable = (event) => {
+      if (event.data.size > 0) chunks.push(event.data);
+    };
+    media.onstop = () => {
+      stream.getTracks().forEach((track) => track.stop());
+      const durationMs = Math.min(Date.now() - startedAt, VOICE_MAX_MS);
+      void sendVoice(chatId, new Blob(chunks, { type: media.mimeType }), durationMs);
+    };
+    const timer = window.setInterval(() => {
+      const elapsed = Date.now() - startedAt;
+      setRecordingMs(elapsed);
+      if (elapsed >= VOICE_MAX_MS) stopRecording();
+    }, 250);
+    recorder.current = { media, startedAt, timer };
+    setRecordingMs(0);
+    media.start();
+  }
+
+  function stopRecording() {
+    const current = recorder.current;
+    if (!current) return;
+    recorder.current = null;
+    window.clearInterval(current.timer);
+    setRecordingMs(null);
+    if (current.media.state !== 'inactive') current.media.stop();
+  }
+
+  async function sendVoice(chatId: string, blob: Blob, durationMs: number) {
+    setPending(true);
+    const form = new FormData();
+    form.set('file', blob, 'voice');
+    form.set('durationMs', String(durationMs));
+    const response = await fetch(`/api/chats/${chatId}/voice`, { method: 'POST', body: form });
+    const data = (await response.json().catch(() => ({}))) as { status?: string };
+    setPending(false);
+    if (data.status !== 'ok') {
+      fail(data.status);
+      return;
+    }
+    await loadChat(chatId);
+  }
 
   function openChat(chatId: string) {
     setActiveId(chatId);
@@ -352,6 +479,19 @@ export function ChatScreen({
                         ? t('byOrder', { number: active.orderNumber })
                         : t('general')}
                     </p>
+                    <p
+                      className="text-muted-foreground mt-0.5 flex items-center gap-1.5 text-[0.7rem]"
+                      data-testid="chat-live"
+                      data-live={live ? 'true' : 'false'}
+                    >
+                      <span
+                        className={cn(
+                          'size-1.5 rounded-full',
+                          live ? 'bg-success' : 'bg-muted-foreground',
+                        )}
+                      />
+                      {live ? t('live') : t('polling')}
+                    </p>
                   </div>
                   {block ? (
                     <Button
@@ -402,7 +542,23 @@ export function ChatScreen({
                               />
                             </a>
                           ) : null}
-                          {message.file && !message.file.image ? (
+                          {message.file?.voice ? (
+                            <span className="flex flex-col gap-1" data-testid="chat-voice">
+                              <span className="flex items-center gap-1.5 text-xs opacity-80">
+                                <Mic aria-hidden className="size-3.5" />
+                                {t('voice')}
+                                {message.file.durationMs
+                                  ? ` · ${clock(message.file.durationMs)}`
+                                  : ''}
+                              </span>
+                              <audio
+                                controls
+                                preload="none"
+                                src={`/api/files/${message.file.id}`}
+                                className="h-10 max-w-60"
+                              />
+                            </span>
+                          ) : message.file && !message.file.image ? (
                             <a
                               href={`/api/files/${message.file.id}`}
                               target="_blank"
@@ -607,6 +763,21 @@ export function ChatScreen({
                       >
                         <Package aria-hidden />
                       </Button>
+                      <Button
+                        type="button"
+                        variant={recordingMs === null ? 'outline' : 'danger'}
+                        size="icon"
+                        className="shrink-0"
+                        aria-label={recordingMs === null ? t('record') : t('stopRecording')}
+                        title={recordingMs === null ? t('record') : t('stopRecording')}
+                        disabled={pending}
+                        data-testid="chat-record"
+                        onClick={() =>
+                          recordingMs === null ? void startRecording() : stopRecording()
+                        }
+                      >
+                        {recordingMs === null ? <Mic aria-hidden /> : <Square aria-hidden />}
+                      </Button>
                       <Input
                         value={text}
                         placeholder={t('messagePlaceholder')}
@@ -637,6 +808,15 @@ export function ChatScreen({
                   </>
                 )}
 
+                {recordingMs !== null ? (
+                  <p
+                    className="text-danger mt-2 text-sm"
+                    role="status"
+                    data-testid="chat-recording"
+                  >
+                    {t('recording', { time: clock(recordingMs), max: clock(VOICE_MAX_MS) })}
+                  </p>
+                ) : null}
                 {notice ? (
                   <p className="text-success mt-2 text-sm" data-testid="chat-notice">
                     {t(`notices.${notice}` as 'notices.templateSaved')}

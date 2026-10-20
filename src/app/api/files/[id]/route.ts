@@ -6,7 +6,7 @@ function denied(status: 401 | 403) {
   return NextResponse.json({ error: status === 401 ? 'unauthorized' : 'forbidden' }, { status });
 }
 
-/** Скачивание файла. PDF и картинки открываются в браузере, остальное — загрузкой. */
+/** Скачивание файла. PDF, картинки и аудио открываются в браузере, остальное — загрузкой. */
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const guard = await requirePermission('DOCUMENTS_PAYMENTS', 'VIEW');
   if (!guard.ok) return denied(guard.status);
@@ -15,7 +15,11 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   const file = await readAttachment(id, guard.access.companyId);
   if (!file) return NextResponse.json({ error: 'not_found' }, { status: 404 });
 
-  const inline = file.mimeType === 'application/pdf' || file.mimeType.startsWith('image/');
+  // Голосовые сообщения чата проигрываются плеером прямо в переписке.
+  const inline =
+    file.mimeType === 'application/pdf' ||
+    file.mimeType.startsWith('image/') ||
+    file.mimeType.startsWith('audio/');
   const asciiName = file.fileName.replace(/[^\x20-\x7E]/g, '_');
   return new NextResponse(file.data, {
     headers: {

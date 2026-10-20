@@ -73,6 +73,7 @@ export async function resetPlatformFlags(prisma: PrismaClient) {
   // Шаблоны печатных форм глобальные: чужой шаблон не должен влиять на другие тесты.
   await prisma.documentTemplate.deleteMany();
   await prisma.broadcast.deleteMany();
+  await prisma.banner.deleteMany();
   await prisma.adminAuditLog.deleteMany();
   await prisma.impersonationLog.deleteMany();
   await prisma.adminSession.deleteMany();

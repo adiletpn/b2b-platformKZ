@@ -27,3 +27,15 @@ export function formatDateTime(date: Date): string {
 export function formatDate(date: Date): string {
   return dateFormat.format(date);
 }
+
+const dayKeyFormat = new Intl.DateTimeFormat('en-CA', {
+  timeZone: KZ_TIME_ZONE,
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+});
+
+/** Календарный день по Казахстану в виде ГГГГ-ММ-ДД: ключ для группировки и сравнения дат. */
+export function kzDayKey(date: Date): string {
+  return dayKeyFormat.format(date);
+}

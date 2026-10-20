@@ -165,7 +165,7 @@ export async function getMessages(chatId: string, companyId: string) {
         orderBy: { createdAt: 'asc' },
         take: 200,
         include: {
-          attachments: { select: { id: true, mimeType: true } },
+          attachments: { select: { id: true, mimeType: true, kind: true, durationMs: true } },
           offer: {
             select: {
               id: true,
@@ -195,6 +195,8 @@ export async function getMessages(chatId: string, companyId: string) {
         ? {
             id: message.attachments[0].id,
             image: message.attachments[0].mimeType.startsWith('image/'),
+            voice: message.attachments[0].kind === 'VOICE',
+            durationMs: message.attachments[0].durationMs,
           }
         : null,
       offer: message.offer

@@ -20,6 +20,8 @@ export type SaleLine = {
   discountPercent?: string;
   /** Коды DataMatrix маркированного товара: по одному на единицу. */
   markingCodes?: string[];
+  /** Продажа поштучно из упаковки: `quantity` — число штук (разделы 4.1 и 4.2 ТЗ). */
+  byPiece?: boolean;
 };
 
 export type SaleInput = {
@@ -56,11 +58,27 @@ export type SaleResult =
   | { status: 'payment_mismatch'; total: string }
   | { status: 'not_enough_cash'; total: string }
   | { status: 'no_price'; productId: string }
+  | { status: 'piece_sale_unavailable'; productId: string }
   | { status: 'marking_required'; productId: string }
   | { status: 'marking_reused'; productId: string }
   | { status: 'age_not_confirmed' }
   | { status: 'restricted_hours'; hours: string }
   | { status: 'not_enough_stock'; productId: string };
+
+/**
+ * Доля упаковки, которую списывает поштучная продажа. Остаток хранится с тремя знаками
+ * (правило 2), поэтому доля округляется; способ округления — в настройках платформы.
+ * TODO(open-question): как округлять долю упаковки (половина вверх, вверх, вниз) и как
+ * сводить копеечный хвост остатка, решает заказчик с бухгалтером.
+ */
+export async function pieceShare(pieces: Decimal, piecesPerPack: number): Promise<Decimal> {
+  const mode = await getSetting('piece_sale_rounding', 'half_up');
+  const rounding =
+    mode === 'up' ? Decimal.ROUND_UP : mode === 'down' ? Decimal.ROUND_DOWN : Decimal.ROUND_HALF_UP;
+  const share = pieces.div(piecesPerPack).toDecimalPlaces(3, rounding);
+  // Штука не может уйти бесплатно для остатка: минимум — одна тысячная.
+  return share.isZero() ? new Decimal('0.001') : share;
+}
 
 function parseMoney(value: string | undefined): Decimal | null {
   if (value === undefined || value === '') return null;
@@ -115,20 +133,25 @@ export async function sell(
 
   let lines: {
     productId: string;
+    /** Сколько продаётся: единиц учёта или штук при поштучной продаже. */
     quantity: Decimal;
     price?: Decimal;
     discountPercent: Decimal;
+    byPiece: boolean;
   }[];
   try {
     lines = input.lines.map((line) => {
       // Правило 2: количества до трёх знаков.
       const quantity = new Decimal(line.quantity.replace(',', '.'));
       if (!quantity.isFinite() || quantity.lessThanOrEqualTo(0)) throw new Error('invalid');
+      // Штуки из упаковки продаются только целыми.
+      if (line.byPiece && !quantity.isInteger()) throw new Error('invalid');
       return {
         productId: line.productId,
         quantity: quantity.toDecimalPlaces(3, Decimal.ROUND_HALF_UP),
         price: line.price ? new Decimal(line.price.replace(',', '.')) : undefined,
         discountPercent: parsePercent(line.discountPercent) ?? new Decimal(-1),
+        byPiece: Boolean(line.byPiece),
       };
     });
   } catch {
@@ -143,9 +166,14 @@ export async function sell(
     where: { companyId, productId: { in: lines.map((line) => line.productId) } },
   });
   const priceByProduct = new Map(prices.map((row) => [row.productId, row.price]));
+  const retailByProduct = new Map(prices.map((row) => [row.productId, row]));
   for (const line of lines) {
     if (!line.price && !priceByProduct.has(line.productId)) {
       return { status: 'no_price', productId: line.productId };
+    }
+    const retail = retailByProduct.get(line.productId);
+    if (line.byPiece && (!retail?.piecesPerPack || !retail.piecePrice)) {
+      return { status: 'piece_sale_unavailable', productId: line.productId };
     }
   }
 
@@ -160,6 +188,8 @@ export async function sell(
   for (const [index, line] of lines.entries()) {
     const product = productById.get(line.productId);
     if (!product?.isMarked) continue;
+    // Маркированный товар поштучно не продаётся: код DataMatrix — на единицу учёта.
+    if (line.byPiece) return { status: 'piece_sale_unavailable', productId: line.productId };
     const codes = (input.lines[index]!.markingCodes ?? []).map((code) => code.trim());
     const unique = new Set(codes);
     if (
@@ -189,10 +219,26 @@ export async function sell(
     }
   }
 
-  const priced = lines.map((line) => ({
-    ...line,
-    price: line.price ?? new Decimal(priceByProduct.get(line.productId)!.toString()),
-  }));
+  const priced = await Promise.all(
+    lines.map(async (line) => {
+      const retail = retailByProduct.get(line.productId);
+      if (line.byPiece) {
+        // Цена — за штуку, а остаток уменьшается на долю упаковки.
+        return {
+          ...line,
+          price: new Decimal(retail!.piecePrice!.toString()),
+          pieces: line.quantity.toNumber(),
+          stockQuantity: await pieceShare(line.quantity, retail!.piecesPerPack!),
+        };
+      }
+      return {
+        ...line,
+        price: line.price ?? new Decimal(priceByProduct.get(line.productId)!.toString()),
+        pieces: null,
+        stockQuantity: line.quantity,
+      };
+    }),
+  );
   const receipt = computeReceipt(priced, receiptPercent);
 
   // Раздел 3.12 ТЗ: максимальная скидка на кассе — у каждого сотрудника своя.
@@ -221,11 +267,20 @@ export async function sell(
     }
   }
 
+  // Один товар может быть в чеке дважды: упаковкой и штуками — остаток проверяется по сумме.
+  const neededByProduct = new Map<string, Decimal>();
+  for (const line of priced) {
+    neededByProduct.set(
+      line.productId,
+      (neededByProduct.get(line.productId) ?? new Decimal(0)).plus(line.stockQuantity),
+    );
+  }
+
   const result = await prisma.$transaction(async (tx) => {
-    for (const line of priced) {
-      const balance = await currentBalance(tx, locationId, line.productId);
-      if (balance.quantity.lessThan(line.quantity)) {
-        return { status: 'not_enough_stock' as const, productId: line.productId };
+    for (const [productId, needed] of neededByProduct) {
+      const balance = await currentBalance(tx, locationId, productId);
+      if (balance.quantity.lessThan(needed)) {
+        return { status: 'not_enough_stock' as const, productId };
       }
     }
 
@@ -255,15 +310,17 @@ export async function sell(
       const balance = await currentBalance(tx, locationId, line.productId);
 
       // Себестоимость — из партий по FEFO: ближний срок уходит первым.
-      const lots = await consumeFefo(tx, locationId, line.productId, line.quantity);
+      const lots = await consumeFefo(tx, locationId, line.productId, line.stockQuantity);
       const cost = lotsCost(lots ?? [], balance.averageCost);
-      const lineCost = cost.times(line.quantity).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
+      const lineCost = cost.times(line.stockQuantity).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
 
       await tx.receiptItem.create({
         data: {
           receiptId: created.id,
           productId: line.productId,
-          quantity: line.quantity.toFixed(3),
+          // В чеке остаётся доля упаковки для учёта и число проданных штук.
+          quantity: line.stockQuantity.toFixed(3),
+          pieces: line.pieces,
           price: line.price.toFixed(2),
           costPrice: cost.toFixed(2),
           discount: computed.discount.toFixed(2),
@@ -277,7 +334,7 @@ export async function sell(
         data: {
           locationId,
           productId: line.productId,
-          quantity: line.quantity.negated().toFixed(3),
+          quantity: line.stockQuantity.negated().toFixed(3),
           costPrice: cost.toFixed(2),
           type: 'ISSUE',
         },
@@ -285,7 +342,7 @@ export async function sell(
       await applyBalanceChange(tx, {
         locationId,
         productId: line.productId,
-        quantity: line.quantity.negated(),
+        quantity: line.stockQuantity.negated(),
         costPrice: cost,
       });
 
@@ -379,6 +436,7 @@ export async function refund(
           receiptId: created.id,
           productId: item.productId,
           quantity: quantity.negated().toFixed(3),
+          pieces: item.pieces === null ? null : -item.pieces,
           price: item.price,
           costPrice: item.costPrice,
           discount: new Decimal(item.discount.toString()).negated().toFixed(2),

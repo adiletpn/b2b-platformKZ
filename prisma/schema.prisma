@@ -887,6 +887,9 @@ model ReceiptItem {
   discount     Decimal  @default(0) @db.Decimal(14, 2)
   /// Коды DataMatrix маркированного товара, по одному на единицу (раздел 4.2 ТЗ).
   markingCodes String[] @default([])
+  /// Поштучная продажа из упаковки: сколько штук продано. `quantity` тогда — доля упаковки
+  /// для остатка, а `price` — цена штуки.
+  pieces       Int?
   total        Decimal  @db.Decimal(14, 2)
 
   @@index([receiptId])
@@ -909,13 +912,17 @@ model MarkupRule {
 
 /// Розничная цена товара в компании: результат наценки или ручной переоценки.
 model RetailPrice {
-  id        String   @id @default(cuid())
-  companyId String
-  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  productId String
-  product   Product  @relation(fields: [productId], references: [id])
-  price     Decimal  @db.Decimal(14, 2)
-  updatedAt DateTime @updatedAt
+  id            String   @id @default(cuid())
+  companyId     String
+  company       Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  productId     String
+  product       Product  @relation(fields: [productId], references: [id])
+  price         Decimal  @db.Decimal(14, 2)
+  /// Продажа поштучно из упаковки (разделы 4.1 и 4.2 ТЗ): штук в упаковке и цена штуки.
+  /// Пусто — товар продаётся только целой единицей учёта.
+  piecesPerPack Int?
+  piecePrice    Decimal? @db.Decimal(14, 2)
+  updatedAt     DateTime @updatedAt
 
   @@unique([companyId, productId])
   @@map("retail_prices")
@@ -1055,6 +1062,8 @@ enum AttachmentKind {
   LICENSE
   PHOTO
   OTHER
+  /// Голосовое сообщение чата (раздел 3.7 ТЗ): аудио webm, ogg или mp4.
+  VOICE
 }
 
 /// Файл, загруженный компанией: к заявке (видят обе стороны) или к самой компании.
@@ -1073,6 +1082,8 @@ model Attachment {
   mimeType     String
   size         Int
   sha256       String
+  /// Длина голосового сообщения в миллисекундах; у остальных файлов пусто.
+  durationMs   Int?
   uploadedById String?
   uploadedBy   User?           @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
   createdAt    DateTime        @default(now())
@@ -1279,6 +1290,7 @@ model AdminUser {
   templates       DocumentTemplate[]
   ticketsAssigned SupportTicket[]
   broadcasts      Broadcast[]
+  banners         Banner[]
 
   @@map("admin_users")
 }
@@ -1608,4 +1620,30 @@ model CompanyLicense {
   updatedAt  DateTime  @updatedAt
 
   @@map("company_licenses")
+}
+
+// ---------- Баннеры в кабинете (раздел 3.13 ТЗ) ----------
+
+/// Для кого баннер: все компании, только магазины или только поставщики.
+enum BannerAudience {
+  ALL
+  STORES
+  SUPPLIERS
+}
+
+/// Баннер в кабинете компаний: текст на двух языках и даты показа (раздел 3.13 ТЗ).
+model Banner {
+  id          String         @id @default(cuid())
+  textRu      String
+  textKk      String
+  audience    BannerAudience @default(ALL)
+  /// Даты показа включительно, по календарю Казахстана.
+  startsOn    DateTime       @db.Date
+  endsOn      DateTime       @db.Date
+  createdById String
+  createdBy   AdminUser      @relation(fields: [createdById], references: [id])
+  createdAt   DateTime       @default(now())
+
+  @@index([startsOn, endsOn])
+  @@map("banners")
 }

@@ -11,6 +11,8 @@ import { withIdempotency } from '@/lib/orders/idempotency';
  * при каждом деплое, а база переживает его и попадает в ежедневную копию.
  */
 export const ATTACHMENT_KINDS = ['CONTRACT', 'CERTIFICATE', 'LICENSE', 'PHOTO', 'OTHER'] as const;
+/** Голосовые сообщения чата: отдельный вид, принимается только аудио. */
+const UPLOAD_KINDS = [...ATTACHMENT_KINDS, 'VOICE'] as const;
 export const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
 /**
@@ -39,6 +41,20 @@ export function detectFileType(data: Uint8Array, fileName: string): string | nul
   return null;
 }
 
+/**
+ * Аудио голосового сообщения по первым байтам (раздел 3.7 ТЗ). MediaRecorder пишет
+ * webm (Chrome, Firefox), ogg (Firefox) или mp4 (Safari); контейнер узнаётся по сигнатуре:
+ * EBML у webm, «OggS» у ogg, «ftyp» на пятом байте у mp4.
+ */
+export function detectAudioType(data: Uint8Array): string | null {
+  const starts = (...bytes: number[]) => bytes.every((byte, index) => data[index] === byte);
+
+  if (starts(0x1a, 0x45, 0xdf, 0xa3)) return 'audio/webm';
+  if (starts(0x4f, 0x67, 0x67, 0x53)) return 'audio/ogg';
+  if (data.length > 8 && String.fromCharCode(...data.slice(4, 8)) === 'ftyp') return 'audio/mp4';
+  return null;
+}
+
 /** Имя файла без путей и управляющих символов, не длиннее 200 знаков. */
 export function safeFileName(name: string): string {
   const base = name.split(/[\\/]/).pop() ?? '';
@@ -55,6 +71,8 @@ export type UploadInput = {
   kind: string;
   fileName: string;
   data: Uint8Array;
+  /** Длина голосового сообщения, мс. */
+  durationMs?: number;
   idempotencyKey?: string;
 };
 
@@ -75,14 +93,15 @@ async function ownOrder(orderId: string, companyId: string) {
 }
 
 export async function uploadAttachment(input: UploadInput): Promise<UploadResult> {
-  if (!(ATTACHMENT_KINDS as readonly string[]).includes(input.kind)) {
+  if (!(UPLOAD_KINDS as readonly string[]).includes(input.kind)) {
     return { status: 'invalid_kind' };
   }
   if (input.data.length === 0) return { status: 'empty' };
   if (input.data.length > MAX_FILE_SIZE) return { status: 'too_large' };
 
   const fileName = safeFileName(input.fileName);
-  const mimeType = detectFileType(input.data, fileName);
+  const mimeType =
+    input.kind === 'VOICE' ? detectAudioType(input.data) : detectFileType(input.data, fileName);
   if (!mimeType) return { status: 'unsupported_type' };
 
   // Правило 4: к чужой заявке файл не приложить.
@@ -105,6 +124,7 @@ export async function uploadAttachment(input: UploadInput): Promise<UploadResult
           mimeType,
           size: input.data.length,
           sha256: createHash('sha256').update(input.data).digest('hex'),
+          durationMs: input.durationMs ?? null,
           uploadedById: input.userId,
           blob: { create: { data: Buffer.from(input.data) } },
         },
@@ -124,7 +144,7 @@ export async function uploadAttachment(input: UploadInput): Promise<UploadResult
 
 export type AttachmentRow = {
   id: string;
-  kind: AttachmentKind;
+  kind: (typeof ATTACHMENT_KINDS)[number];
   fileName: string;
   mimeType: string;
   size: number;
@@ -151,7 +171,8 @@ export async function listAttachments(
   });
   return rows.map((row) => ({
     id: row.id,
-    kind: row.kind,
+    // Голосовые живут только в сообщениях чата и в этот список не попадают.
+    kind: row.kind as AttachmentRow['kind'],
     fileName: row.fileName,
     mimeType: row.mimeType,
     size: row.size,

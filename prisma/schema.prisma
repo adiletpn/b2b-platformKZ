@@ -1217,6 +1217,7 @@ model AdminUser {
   decisions      VerificationRequest[]
   auditEntries   AdminAuditLog[]
   impersonations ImpersonationLog[]
+  templates      DocumentTemplate[]
 
   @@map("admin_users")
 }
@@ -1285,6 +1286,24 @@ model ImpersonationLog {
 }
 
 /// Настройки платформы и флаги функций (раздел 3.13 ТЗ). Правило 5: перечень в БД.
+/// Шаблон печатной формы, сохранённый администратором (разделы 3.13 и 4.4 ТЗ).
+/// Каждое сохранение — новая версия; действует последняя активная, без неё — стандартный.
+model DocumentTemplate {
+  id          String       @id @default(cuid())
+  type        DocumentType
+  locale      Locale
+  body        String
+  version     Int
+  isActive    Boolean      @default(true)
+  createdById String
+  createdBy   AdminUser    @relation(fields: [createdById], references: [id])
+  createdAt   DateTime     @default(now())
+
+  @@unique([type, locale, version])
+  @@index([type, locale, isActive])
+  @@map("document_templates")
+}
+
 model PlatformSetting {
   key       String   @id
   value     String

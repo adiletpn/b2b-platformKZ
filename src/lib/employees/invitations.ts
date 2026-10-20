@@ -1,7 +1,29 @@
 import { randomUUID } from 'node:crypto';
+import type { MembershipRole } from '@/generated/prisma/enums';
 import { prisma } from '@/lib/prisma';
 import { normalizePhone, maskPhone } from '@/lib/phone';
 import { writeAudit } from '@/lib/auth/permissions';
+
+const MEMBERSHIP_ROLES: readonly MembershipRole[] = [
+  'OWNER',
+  'PURCHASING_MANAGER',
+  'SALES_MANAGER',
+  'STOREKEEPER',
+  'ACCOUNTANT',
+  'CASHIER',
+  'DRIVER',
+];
+
+/**
+ * Поле `Membership.role` из модели D1 знает только роли-шаблоны демо. Права берутся
+ * из `roleId`, поэтому для новой системной роли (торговый представитель) и своих ролей
+ * компании пишем нейтральную базовую роль: модель D1 не меняется.
+ */
+function baseMembershipRole(code: string): MembershipRole {
+  return (MEMBERSHIP_ROLES as readonly string[]).includes(code)
+    ? (code as MembershipRole)
+    : 'SALES_MANAGER';
+}
 
 /** Раздел 3.12 ТЗ: ссылка приглашения действует 7 дней. */
 export const INVITATION_DAYS = 7;
@@ -83,7 +105,7 @@ export async function acceptPendingInvitations(userId: string, phone: string) {
         create: {
           userId,
           companyId: invitation.companyId,
-          role: invitation.role.code as never,
+          role: baseMembershipRole(invitation.role.code),
           roleId: invitation.roleId,
           status: 'ACTIVE',
         },

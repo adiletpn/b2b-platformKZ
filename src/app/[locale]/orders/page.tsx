@@ -18,6 +18,11 @@ export default async function OrdersPage({ params }: { params: Promise<{ locale:
 
   const active = await getActiveCompany();
   if (!active) redirect({ href: '/login', locale });
+  // Раздел 3.12 ТЗ: без права на заявки (кассир, водитель, торговый представитель) списка нет.
+  const viewer = await getAccess();
+  if (!viewer || !(await hasPermission(viewer, 'SWIPE_ORDERS', 'VIEW'))) {
+    redirect({ href: '/dashboard', locale });
+  }
 
   const companyId = active!.companyId;
   const [orders, notifications] = await Promise.all([

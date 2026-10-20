@@ -42,6 +42,18 @@
   Excel `/api/analytics/xlsx`. Права: магазин — PURCHASE_PRICES VIEW, поставщик — SWIPE_ORDERS VIEW.
 - Тесты: `tests/integration/analytics.test.ts`, шаг в `tests/e2e/f2-loyalty.spec.ts`.
 
+## Сделано (коммит «B8 торговые представители»)
+
+- Миграция `20261020150000_s3c_sales_reps`: раздел прав `SALES_REPS`, `SalesRepStore`
+  (один представитель на магазин у поставщика), `SalesRepVisit`. Модель D1 не тронута:
+  `Membership.role` для роли вне enum пишется `SALES_MANAGER`, права берутся из `roleId`.
+- Сид: системная роль `SALES_REP` (SALES_REPS: VIEW, CREATE), у Владельца — весь раздел.
+- `src/lib/reps/reps.ts`, `/api/reps`, экран `/reps` (пункт меню у поставщика).
+- Экраны `/orders` и `/orders/[id]` теперь требуют SWIPE_ORDERS VIEW (кассир, водитель и
+  представитель туда не попадают; раньше страница списка права не проверяла).
+- Заявка от имени магазина — не сделана, TODO(open-question).
+- Тесты: `tests/integration/sales-reps.test.ts`, e2e `tests/e2e/f3-sales-rep.spec.ts`.
+
 ## Как гонять e2e в этом контейнере
 
 Node 22.22 падает при загрузке спек («module not been linked»). Рабочий способ: собрать
@@ -53,7 +65,7 @@ Node 22.22 падает при загрузке спек («module not been link
 ## Не доделано
 
 - Интеграционные тесты дублей и баннеров, e2e объединения дублей.
-- Блок B: 8 торговые представители, 9 маршруты водителей.
+- Блок B: 9 маршруты водителей.
   План по каждому пункту был такой:
   - 6: `LoyaltyCustomer(companyId, phone, balance)`, `LoyaltyMovement`, поля чека
     `bonusRedeemed/bonusEarned/loyaltyCustomerId`; «к оплате» = total − бонусы, в Z-отчёте строка

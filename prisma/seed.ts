@@ -195,6 +195,7 @@ const ROLE_TEMPLATES = [
       DOCUMENTS_PAYMENTS: ALL_ACTIONS,
       EMPLOYEES_REQUISITES: ALL_ACTIONS,
       DELIVERIES: ALL_ACTIONS,
+      SALES_REPS: ALL_ACTIONS,
     },
   },
   {
@@ -252,6 +253,16 @@ const ROLE_TEMPLATES = [
       SWIPE_ORDERS: ['VIEW', 'UPDATE'],
       DOCUMENTS_PAYMENTS: ['VIEW', 'CREATE'],
       STOCK: ['VIEW'],
+    },
+  },
+  {
+    // Этап 3 ТЗ: видит только закреплённые за ним магазины, отмечает визиты.
+    // TODO(open-question): заявка от имени магазина — нужен порядок согласия магазина.
+    code: 'SALES_REP',
+    nameRu: 'Торговый представитель',
+    nameKk: 'Сауда өкілі',
+    permissions: {
+      SALES_REPS: ['VIEW', 'CREATE'],
     },
   },
   {

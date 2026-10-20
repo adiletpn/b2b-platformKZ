@@ -231,6 +231,10 @@ model Company {
   chatBlocksReceived   ChatBlock[]            @relation("ChatBlocked")
   supportTickets       SupportTicket[]
   loyaltyCustomers     LoyaltyCustomer[]
+  repStoresSupplier    SalesRepStore[]        @relation("RepSupplier")
+  repStoresStore       SalesRepStore[]        @relation("RepStore")
+  repVisitsSupplier    SalesRepVisit[]        @relation("VisitSupplier")
+  repVisitsStore       SalesRepVisit[]        @relation("VisitStore")
 
   license CompanyLicense?
 
@@ -271,6 +275,8 @@ model Membership {
   orderLimit         Decimal?         @db.Decimal(14, 2)
   maxDiscount        Decimal?         @db.Decimal(5, 2)
   createdAt          DateTime         @default(now())
+  repStores          SalesRepStore[]
+  repVisits          SalesRepVisit[]
 
   @@unique([userId, companyId])
   @@index([companyId])
@@ -1145,6 +1151,8 @@ enum PermissionSection {
   DOCUMENTS_PAYMENTS
   EMPLOYEES_REQUISITES
   DELIVERIES
+  /// Торговые представители поставщика (этап 3): закреплённые магазины и визиты.
+  SALES_REPS
 }
 
 enum PermissionAction {
@@ -1696,4 +1704,38 @@ model LoyaltyMovement {
 
   @@index([customerId, createdAt])
   @@map("loyalty_movements")
+}
+
+// ---------- Торговые представители (этап 3 ТЗ) ----------
+
+/// Магазин, закреплённый за торговым представителем поставщика. У магазина один представитель.
+model SalesRepStore {
+  id           String     @id @default(cuid())
+  supplierId   String
+  supplier     Company    @relation("RepSupplier", fields: [supplierId], references: [id], onDelete: Cascade)
+  membershipId String
+  membership   Membership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  storeId      String
+  store        Company    @relation("RepStore", fields: [storeId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+
+  @@unique([supplierId, storeId])
+  @@index([membershipId])
+  @@map("sales_rep_stores")
+}
+
+/// Отметка визита представителя в магазин с комментарием.
+model SalesRepVisit {
+  id           String     @id @default(cuid())
+  supplierId   String
+  supplier     Company    @relation("VisitSupplier", fields: [supplierId], references: [id], onDelete: Cascade)
+  membershipId String
+  membership   Membership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  storeId      String
+  store        Company    @relation("VisitStore", fields: [storeId], references: [id], onDelete: Cascade)
+  comment      String
+  visitedAt    DateTime   @default(now())
+
+  @@index([supplierId, storeId, visitedAt])
+  @@map("sales_rep_visits")
 }

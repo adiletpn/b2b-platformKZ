@@ -264,6 +264,19 @@ FIFO и сканер штрихкодов (USB/Bluetooth) — раздел 4.1 �
 | Файл компании виден только ей, удаляет только владелец, всё пишется в журнал | `company_file_is_private_and_only_owner_deletes`, e2e `company_keeps_contract_in_archive`                                           |
 | Тип файла определяется по содержимому, лишнее отклоняется                    | `file_type_is_detected_by_content`, `wrong_files_are_refused_and_double_click_uploads_once`, e2e `html_disguised_as_pdf_is_refused` |
 
+## Этап 2, раздел 4.4 — экспорт и печать, 20.10.2026
+
+| Что проверено                                                                 | Тесты                                                                                                                                                                                              |
+| :---------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Архив за период: PDF каждого документа, ЭСФ своих счетов, реестр; только свои | `bundle_has_pdf_of_each_document_registry_and_esf`, e2e `supplier_downloads_documents_of_period_as_zip`                                                                                            |
+| Пустой и слишком длинный период отклоняются                                   | `bundle_refuses_empty_and_too_long_period`                                                                                                                                                         |
+| CSV каталога — только свои предложения, формулы обезврежены                   | `catalog_csv_has_only_own_offers_and_neutralizes_formulas`, `csv_quotes_commas_and_line_breaks`                                                                                                    |
+| CSV остатков: себестоимость только с правом, ограничение по точкам            | `stock_csv_shows_cost_only_with_purchase_price_right`                                                                                                                                              |
+| 1С: номенклатура, контрагенты, реализации (накладные и смены кассы), оплаты   | `nomenclature_and_counterparties_are_own_only`, `sales_have_waybills_of_seller_and_closed_pos_shifts`, `payments_are_seen_by_both_sides_with_own_role`, e2e `one_c_and_csv_exports_are_downloaded` |
+| QR проверки на печатной форме и открытая страница проверки                    | `printed_form_has_qr_with_verification_link`, `verification_page_data_masks_bin_and_marks_old_paper`, e2e `anyone_with_qr_checks_document_without_login`                                           |
+
+QR на отрендеренной форме сверен внешним декодером. ZIP проверен `unzip -t`.
+
 ## Расхождения ТЗ и демо-объёма
 
 Сужение demo-объёма снято: чат, рейтинги, сотрудники с матрицей прав, уведомления и

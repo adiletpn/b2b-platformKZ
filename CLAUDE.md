@@ -129,6 +129,23 @@ PWA (раздел 6): `src/app/manifest.ts`, `public/sw.js` — без сети 
   (`SupportTicket`, экран `/support`), отчёты Excel, рассылки (`Broadcast`), статус интеграций,
   жалобы на сообщения.
 
+## Этап 3 без внешних сервисов (20.10.2026, ветка feature/stage3)
+
+Состояние и план остатка — [docs/handoff/stage3-progress.md](docs/handoff/stage3-progress.md).
+
+- Чат: голосовые (вложение `VOICE`, webm/ogg/mp4 по первым байтам, до 2 минут) и SSE
+  `/api/chats/stream` (`src/lib/chat/live.ts`, опрос базы раз в 2 с, без потока — запрос).
+- Админка: объединение дублей товаров и бренды (`src/lib/admin/products.ts`), баннеры
+  в кабинете (`Banner`, `src/lib/admin/banners.ts`).
+- Касса: поштучно из упаковки (`RetailPrice.piecesPerPack/piecePrice`, `ReceiptItem.pieces`),
+  лояльность (`LoyaltyCustomer`, `LoyaltyMovement`, `src/lib/pos/loyalty.ts`).
+- Аналитика `/analytics` (`src/lib/analytics/analytics.ts`, SVG `bar-chart.tsx`, Excel).
+- Торговые представители (`SALES_REPS`, роль `SALES_REP`, `src/lib/reps/reps.ts`, `/reps`).
+  `/orders` требует право на заявки.
+- Рейсы водителей (`DeliveryRoute`, `src/lib/deliveries/routes.ts`, панель на `/deliveries`).
+- Настройки по умолчанию с `TODO(open-question)`: `piece_sale_rounding`, `loyalty_earn_percent`,
+  `loyalty_max_redeem_share`, `analytics_abc_thresholds`, `analytics_stale_days`.
+
 ## Что в демо не входит
 
 Реальные подключения: платёжный шлюз, ЭЦП (NCALayer/SIGEX), онлайн-касса, ИС ЭСФ —
@@ -204,7 +221,7 @@ npm run db:backup    # НФТ 5.4: копия базы в ./backups, старш�
   этапы только добавляют таблицы; изменение этих — серая зона, требует согласования.
 - D2 добавил таблицы каталога: `Unit`, `Category`, `Product`, `SupplierOffer`.
 - Чат добавил `Chat` и `Message`: общая переписка пары компаний плюс отдельный чат внутри
-  заявки, статусы «доставлено / прочитано». Вложений и голосовых в демо нет.
+  заявки, статусы «доставлено / прочитано». Файлы и голосовые — вложениями (этап 3).
 - Рейтинги добавили `Rating`: оценка по закрытой заявке, одна от каждой стороны,
   автоматические метрики считаются по заявкам за 12 месяцев.
 - Тарифы добавили `TariffPlan` и `Subscription`: лимиты по точкам, сотрудникам и товарам,

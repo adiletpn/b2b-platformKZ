@@ -251,6 +251,19 @@ FIFO и сканер штрихкодов (USB/Bluetooth) — раздел 4.1 �
 Попутно закрыты две дыры: колбэк шлюза принимал оплату без подписи, а поиск в архиве
 по номеру отдавал документы других компаний (`archive_search_and_counterparty_filter_do_not_leak_other_companies`).
 
+## Этап 2, раздел 4.3 — версии документов и свои файлы, 20.10.2026
+
+| Что проверено                                                                | Тесты                                                                                                                               |
+| :--------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------- |
+| Исправление выпускает новую версию, старая остаётся в истории и печатается   | `correction_creates_new_version_and_keeps_old_in_history`, e2e `supplier_corrects_invoice_and_old_version_stays_in_history`         |
+| Исправление берёт реквизиты из профиля, позиции и суммы не меняются          | `correction_refreshes_requisites_from_profile`                                                                                      |
+| Исправляет только выписавшая сторона, посторонний не видит историю и PDF     | `only_issuer_corrects_and_outsider_sees_nothing`, e2e `store_sees_correction_but_cannot_correct_incoming_document`                  |
+| Причина обязательна, двойное нажатие не создаёт две версии                   | `correction_requires_reason_and_is_protected_from_double_click`                                                                     |
+| Исправленную версию подписывают заново, получатель получает уведомление      | `corrected_version_is_signed_again_and_recipient_is_notified`                                                                       |
+| Файл заявки видят обе стороны и только они                                   | `order_file_is_visible_to_both_sides_only`, e2e `store_attaches_photo_and_supplier_downloads_it`                                    |
+| Файл компании виден только ей, удаляет только владелец, всё пишется в журнал | `company_file_is_private_and_only_owner_deletes`, e2e `company_keeps_contract_in_archive`                                           |
+| Тип файла определяется по содержимому, лишнее отклоняется                    | `file_type_is_detected_by_content`, `wrong_files_are_refused_and_double_click_uploads_once`, e2e `html_disguised_as_pdf_is_refused` |
+
 ## Расхождения ТЗ и демо-объёма
 
 Сужение demo-объёма снято: чат, рейтинги, сотрудники с матрицей прав, уведомления и

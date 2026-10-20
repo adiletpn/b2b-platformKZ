@@ -671,6 +671,8 @@ model Document {
   /// Раздел 4.3 ТЗ: исправление выпускает новую версию, прошлая уходит в историю.
   correctionReason String?
   correctedAt      DateTime?
+  /// Код для QR проверки на печатной форме (раздел 4.4 ТЗ): случайный, не угадывается.
+  verificationCode String              @unique @default(uuid())
 
   movements  StockMovement[]
   payments   Payment[]

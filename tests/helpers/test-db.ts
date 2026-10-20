@@ -23,6 +23,9 @@ export async function resetTransactionalData(prisma: PrismaClient) {
   await prisma.message.deleteMany();
   await prisma.chat.deleteMany();
   await prisma.rating.deleteMany();
+  await prisma.receiptItem.deleteMany();
+  await prisma.receipt.deleteMany();
+  await prisma.posShift.deleteMany();
   await prisma.retailPrice.deleteMany();
   await prisma.markupRule.deleteMany();
   await prisma.stockBatch.deleteMany();

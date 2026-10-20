@@ -10,6 +10,7 @@ type NavItem = {
     | '/cart'
     | '/orders'
     | '/stock'
+    | '/pos'
     | '/catalog'
     | '/ratings'
     | '/requisites'
@@ -40,6 +41,7 @@ export async function AppHeader() {
       items.push({ href: '/feed', label: t('feedLink'), testId: 'go-feed' });
       items.push({ href: '/cart', label: t('cartLink'), testId: 'go-cart' });
       items.push({ href: '/stock', label: t('stockLink'), testId: 'go-stock' });
+      items.push({ href: '/pos', label: t('posLink'), testId: 'go-pos' });
     }
     if (company.type !== 'STORE') {
       items.push({ href: '/catalog', label: t('catalogLink'), testId: 'go-catalog' });

@@ -8,6 +8,8 @@ import { receiveBatch } from '@/lib/stock/batches';
 import { setMarkup, repriceAll } from '@/lib/stock/pricing';
 import { cashOperation, closeShift, getSalesReport, getZReport, openShift } from '@/lib/pos/shift';
 import { refund, sell, sendElectronicReceipt } from '@/lib/pos/sale';
+import { checkApproval, requestApprovalCode } from '@/lib/pos/approval';
+import { getRecommendations } from '@/lib/stock/replenishment';
 import { testPoolBin } from '@/mocks/bin-registry';
 
 const prisma = createTestPrisma();
@@ -528,5 +530,54 @@ describe('маркировка, акциз и электронный чек (р�
     expect(
       await sendElectronicReceipt(shop.companyId, sold.receiptId, '+77010000000', 'whatsapp'),
     ).toEqual({ status: 'ok' });
+  });
+  it('refund_needs_code_of_senior_with_pos_update_right', async () => {
+    const shop = await shopReadyToSell(1);
+    const owner = await prisma.user.findUniqueOrThrow({ where: { id: shop.userId } });
+    const cashier = await prisma.user.create({ data: { phone: '+77830000030' } });
+    await prisma.membership.create({
+      data: { userId: cashier.id, companyId: shop.companyId, role: 'CASHIER' },
+    });
+    const other = await shopReadyToSell(2);
+    const stranger = await prisma.user.findUniqueOrThrow({ where: { id: other.userId } });
+
+    // Кассир и владелец чужой компании подтверждать не могут (правило 4).
+    expect(await requestApprovalCode(shop.companyId, cashier.phone)).toEqual({
+      status: 'not_senior',
+    });
+    expect(await requestApprovalCode(shop.companyId, stranger.phone)).toEqual({
+      status: 'not_senior',
+    });
+
+    const issued = await requestApprovalCode(shop.companyId, owner.phone);
+    expect(issued.status).toBe('ok');
+    expect(await checkApproval(shop.companyId, owner.phone, '000000')).toEqual({
+      status: 'invalid_code',
+    });
+    const code = (issued as { code: string }).code;
+    expect(await checkApproval(shop.companyId, owner.phone, code)).toEqual({
+      status: 'ok',
+      approverId: owner.id,
+    });
+    // Код одноразовый.
+    expect((await checkApproval(shop.companyId, owner.phone, code)).status).toBe('invalid_code');
+  });
+
+  it('recommendations_follow_sales_speed', async () => {
+    const shop = await shopReadyToSell(3);
+    await openShift(shop.companyId, shop.userId, shop.locationId);
+    // Продано 7 из 10 за окно: 0,5 в день, остатка 3 хватит на 6 дней — меньше недели.
+    const sale = await sell(shop.companyId, shop.userId, shop.locationId, {
+      clientId: 'rec-1',
+      paymentType: 'CARD',
+      lines: [{ productId: shop.productId, quantity: '7' }],
+    });
+    expect(sale.status).toBe('ok');
+
+    const rows = await getRecommendations(shop.companyId, shop.locationId);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ dailySales: '0.500', daysLeft: '6.0', suggested: '4.000' });
+    // Правило 4: чужая точка — пустой список.
+    expect(await getRecommendations('чужая', shop.locationId)).toEqual([]);
   });
 });

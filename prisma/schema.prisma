@@ -860,6 +860,8 @@ model Receipt {
   fiscalUrl     String?
   userId        String?
   user          User?              @relation(fields: [userId], references: [id])
+  /// Старший, подтвердивший возврат кодом (разделы 4.2 и 3.12 ТЗ).
+  approvedById  String?
   createdAt     DateTime           @default(now())
 
   items    ReceiptItem[]
@@ -1375,21 +1377,27 @@ model PlatformSetting {
 
 /// Оценка по закрытой заявке: одна от каждой стороны (раздел 3.8 ТЗ).
 model Rating {
-  id              String    @id @default(cuid())
-  orderId         String
-  order           Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  authorCompanyId String
-  authorCompany   Company   @relation("RatingsGiven", fields: [authorCompanyId], references: [id], onDelete: Cascade)
-  targetCompanyId String
-  targetCompany   Company   @relation("RatingsReceived", fields: [targetCompanyId], references: [id], onDelete: Cascade)
+  id                String    @id @default(cuid())
+  orderId           String
+  order             Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  authorCompanyId   String
+  authorCompany     Company   @relation("RatingsGiven", fields: [authorCompanyId], references: [id], onDelete: Cascade)
+  targetCompanyId   String
+  targetCompany     Company   @relation("RatingsReceived", fields: [targetCompanyId], references: [id], onDelete: Cascade)
   /// Оценки по критериям 1–5, состав зависит от стороны.
-  criteria        Json
+  criteria          Json
   /// Средняя ручная оценка.
-  score           Decimal   @db.Decimal(3, 2)
-  comment         String?
-  reply           String?
-  repliedAt       DateTime?
-  createdAt       DateTime  @default(now())
+  score             Decimal   @db.Decimal(3, 2)
+  comment           String?
+  reply             String?
+  repliedAt         DateTime?
+  /// Оспаривание отзыва через модератора (раздел 3.8 ТЗ): скрытый отзыв не влияет на оценку.
+  disputeReason     String?
+  disputedAt        DateTime?
+  disputeResolution String?
+  disputeResolvedAt DateTime?
+  hiddenAt          DateTime?
+  createdAt         DateTime  @default(now())
 
   @@unique([orderId, authorCompanyId])
   @@index([targetCompanyId, createdAt])

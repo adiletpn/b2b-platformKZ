@@ -1,9 +1,19 @@
 import { NextResponse } from 'next/server';
 import { requirePermission } from '@/lib/auth/permissions';
 import { getStoreContext } from '@/lib/auth/store-context';
-import { buildReplenishmentDraft, getReplenishment } from '@/lib/stock/replenishment';
+import {
+  buildRecommendationDraft,
+  buildReplenishmentDraft,
+  getRecommendations,
+  getReplenishment,
+} from '@/lib/stock/replenishment';
 
-export async function GET() {
+/** `?kind=recommendations` — рекомендации по скорости продаж вместо минимального остатка. */
+function wantsRecommendations(request: Request) {
+  return new URL(request.url).searchParams.get('kind') === 'recommendations';
+}
+
+export async function GET(request: Request) {
   const guard = await requirePermission('STOCK', 'VIEW');
   if (!guard.ok) {
     return NextResponse.json(
@@ -16,11 +26,13 @@ export async function GET() {
   if (!store) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
   return NextResponse.json({
-    rows: await getReplenishment(guard.access.companyId, store.locationId),
+    rows: wantsRecommendations(request)
+      ? await getRecommendations(guard.access.companyId, store.locationId)
+      : await getReplenishment(guard.access.companyId, store.locationId),
   });
 }
 
-export async function POST() {
+export async function POST(request: Request) {
   // Черновик заявки создаёт тот, кто может создавать заявки (раздел 3.12 ТЗ).
   const guard = await requirePermission('SWIPE_ORDERS', 'CREATE');
   if (!guard.ok) {
@@ -33,7 +45,8 @@ export async function POST() {
   const store = await getStoreContext();
   if (!store) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
-  const result = await buildReplenishmentDraft(
+  const build = wantsRecommendations(request) ? buildRecommendationDraft : buildReplenishmentDraft;
+  const result = await build(
     guard.access.companyId,
     guard.access.userId,
     store.locationId,

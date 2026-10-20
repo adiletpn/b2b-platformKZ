@@ -9,7 +9,13 @@ import { changeStatus, confirmOrder } from '@/lib/orders/workflow';
 import { createWaybillAndInvoice } from '@/lib/documents/create';
 import { acceptDelivery } from '@/lib/acceptance/accept';
 import { recordPayment } from '@/lib/payments/record';
-import { rateOrder, replyToRating } from '@/lib/ratings/rate';
+import {
+  disputeRating,
+  listDisputedRatings,
+  rateOrder,
+  replyToRating,
+  resolveRatingDispute,
+} from '@/lib/ratings/rate';
 import { chatResponseMinutes, getCompanyRating } from '@/lib/ratings/metrics';
 import { testPoolBin } from '@/mocks/bin-registry';
 
@@ -344,5 +350,41 @@ describe('рейтинг компании', () => {
 
     expect(await chatResponseMinutes(context.supplierId, at(-1))).toBe('20');
     expect(await chatResponseMinutes(context.storeId, at(-1))).toBeNull();
+  });
+  it('disputed_review_hidden_by_moderator_leaves_score', async () => {
+    const context = await scenario(9, { close: true });
+    const rating = await rateOrder({
+      orderId: context.orderId,
+      authorCompanyId: context.storeId,
+      criteria: { quality: 1, matching: 1, politeness: 1, packaging: 1 },
+      comment: 'несправедливый отзыв',
+    });
+    if (rating.status !== 'ok') throw new Error(rating.status);
+    expect((await getCompanyRating(context.supplierId)).manualScore).toBe('1.00');
+
+    // Оспорить может только та компания, о которой отзыв, и с причиной.
+    expect(await disputeRating(rating.ratingId, context.storeId, 'хочу скрыть отзыв')).toEqual({
+      status: 'not_found',
+    });
+    expect(await disputeRating(rating.ratingId, context.supplierId, 'коротко')).toEqual({
+      status: 'reason_required',
+    });
+    expect(
+      await disputeRating(rating.ratingId, context.supplierId, 'товар был доставлен вовремя'),
+    ).toEqual({ status: 'ok' });
+    expect(
+      await disputeRating(rating.ratingId, context.supplierId, 'товар был доставлен вовремя'),
+    ).toEqual({ status: 'already_disputed' });
+    expect((await listDisputedRatings()).map((row) => row.id)).toEqual([rating.ratingId]);
+
+    const admin = await prisma.adminUser.findFirstOrThrow();
+    expect(await resolveRatingDispute(admin.id, rating.ratingId, 'hide', '')).toEqual({
+      status: 'comment_required',
+    });
+    expect(
+      await resolveRatingDispute(admin.id, rating.ratingId, 'hide', 'отзыв без оснований'),
+    ).toEqual({ status: 'ok' });
+    expect(await listDisputedRatings()).toEqual([]);
+    expect((await getCompanyRating(context.supplierId)).manualScore).toBeNull();
   });
 });

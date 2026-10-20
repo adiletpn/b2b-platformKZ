@@ -108,6 +108,13 @@ export default async function RatingsPage({ params }: { params: Promise<{ locale
           score: review.score.toFixed(2),
           comment: review.comment,
           reply: review.reply,
+          dispute: review.hiddenAt
+            ? 'hidden'
+            : review.disputeResolvedAt
+              ? 'kept'
+              : review.disputedAt
+                ? 'pending'
+                : 'none',
         }))}
       />
     </Page>

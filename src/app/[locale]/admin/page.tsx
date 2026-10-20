@@ -10,6 +10,8 @@ import { TemplateEditor } from './template-editor';
 import { getTemplateEditorData, TEMPLATE_EDITOR_ROLES } from '@/lib/admin/templates';
 import { Page } from '@/components/ui/page';
 import { ComplaintsPanel } from './complaints-panel';
+import { RatingDisputesPanel } from './rating-disputes-panel';
+import { listDisputedRatings } from '@/lib/ratings/rate';
 import {
   BroadcastPanel,
   IntegrationsPanel,
@@ -68,8 +70,9 @@ export default async function AdminPage({ params }: { params: Promise<{ locale: 
   const templates = canEditTemplates ? await getTemplateEditorData('WAYBILL', 'ru') : null;
   // Раздел 3.13 ТЗ: каждой роли администратора — свои разделы.
   const is = (...roles: string[]) => role === 'SUPERADMIN' || roles.includes(role);
-  const [complaints, tickets, cities] = await Promise.all([
+  const [complaints, ratingDisputes, tickets, cities] = await Promise.all([
     is('MODERATOR') ? listOpenComplaints() : Promise.resolve(null),
+    is('MODERATOR') ? listDisputedRatings() : Promise.resolve(null),
     is('SUPPORT') ? listTickets() : Promise.resolve(null),
     is('CONTENT_MANAGER')
       ? prisma.city.findMany({
@@ -111,6 +114,7 @@ export default async function AdminPage({ params }: { params: Promise<{ locale: 
       />
       <Page width="lg" className="space-y-4 pt-0 sm:pt-0">
         {complaints ? <ComplaintsPanel initial={complaints} /> : null}
+        {ratingDisputes ? <RatingDisputesPanel initial={ratingDisputes} /> : null}
         {tickets ? <TicketsPanel initial={tickets} /> : null}
         {is('SUPPORT') ? <UsersPanel /> : null}
         {is('FINANCE') ? <ReportsPanel /> : null}

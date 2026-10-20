@@ -1,6 +1,7 @@
 import Decimal from 'decimal.js';
 import { prisma } from '@/lib/prisma';
 import { notify } from '@/mocks/notifications';
+import { writeAdminAudit } from '@/lib/admin/session';
 import { criteriaFor } from './criteria';
 
 export type RateInput = {
@@ -86,5 +87,93 @@ export async function replyToRating(ratingId: string, companyId: string, reply: 
     where: { id: ratingId },
     data: { reply: reply.trim(), repliedAt: new Date() },
   });
+  return { status: 'ok' as const };
+}
+
+export const DISPUTE_REASON_MIN = 10;
+
+/**
+ * Оспаривание отзыва (раздел 3.8 ТЗ): компания, о которой отзыв, один раз отправляет
+ * его модератору с причиной. Срок разбора и права модератора — TODO(open-question).
+ */
+export async function disputeRating(ratingId: string, companyId: string, rawReason: string) {
+  const rating = await prisma.rating.findUnique({ where: { id: ratingId } });
+  // Правило 4: оспорить можно только отзыв о своей компании.
+  if (!rating || rating.targetCompanyId !== companyId) return { status: 'not_found' as const };
+  if (rating.disputedAt) return { status: 'already_disputed' as const };
+  const reason = rawReason.trim();
+  if (reason.length < DISPUTE_REASON_MIN) return { status: 'reason_required' as const };
+
+  await prisma.rating.update({
+    where: { id: ratingId },
+    data: { disputeReason: reason.slice(0, 1000), disputedAt: new Date() },
+  });
+  return { status: 'ok' as const };
+}
+
+export type DisputedRatingRow = {
+  id: string;
+  authorName: string;
+  targetName: string;
+  orderNumber: string;
+  score: string;
+  comment: string | null;
+  reason: string;
+  disputedAt: string;
+};
+
+/** Очередь модератора: оспоренные и ещё не разобранные отзывы. */
+export async function listDisputedRatings(): Promise<DisputedRatingRow[]> {
+  const rows = await prisma.rating.findMany({
+    where: { disputedAt: { not: null }, disputeResolvedAt: null },
+    include: {
+      authorCompany: { select: { name: true } },
+      targetCompany: { select: { name: true } },
+      order: { select: { number: true } },
+    },
+    orderBy: { disputedAt: 'asc' },
+    take: 50,
+  });
+  return rows.map((row) => ({
+    id: row.id,
+    authorName: row.authorCompany.name,
+    targetName: row.targetCompany.name,
+    orderNumber: row.order.number,
+    score: row.score.toFixed(2),
+    comment: row.comment,
+    reason: row.disputeReason ?? '',
+    disputedAt: row.disputedAt!.toISOString(),
+  }));
+}
+
+/** Решение модератора: скрыть отзыв или оставить, с комментарием в журнал. */
+export async function resolveRatingDispute(
+  adminId: string,
+  ratingId: string,
+  decision: 'hide' | 'keep',
+  rawResolution: string,
+) {
+  const resolution = rawResolution.trim();
+  if (resolution.length < 3) return { status: 'comment_required' as const };
+  const rating = await prisma.rating.findFirst({
+    where: { id: ratingId, disputedAt: { not: null }, disputeResolvedAt: null },
+  });
+  if (!rating) return { status: 'not_found' as const };
+
+  const now = new Date();
+  await prisma.rating.update({
+    where: { id: ratingId },
+    data: {
+      disputeResolution: resolution,
+      disputeResolvedAt: now,
+      hiddenAt: decision === 'hide' ? now : null,
+    },
+  });
+  await writeAdminAudit(adminId, decision === 'hide' ? 'rating_hidden' : 'rating_kept', {
+    entity: 'Rating',
+    entityId: ratingId,
+    reason: resolution,
+  });
+  await notify(rating.targetCompanyId, 'rating_dispute_resolved', {});
   return { status: 'ok' as const };
 }

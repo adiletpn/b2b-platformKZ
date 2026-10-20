@@ -173,7 +173,8 @@ export async function getCompanyRating(
   const company = await prisma.company.findUniqueOrThrow({ where: { id: companyId } });
 
   const ratings = await prisma.rating.findMany({
-    where: { targetCompanyId: companyId, createdAt: { gte: since } },
+    // Скрытые модератором отзывы в оценку не входят (раздел 3.8 ТЗ).
+    where: { targetCompanyId: companyId, createdAt: { gte: since }, hiddenAt: null },
   });
 
   const manualScore =

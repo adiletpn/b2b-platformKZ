@@ -156,6 +156,10 @@ export function PosScreen({
   const [notice, setNotice] = useState<{ key: string; change?: string } | null>(null);
   const [error, setError] = useState<{ key: string; value?: string } | null>(null);
   const [lastReceipt, setLastReceipt] = useState<{ id: string; number: string } | null>(null);
+  // Возврат без права «Касса → изменение» подтверждает старший кодом (разделы 4.2 и 3.12 ТЗ).
+  const [approval, setApproval] = useState<{ phone: string; code: string; issued?: string } | null>(
+    null,
+  );
   const [pending, setPending] = useState(false);
   const today = new Date(Date.now() + 5 * 3_600_000).toISOString().slice(0, 10);
   const [period, setPeriod] = useState({ from: today, to: today });
@@ -424,10 +428,47 @@ export function PosScreen({
 
   async function refundLast() {
     if (!lastReceipt) return;
-    if (await post('/api/pos/refund', { receiptId: lastReceipt.id })) {
-      setNotice({ key: 'refunded' });
-      setLastReceipt(null);
+    setPending(true);
+    setError(null);
+    const response = await fetch('/api/pos/refund', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        receiptId: lastReceipt.id,
+        approverPhone: approval?.phone,
+        approverCode: approval?.code,
+      }),
+    });
+    const data = (await response.json().catch(() => ({}))) as { status?: string; error?: string };
+    setPending(false);
+    if (data.status === 'approval_required') {
+      setApproval({ phone: '', code: '' });
+      return;
     }
+    if (data.status !== 'ok') {
+      setError({ key: data.status ?? data.error ?? 'unknown' });
+      return;
+    }
+    setApproval(null);
+    setNotice({ key: 'refunded' });
+    setLastReceipt(null);
+    await refresh();
+  }
+
+  async function requestApprovalCode() {
+    if (!approval) return;
+    setError(null);
+    const response = await fetch('/api/pos/refund', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ action: 'request_code', approverPhone: approval.phone }),
+    });
+    const data = (await response.json().catch(() => ({}))) as { status?: string; code?: string };
+    if (data.status !== 'ok') {
+      setError({ key: data.status ?? 'unknown' });
+      return;
+    }
+    setApproval({ ...approval, issued: data.code });
   }
 
   async function submitCashOp() {
@@ -1032,6 +1073,54 @@ export function PosScreen({
               >
                 {t('printReceipt')}
               </a>
+            ) : null}
+            {approval ? (
+              <div
+                className="border-border flex w-full flex-wrap items-end gap-2 rounded-lg border border-dashed p-3"
+                data-testid="pos-approval"
+              >
+                <p className="w-full text-sm">{t('approvalTitle')}</p>
+                <Input
+                  className="h-9 w-44"
+                  inputMode="tel"
+                  placeholder={t('approvalPhone')}
+                  value={approval.phone}
+                  data-testid="pos-approval-phone"
+                  onChange={(event) => setApproval({ ...approval, phone: event.target.value })}
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  data-testid="pos-approval-request"
+                  onClick={() => void requestApprovalCode()}
+                >
+                  {t('approvalRequest')}
+                </Button>
+                <Input
+                  className="h-9 w-28"
+                  inputMode="numeric"
+                  placeholder={t('approvalCode')}
+                  value={approval.code}
+                  data-testid="pos-approval-code"
+                  onChange={(event) => setApproval({ ...approval, code: event.target.value })}
+                />
+                <Button
+                  size="sm"
+                  disabled={pending}
+                  data-testid="pos-approval-confirm"
+                  onClick={() => void refundLast()}
+                >
+                  {t('approvalConfirm')}
+                </Button>
+                {approval.issued ? (
+                  <p
+                    className="text-muted-foreground w-full text-xs"
+                    data-testid="pos-approval-issued"
+                  >
+                    {t('approvalIssued', { code: approval.issued })}
+                  </p>
+                ) : null}
+              </div>
             ) : null}
             {queued > 0 ? (
               <span className="text-muted-foreground text-sm" data-testid="pos-queued">

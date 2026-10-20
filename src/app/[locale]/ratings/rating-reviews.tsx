@@ -12,13 +12,37 @@ type Review = {
   score: string;
   comment: string | null;
   reply: string | null;
+  /** Оспаривание отзыва (раздел 3.8 ТЗ). */
+  dispute: 'none' | 'pending' | 'hidden' | 'kept';
 };
+
+const DISPUTE_ERRORS = ['reason_required', 'already_disputed', 'not_found'];
 
 export function RatingReviews({ reviews }: { reviews: Review[] }) {
   const t = useTranslations('ratings');
   const router = useRouter();
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
+  const [disputing, setDisputing] = useState<string | null>(null);
+  const [reason, setReason] = useState('');
+  const [disputeError, setDisputeError] = useState<string | null>(null);
+
+  async function dispute(id: string) {
+    setDisputeError(null);
+    const response = await fetch(`/api/ratings/${id}/dispute`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ reason }),
+    });
+    const data = (await response.json()) as { status?: string };
+    if (data.status !== 'ok') {
+      setDisputeError(data.status && DISPUTE_ERRORS.includes(data.status) ? data.status : 'unknown');
+      return;
+    }
+    setDisputing(null);
+    setReason('');
+    router.refresh();
+  }
 
   async function reply(id: string) {
     setError(null);
@@ -56,6 +80,41 @@ export function RatingReviews({ reviews }: { reviews: Review[] }) {
                 <span className="font-medium tabular-nums">{review.score}</span>
               </div>
               {review.comment ? <p className="mt-1 break-words">{review.comment}</p> : null}
+              {review.dispute !== 'none' ? (
+                <p className="text-muted-foreground mt-1 text-xs" data-testid="review-dispute-state">
+                  {t(review.dispute === 'pending' ? 'disputed' : review.dispute)}
+                </p>
+              ) : disputing === review.id ? (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <Input
+                    className="h-9 min-w-40 flex-1"
+                    placeholder={t('disputePlaceholder')}
+                    value={reason}
+                    data-testid="review-dispute-reason"
+                    onChange={(event) => setReason(event.target.value)}
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    data-testid="review-dispute-send"
+                    onClick={() => void dispute(review.id)}
+                  >
+                    {t('disputeSend')}
+                  </Button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  className="text-muted-foreground mt-1 text-xs underline"
+                  data-testid={`review-dispute-${review.id}`}
+                  onClick={() => {
+                    setDisputing(review.id);
+                    setDisputeError(null);
+                  }}
+                >
+                  {t('dispute')}
+                </button>
+              )}
 
               {review.reply ? (
                 <p className="text-muted-foreground mt-2 text-xs break-words">↳ {review.reply}</p>
@@ -85,6 +144,11 @@ export function RatingReviews({ reviews }: { reviews: Review[] }) {
         </ul>
       )}
 
+      {disputeError ? (
+        <p className="text-danger mt-2 text-sm" role="alert" data-testid="dispute-error">
+          {t(`disputeErrors.${disputeError}` as 'disputeErrors.unknown')}
+        </p>
+      ) : null}
       {error ? (
         <p className="mt-2 text-sm text-red-600" role="alert" data-testid="reviews-error">
           {t(`errors.${error}` as 'errors.unknown')}

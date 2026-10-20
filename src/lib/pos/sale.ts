@@ -328,6 +328,7 @@ export async function refund(
   companyId: string,
   userId: string,
   receiptId: string,
+  approvedById: string | null = null,
 ): Promise<RefundResult> {
   const receipt = await prisma.receipt.findFirst({
     where: { id: receiptId, companyId, status: 'PAID' },
@@ -365,6 +366,7 @@ export async function refund(
           : null,
         refundOf: receipt.id,
         userId,
+        approvedById,
       },
     });
 

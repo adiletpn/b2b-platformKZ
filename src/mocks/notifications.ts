@@ -17,6 +17,7 @@ export type NotificationEvent =
   | 'company_approved'
   | 'company_rejected'
   | 'rating_received'
+  | 'rating_dispute_resolved'
   | 'message_received'
   | 'owner_transferred'
   | 'document_corrected'

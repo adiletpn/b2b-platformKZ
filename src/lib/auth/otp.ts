@@ -21,7 +21,11 @@ export async function issueLoginCode(phone: string) {
 export type VerifyResult =
   { ok: true; userId: string } | { ok: false; reason: 'invalid' | 'expired' };
 
-export async function verifyLoginCode(phone: string, code: string): Promise<VerifyResult> {
+/** Проверка и гашение кода без входа: им же старший подтверждает возврат на кассе. */
+export async function consumeCode(
+  phone: string,
+  code: string,
+): Promise<{ ok: true } | { ok: false; reason: 'invalid' | 'expired' }> {
   const otp = await prisma.otpCode.findFirst({
     where: { phone, consumedAt: null },
     orderBy: { createdAt: 'desc' },
@@ -36,6 +40,12 @@ export async function verifyLoginCode(phone: string, code: string): Promise<Veri
   }
 
   await prisma.otpCode.update({ where: { id: otp.id }, data: { consumedAt: new Date() } });
+  return { ok: true };
+}
+
+export async function verifyLoginCode(phone: string, code: string): Promise<VerifyResult> {
+  const consumed = await consumeCode(phone, code);
+  if (!consumed.ok) return consumed;
 
   const user = await prisma.user.upsert({
     where: { phone },

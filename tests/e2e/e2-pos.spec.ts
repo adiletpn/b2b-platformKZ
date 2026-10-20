@@ -62,6 +62,14 @@ test('pos_routes_are_closed_without_session', async ({ browser }, testInfo) => {
   expect(
     (await anonymous.request.post('/api/pos/refund', { data: { receiptId: 'x' } })).status(),
   ).toBe(401);
+  // Маршруты, добавленные после сверки с ТЗ: выгрузки, карточки чата, оспаривание отзыва.
+  for (const path of ['/api/pos/report/xlsx', '/api/stock/ledger/x/xlsx', '/api/chats/x/cards']) {
+    expect((await anonymous.request.get(path)).status(), path).toBe(401);
+  }
+  expect(
+    (await anonymous.request.post('/api/ratings/x/dispute', { data: { reason: 'x' } })).status(),
+  ).toBe(401);
+  expect((await anonymous.request.get('/api/admin/rating-disputes')).status()).toBe(401);
   await anonymous.close();
 });
 

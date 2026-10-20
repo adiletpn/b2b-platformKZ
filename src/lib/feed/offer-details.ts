@@ -84,6 +84,7 @@ export async function getOfferDetails(
     where: {
       targetCompanyId: { in: competing.map((item) => item.supplierId) },
       createdAt: { gte: ratingWindowStart() },
+      hiddenAt: null,
     },
     _avg: { score: true },
   });

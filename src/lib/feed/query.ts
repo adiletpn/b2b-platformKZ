@@ -115,7 +115,11 @@ export async function getFeed(
   // Рейтинг поставщиков берём одним запросом, а не по карточке.
   const ratings = await prisma.rating.groupBy({
     by: ['targetCompanyId'],
-    where: { targetCompanyId: { in: supplierIds }, createdAt: { gte: ratingWindowStart() } },
+    where: {
+      targetCompanyId: { in: supplierIds },
+      createdAt: { gte: ratingWindowStart() },
+      hiddenAt: null,
+    },
     _avg: { score: true },
     _count: { _all: true },
   });

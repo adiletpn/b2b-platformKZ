@@ -6,7 +6,8 @@ import { Page, PageHeader } from '@/components/ui/page';
 import { getAccess } from '@/lib/auth/permissions';
 import { StockDocuments } from './stock-documents';
 import { ReplenishmentPanel } from './replenishment-panel';
-import { getReplenishment } from '@/lib/stock/replenishment';
+import { getRecommendations, getReplenishment } from '@/lib/stock/replenishment';
+import { RecommendationsPanel } from './recommendations-panel';
 import { getExpiring } from '@/lib/stock/batches';
 import { getLabels } from '@/lib/stock/pricing';
 import { PricingPanel } from './pricing-panel';
@@ -39,13 +40,15 @@ export default async function StockPage({ params }: { params: Promise<{ locale: 
     }),
   ]);
 
-  const [replenishment, expiring, retailPrices, categories, markups] = await Promise.all([
-    getReplenishment(access!.companyId, store!.locationId),
-    getExpiring(access!.companyId),
-    getLabels(access!.companyId),
-    prisma.category.findMany({ orderBy: { code: 'asc' } }),
-    prisma.markupRule.findMany({ where: { companyId: access!.companyId } }),
-  ]);
+  const [replenishment, recommendations, expiring, retailPrices, categories, markups] =
+    await Promise.all([
+      getReplenishment(access!.companyId, store!.locationId),
+      getRecommendations(access!.companyId, store!.locationId),
+      getExpiring(access!.companyId),
+      getLabels(access!.companyId),
+      prisma.category.findMany({ orderBy: { code: 'asc' } }),
+      prisma.markupRule.findMany({ where: { companyId: access!.companyId } }),
+    ]);
 
   // В опись можно внести и то, чего сейчас нет на остатке: товары из принятых заявок.
   const ordered = await prisma.orderItem.findMany({
@@ -178,6 +181,18 @@ export default async function StockPage({ params }: { params: Promise<{ locale: 
           productId: balance.productId,
           name: locale === 'kk' ? balance.product.nameKk : balance.product.nameRu,
           minQuantity: balance.minQuantity?.toFixed(3) ?? '',
+        }))}
+      />
+
+      <RecommendationsPanel
+        rows={recommendations.map((row) => ({
+          productId: row.productId,
+          name: locale === 'kk' ? row.nameKk : row.nameRu,
+          quantity: row.quantity,
+          dailySales: row.dailySales,
+          daysLeft: row.daysLeft,
+          suggested: row.suggested,
+          supplierName: row.supplierName,
         }))}
       />
 

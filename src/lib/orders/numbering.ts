@@ -12,6 +12,7 @@ const PREFIXES: Record<string, string> = {
   stocktake: 'ИНВ',
   shift: 'СМЕНА',
   receipt: 'ЧЕК',
+  route: 'РЕЙС',
 };
 
 /** Нумерация отдельная у каждой компании и года (раздел 3.5 ТЗ). */

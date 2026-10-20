@@ -3,6 +3,7 @@ import type { OrderStatus } from '@/generated/prisma/enums';
 import { prisma } from '@/lib/prisma';
 import { writeAudit } from '@/lib/auth/permissions';
 import { maskPhone } from '@/lib/phone';
+import { membersWithPermission } from '@/lib/employees/members';
 
 /**
  * Торговые представители поставщика (этап 3 ТЗ). Владелец закрепляет за представителем
@@ -31,27 +32,10 @@ function memberLabel(user: { name: string | null; phone: string }) {
 
 /** Сотрудники, у роли которых есть раздел «Торговые представители» (матрица прав в БД). */
 export async function listReps(supplierId: string): Promise<RepRow[]> {
-  const memberships = await prisma.membership.findMany({
-    where: { companyId: supplierId, status: 'ACTIVE', role: { not: 'OWNER' } },
-    include: {
-      user: { select: { name: true, phone: true } },
-      customRole: { include: { permissions: true } },
-    },
-    orderBy: { createdAt: 'asc' },
-  });
-  const templates = await prisma.role.findMany({
-    where: { companyId: null },
-    include: { permissions: true },
-  });
-  const byCode = new Map(templates.map((role) => [role.code, role]));
-  return memberships
-    .filter((membership) => {
-      const role = membership.customRole ?? byCode.get(membership.role);
-      return role?.permissions.some(
-        (permission) => permission.section === 'SALES_REPS' && permission.action === 'VIEW',
-      );
-    })
-    .map((membership) => ({ membershipId: membership.id, label: memberLabel(membership.user) }));
+  const members = await membersWithPermission(supplierId, 'SALES_REPS', 'VIEW');
+  return members
+    .filter((member) => !member.isOwner)
+    .map((member) => ({ membershipId: member.membershipId, label: member.label }));
 }
 
 /** Магазины, которые уже отправляли заявки этому поставщику. */

@@ -65,7 +65,10 @@ Node 22.22 падает при загрузке спек («module not been link
 ## Не доделано
 
 - Интеграционные тесты дублей и баннеров, e2e объединения дублей.
-- Блок B: 9 маршруты водителей.
+- B9 маршруты водителей — код есть, не проверен тестами (коммит «B9 черновик»): миграция
+  `20261020160000_s3d_delivery_routes`, `src/lib/deliveries/routes.ts`, `/api/deliveries/routes`,
+  PDF `/api/deliveries/routes/[id]/pdf`, панель `deliveries/routes-panel.tsx`. Нужны
+  интеграционный тест и e2e рейса (375 и 1280 px), прогон e9-deliveries.
   План по каждому пункту был такой:
   - 6: `LoyaltyCustomer(companyId, phone, balance)`, `LoyaltyMovement`, поля чека
     `bonusRedeemed/bonusEarned/loyaltyCustomerId`; «к оплате» = total − бонусы, в Z-отчёте строка

@@ -20,6 +20,8 @@ export function createTestPrisma() {
 
 /** Чистит операционные данные; справочники (города, НДС, единицы, категории) остаются. */
 export async function resetTransactionalData(prisma: PrismaClient) {
+  await prisma.deliveryRouteStop.deleteMany();
+  await prisma.deliveryRoute.deleteMany();
   await prisma.salesRepVisit.deleteMany();
   await prisma.salesRepStore.deleteMany();
   await prisma.supportMessage.deleteMany();

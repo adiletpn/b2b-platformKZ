@@ -235,6 +235,7 @@ model Company {
   repStoresStore       SalesRepStore[]        @relation("RepStore")
   repVisitsSupplier    SalesRepVisit[]        @relation("VisitSupplier")
   repVisitsStore       SalesRepVisit[]        @relation("VisitStore")
+  deliveryRoutes       DeliveryRoute[]
 
   license CompanyLicense?
 
@@ -277,6 +278,7 @@ model Membership {
   createdAt          DateTime         @default(now())
   repStores          SalesRepStore[]
   repVisits          SalesRepVisit[]
+  driverRoutes       DeliveryRoute[]
 
   @@unique([userId, companyId])
   @@index([companyId])
@@ -553,6 +555,7 @@ model Order {
   ratings        Rating[]
   attachments    Attachment[]
   chats          Chat[]
+  routeStop      DeliveryRouteStop?
 
   // Раздел 3.5 ТЗ: нумерация отдельная у каждой компании, поэтому номер уникален в пределах магазина.
   @@unique([storeId, number])
@@ -1738,4 +1741,38 @@ model SalesRepVisit {
 
   @@index([supplierId, storeId, visitedAt])
   @@map("sales_rep_visits")
+}
+
+// ---------- Маршруты водителей (этап 3 ТЗ) ----------
+
+/// Рейс поставщика на день: водитель и точки по порядку. Порядок задаётся вручную —
+/// автопостроения маршрута и карты нет (это внешний провайдер).
+model DeliveryRoute {
+  id                 String              @id @default(cuid())
+  number             String
+  supplierId         String
+  supplier           Company             @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  date               DateTime            @db.Date
+  driverMembershipId String?
+  driver             Membership?         @relation(fields: [driverMembershipId], references: [id], onDelete: SetNull)
+  createdById        String?
+  createdAt          DateTime            @default(now())
+  stops              DeliveryRouteStop[]
+
+  @@unique([supplierId, number])
+  @@index([supplierId, date])
+  @@map("delivery_routes")
+}
+
+/// Точка рейса: заявка к отгрузке. Заявка входит не больше чем в один рейс.
+model DeliveryRouteStop {
+  id       String        @id @default(cuid())
+  routeId  String
+  route    DeliveryRoute @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  orderId  String        @unique
+  order    Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  position Int
+
+  @@unique([routeId, position])
+  @@map("delivery_route_stops")
 }

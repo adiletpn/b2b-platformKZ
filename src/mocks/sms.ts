@@ -12,3 +12,17 @@ export function sendLoginCode(phone: string, code: string): SmsResult {
   void code;
   return { providerMessageId: `mock-${Date.now()}`, deliveredToUi: true };
 }
+
+/**
+ * Электронный чек по SMS или WhatsApp (раздел 4.2 ТЗ). Мок: в лог пишется только маска
+ * номера и канал, ссылка на чек в ОФД уходит покупателю у настоящего провайдера.
+ */
+export function sendReceiptLink(
+  phone: string,
+  channel: 'sms' | 'whatsapp',
+  link: string,
+): SmsResult {
+  console.info(`[${channel}-mock] электронный чек отправлен на ${maskPhone(phone)}`);
+  void link;
+  return { providerMessageId: `mock-${Date.now()}`, deliveredToUi: true };
+}

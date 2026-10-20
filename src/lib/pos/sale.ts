@@ -7,6 +7,10 @@ import { applyBalanceChange, currentBalance } from '@/lib/stock/balance';
 import { consumeFefo, lotsCost } from '@/lib/stock/batches';
 import { fiscalize } from '@/mocks/fiscal';
 import { computeReceipt, parsePercent } from './receipt-math';
+import { isWithinHours, markingCodeFits } from './restrictions';
+import { getSetting } from '@/lib/admin/settings';
+import { normalizePhone } from '@/lib/phone';
+import { sendReceiptLink } from '@/mocks/sms';
 
 export type SaleLine = {
   productId: string;
@@ -14,6 +18,8 @@ export type SaleLine = {
   price?: string;
   /** Скидка на позицию, % (раздел 4.2 ТЗ). */
   discountPercent?: string;
+  /** Коды DataMatrix маркированного товара: по одному на единицу. */
+  markingCodes?: string[];
 };
 
 export type SaleInput = {
@@ -27,6 +33,8 @@ export type SaleInput = {
   cardAmount?: string;
   /** Получено наличными — для сдачи. */
   cashReceived?: string;
+  /** Кассир проверил документ покупателя подакцизного товара. */
+  ageConfirmed?: boolean;
 };
 
 export type SaleResult =
@@ -48,6 +56,10 @@ export type SaleResult =
   | { status: 'payment_mismatch'; total: string }
   | { status: 'not_enough_cash'; total: string }
   | { status: 'no_price'; productId: string }
+  | { status: 'marking_required'; productId: string }
+  | { status: 'marking_reused'; productId: string }
+  | { status: 'age_not_confirmed' }
+  | { status: 'restricted_hours'; hours: string }
   | { status: 'not_enough_stock'; productId: string };
 
 function parseMoney(value: string | undefined): Decimal | null {
@@ -74,7 +86,7 @@ export async function sell(
   userId: string,
   locationId: string,
   input: SaleInput,
-  options: { maxDiscount?: string | null } = {},
+  options: { maxDiscount?: string | null; now?: Date } = {},
 ): Promise<SaleResult> {
   if (input.lines.length === 0) return { status: 'empty_receipt' };
 
@@ -137,6 +149,46 @@ export async function sell(
     }
   }
 
+  // Раздел 4.2 ТЗ: маркированный товар — только с DataMatrix на каждую единицу,
+  // подакцизный — в разрешённые часы и с подтверждением возраста.
+  const products = await prisma.product.findMany({
+    where: { id: { in: lines.map((line) => line.productId) } },
+    select: { id: true, barcode: true, isMarked: true, isExcise: true },
+  });
+  const productById = new Map(products.map((product) => [product.id, product]));
+  const codesByProduct = new Map<string, string[]>();
+  for (const [index, line] of lines.entries()) {
+    const product = productById.get(line.productId);
+    if (!product?.isMarked) continue;
+    const codes = (input.lines[index]!.markingCodes ?? []).map((code) => code.trim());
+    const unique = new Set(codes);
+    if (
+      !line.quantity.isInteger() ||
+      codes.length !== line.quantity.toNumber() ||
+      unique.size !== codes.length ||
+      codes.some((code) => !markingCodeFits(code, product.barcode))
+    ) {
+      return { status: 'marking_required', productId: line.productId };
+    }
+    // Один код — одна продажа: повторно пробить ту же пачку нельзя.
+    const reused = await prisma.receiptItem.findFirst({
+      where: {
+        productId: line.productId,
+        markingCodes: { hasSome: codes },
+        receipt: { companyId, status: 'PAID', refunds: { none: {} } },
+      },
+    });
+    if (reused) return { status: 'marking_reused', productId: line.productId };
+    codesByProduct.set(line.productId, codes);
+  }
+  if (lines.some((line) => productById.get(line.productId)?.isExcise)) {
+    if (!input.ageConfirmed) return { status: 'age_not_confirmed' };
+    const hours = await getSetting('excise_sale_hours', '08:00-23:00');
+    if (!isWithinHours(options.now ?? new Date(), hours)) {
+      return { status: 'restricted_hours', hours };
+    }
+  }
+
   const priced = lines.map((line) => ({
     ...line,
     price: line.price ?? new Decimal(priceByProduct.get(line.productId)!.toString()),
@@ -193,6 +245,7 @@ export async function sell(
         cashAmount: cashAmount?.toFixed(2) ?? null,
         cardAmount: cardAmount?.toFixed(2) ?? null,
         cashReceived: cashReceived?.toFixed(2) ?? null,
+        ageConfirmed: Boolean(input.ageConfirmed),
         userId,
       },
     });
@@ -215,6 +268,7 @@ export async function sell(
           costPrice: cost.toFixed(2),
           discount: computed.discount.toFixed(2),
           total: computed.total.toFixed(2),
+          markingCodes: codesByProduct.get(line.productId) ?? [],
         },
       });
 
@@ -348,4 +402,27 @@ export async function refund(
 
     return { status: 'ok' as const, receiptId: created.id, number };
   }, LONG_TRANSACTION);
+}
+
+export type SendReceiptResult =
+  | { status: 'ok' }
+  | { status: 'not_found' }
+  | { status: 'invalid_phone' }
+  | { status: 'not_fiscalized' };
+
+/** Электронный чек покупателю: ссылка на чек в ОФД по SMS или WhatsApp (раздел 4.2 ТЗ). */
+export async function sendElectronicReceipt(
+  companyId: string,
+  receiptId: string,
+  rawPhone: string,
+  channel: 'sms' | 'whatsapp',
+): Promise<SendReceiptResult> {
+  const phone = normalizePhone(rawPhone);
+  if (!phone) return { status: 'invalid_phone' };
+  // Правило 4: только чек своей компании.
+  const receipt = await prisma.receipt.findFirst({ where: { id: receiptId, companyId } });
+  if (!receipt) return { status: 'not_found' };
+  if (!receipt.fiscalUrl) return { status: 'not_fiscalized' };
+  sendReceiptLink(phone, channel, receipt.fiscalUrl);
+  return { status: 'ok' };
 }

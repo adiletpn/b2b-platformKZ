@@ -40,6 +40,7 @@ export async function POST(request: Request) {
       cashAmount: body.cashAmount,
       cardAmount: body.cardAmount,
       cashReceived: body.cashReceived,
+      ageConfirmed: body.ageConfirmed === true,
     },
     { maxDiscount: membership?.maxDiscount?.toFixed(2) ?? null },
   );

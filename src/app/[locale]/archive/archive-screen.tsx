@@ -65,15 +65,25 @@ export function ArchiveScreen({
         title={title}
         description={t('subtitle')}
         actions={
-          <a
-            href={`/api/archive/export?locale=${locale}${type ? `&type=${type}` : ''}${
-              search ? `&search=${encodeURIComponent(search)}` : ''
-            }`}
-            className={buttonVariants({ variant: 'outline', size: 'sm' })}
-            data-testid="archive-export"
-          >
-            {t('export')}
-          </a>
+          <div className="flex flex-wrap gap-2">
+            <a
+              href={`/api/archive/export?locale=${locale}${type ? `&type=${type}` : ''}${
+                search ? `&search=${encodeURIComponent(search)}` : ''
+              }`}
+              className={buttonVariants({ variant: 'outline', size: 'sm' })}
+              data-testid="archive-export"
+            >
+              {t('export')}
+            </a>
+            {/* Раздел 4.5 ТЗ: поступления за месяц файлом для 1С. */}
+            <a
+              href={`/api/exports/one-c?locale=${locale}`}
+              className={buttonVariants({ variant: 'outline', size: 'sm' })}
+              data-testid="export-one-c"
+            >
+              {t('exportOneC')}
+            </a>
+          </div>
         }
       />
 
@@ -153,6 +163,16 @@ export function ArchiveScreen({
                       >
                         {t('open')}
                       </a>
+                      {/* ЭСФ выписывает продавец: кнопка только у своего счёта. */}
+                      {row.type === 'INVOICE' && row.outgoing ? (
+                        <a
+                          href={`/api/exports/esf/${row.id}`}
+                          className={`${buttonVariants({ variant: 'ghost', size: 'sm' })} ml-2`}
+                          data-testid={`export-esf-${row.number}`}
+                        >
+                          {t('exportEsf')}
+                        </a>
+                      ) : null}
                     </td>
                   </tr>
                 ))}

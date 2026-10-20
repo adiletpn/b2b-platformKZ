@@ -928,7 +928,9 @@
     "incoming": "Входящий",
     "empty": "Документов не найдено",
     "open": "PDF",
-    "export": "Выгрузить в Excel"
+    "export": "Выгрузить в Excel",
+    "exportOneC": "Поступления для 1С",
+    "exportEsf": "ЭСФ XML"
   },
   "onboardingWizard": {
     "title": "Мастер заполнения профиля",

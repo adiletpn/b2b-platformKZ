@@ -928,7 +928,9 @@
     "incoming": "Кіріс",
     "empty": "Құжат табылмады",
     "open": "PDF",
-    "export": "Excel-ге жүктеу"
+    "export": "Excel-ге жүктеу",
+    "exportOneC": "1С үшін кірістер",
+    "exportEsf": "ЭШФ XML"
   },
   "onboardingWizard": {
     "title": "Профильді толтыру шебері",

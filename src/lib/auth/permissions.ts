@@ -85,3 +85,18 @@ export async function writeAudit(
     data: { companyId, userId, action, entity: entity ?? null, entityId: entityId ?? null },
   });
 }
+
+/** Флаги прав текущего сотрудника для экрана: какие кнопки показывать. */
+export async function permissionFlags<A extends PermissionAction>(
+  section: PermissionSection,
+  actions: readonly A[],
+): Promise<Record<A, boolean>> {
+  const access = await getAccess();
+  const entries = await Promise.all(
+    actions.map(async (action) => [
+      action,
+      access ? await hasPermission(access, section, action) : false,
+    ]),
+  );
+  return Object.fromEntries(entries) as Record<A, boolean>;
+}

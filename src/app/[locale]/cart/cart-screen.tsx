@@ -95,6 +95,10 @@ export function CartScreen({
       router.push('/orders');
       return;
     }
+    if (data.status === 'license_required') {
+      setSendResult('license');
+      return;
+    }
     if (data.status === 'below_minimum') {
       setSendResult(`below:${(data.suppliers ?? []).map((item) => item.supplierName).join(', ')}`);
       return;
@@ -178,9 +182,11 @@ export function CartScreen({
                   ? tOrders('sent', { count: Number(sendResult.split(':')[1]) })
                   : sendResult === 'approval'
                     ? tOrders('awaitingApproval')
-                    : sendResult.startsWith('below:')
-                      ? tOrders('belowMinimum', { suppliers: sendResult.slice(6) })
-                      : tOrders('emptyCart')}
+                    : sendResult === 'license'
+                      ? tOrders('licenseRequired')
+                      : sendResult.startsWith('below:')
+                        ? tOrders('belowMinimum', { suppliers: sendResult.slice(6) })
+                        : tOrders('emptyCart')}
               </p>
             ) : null}
           </div>

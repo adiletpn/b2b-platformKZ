@@ -60,6 +60,7 @@ export async function resetTransactionalData(prisma: PrismaClient) {
   await prisma.location.deleteMany();
   await prisma.membership.deleteMany();
   await prisma.session.deleteMany();
+  await prisma.companyLicense.deleteMany();
   await prisma.company.deleteMany();
   await prisma.otpCode.deleteMany();
   await prisma.user.deleteMany();

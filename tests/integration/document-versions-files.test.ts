@@ -1,4 +1,5 @@
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
+import ExcelJS from 'exceljs';
 import { createTestPrisma, resetTransactionalData } from '../helpers/test-db';
 import { buildCatalogXlsx, toArrayBuffer, validRow } from '../helpers/catalog-fixture';
 import { registerCompany } from '@/lib/registration/register-company';
@@ -19,6 +20,8 @@ import {
   uploadAttachment,
 } from '@/lib/files/attachments';
 import { testPoolBin } from '@/mocks/bin-registry';
+import { documentXlsx } from '@/lib/documents/xlsx';
+import { LABELS } from '@/lib/documents/templates';
 
 const prisma = createTestPrisma();
 
@@ -369,5 +372,26 @@ describe('свои файлы компании и заявки', () => {
     expect(again).toMatchObject({ status: 'ok', replayed: true });
     expect(first.status === 'ok' && again.status === 'ok' && first.id === again.id).toBe(true);
     expect(await prisma.attachment.count({ where: { companyId: context.storeId } })).toBe(1);
+  });
+});
+
+describe('документ в Excel (раздел 4.3 ТЗ)', () => {
+  it('xlsx_matches_document_totals_in_both_languages', async () => {
+    const context = await orderWithDocuments(3);
+    const printable = await documentForPrint(context.invoiceId, context.storeId);
+    const document = await prisma.document.findUniqueOrThrow({ where: { id: context.invoiceId } });
+
+    for (const locale of ['ru', 'kk'] as const) {
+      const file = await documentXlsx(document.type, printable!.payload, locale);
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.load(toArrayBuffer(file));
+      const sheet = workbook.worksheets[0]!;
+      const cells: unknown[] = [];
+      sheet.eachRow((row) => row.eachCell((cell) => cells.push(cell.value)));
+      expect(String(cells[0])).toContain(document.number);
+      // Итог в Excel — тот же, что в документе, числом с двумя знаками.
+      expect(cells).toContain(Number(document.totalWithVat.toFixed(2)));
+      expect(cells).toContain(locale === 'ru' ? 'Итого' : LABELS.kk.totals);
+    }
   });
 });

@@ -515,6 +515,13 @@ export function OrderDetail({
                     >
                       {tDocuments('open')}
                     </a>
+                    <a
+                      href={`/api/documents/${document.id}/xlsx?locale=${locale}`}
+                      className={buttonVariants({ variant: 'ghost', size: 'sm' })}
+                      data-testid={`document-xlsx-${document.type}`}
+                    >
+                      {tDocuments('excel')}
+                    </a>
                   </span>
                 </div>
                 <DocumentSignatures

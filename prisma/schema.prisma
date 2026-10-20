@@ -566,6 +566,10 @@ model OrderItem {
   priceWithoutVat   Decimal       @db.Decimal(14, 2)
   priceWithVat      Decimal       @db.Decimal(14, 2)
   vatRateValue      Decimal       @db.Decimal(5, 2)
+  /// Замена от поставщика (раздел 3.4 ТЗ): позиция предложена вместо отсутствующей.
+  substituteForId   String?
+  substituteFor     OrderItem?    @relation("OrderItemSubstitute", fields: [substituteForId], references: [id], onDelete: Cascade)
+  substitutes       OrderItem[]   @relation("OrderItemSubstitute")
 
   @@unique([orderId, offerId])
   @@map("order_items")

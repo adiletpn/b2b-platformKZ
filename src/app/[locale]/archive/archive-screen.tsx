@@ -181,6 +181,12 @@ export function ArchiveScreen({
                       >
                         {t('open')}
                       </a>
+                      <a
+                        href={`/api/documents/${row.id}/xlsx?locale=${locale}`}
+                        className={buttonVariants({ variant: 'ghost', size: 'sm' })}
+                      >
+                        {t('excel')}
+                      </a>
                       {/* ЭСФ выписывает продавец: кнопка только у своего счёта. */}
                       {row.type === 'INVOICE' && row.outgoing ? (
                         <a

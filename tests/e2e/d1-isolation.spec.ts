@@ -135,6 +135,7 @@ test('stage2_routes_are_closed_without_session', async ({ browser }, testInfo) =
     '/api/exports/csv/stock',
     '/api/documents/any-document-id/versions',
     '/api/documents/any-document-id/pdf',
+    '/api/documents/any-document-id/xlsx',
     '/api/admin/templates?type=INVOICE&locale=ru',
   ]) {
     expect((await anonymous.request.get(path)).status(), path).toBe(401);

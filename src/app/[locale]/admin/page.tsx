@@ -6,6 +6,9 @@ import { listPlans, listSubscriptions } from '@/lib/admin/tariffs';
 import { getReferenceData } from '@/lib/admin/reference';
 import { AdminLogin } from './admin-login';
 import { AdminPanel } from './admin-panel';
+import { TemplateEditor } from './template-editor';
+import { getTemplateEditorData, TEMPLATE_EDITOR_ROLES } from '@/lib/admin/templates';
+import { Page } from '@/components/ui/page';
 
 export default async function AdminPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -49,34 +52,44 @@ export default async function AdminPage({ params }: { params: Promise<{ locale: 
       }),
     ]);
 
+  const canEditTemplates = TEMPLATE_EDITOR_ROLES.includes(session.admin.role);
+  const templates = canEditTemplates ? await getTemplateEditorData('WAYBILL', 'ru') : null;
+
   return (
-    <AdminPanel
-      role={session.admin.role}
-      metrics={metrics}
-      disputes={disputes}
-      plans={plans}
-      subscriptions={subscriptions}
-      reference={reference}
-      queue={queue.map((request) => ({
-        id: request.id,
-        companyName: request.company.name,
-        bin: request.company.bin,
-      }))}
-      audit={audit.map((entry) => ({
-        id: entry.id,
-        action: entry.action,
-        admin: entry.admin.name,
-        reason: entry.reason,
-        createdAt: entry.createdAt.toLocaleString('ru-RU'),
-      }))}
-      activeImpersonation={
-        impersonations[0]
-          ? { id: impersonations[0].id, companyName: impersonations[0].company.name }
-          : null
-      }
-      companies={(await prisma.company.findMany({ orderBy: { createdAt: 'desc' }, take: 20 })).map(
-        (company) => ({ id: company.id, name: company.name }),
-      )}
-    />
+    <>
+      <AdminPanel
+        role={session.admin.role}
+        metrics={metrics}
+        disputes={disputes}
+        plans={plans}
+        subscriptions={subscriptions}
+        reference={reference}
+        queue={queue.map((request) => ({
+          id: request.id,
+          companyName: request.company.name,
+          bin: request.company.bin,
+        }))}
+        audit={audit.map((entry) => ({
+          id: entry.id,
+          action: entry.action,
+          admin: entry.admin.name,
+          reason: entry.reason,
+          createdAt: entry.createdAt.toLocaleString('ru-RU'),
+        }))}
+        activeImpersonation={
+          impersonations[0]
+            ? { id: impersonations[0].id, companyName: impersonations[0].company.name }
+            : null
+        }
+        companies={(
+          await prisma.company.findMany({ orderBy: { createdAt: 'desc' }, take: 20 })
+        ).map((company) => ({ id: company.id, name: company.name }))}
+      />
+      {templates ? (
+        <Page width="lg" className="pt-0 sm:pt-0">
+          <TemplateEditor initial={templates} />
+        </Page>
+      ) : null}
+    </>
   );
 }

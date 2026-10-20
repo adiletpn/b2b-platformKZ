@@ -63,6 +63,8 @@ export async function resetTransactionalData(prisma: PrismaClient) {
 
 /** Флаги платформы глобальные: тесты обязаны возвращать их в исходное состояние. */
 export async function resetPlatformFlags(prisma: PrismaClient) {
+  // Шаблоны печатных форм глобальные: чужой шаблон не должен влиять на другие тесты.
+  await prisma.documentTemplate.deleteMany();
   await prisma.adminAuditLog.deleteMany();
   await prisma.impersonationLog.deleteMany();
   await prisma.adminSession.deleteMany();

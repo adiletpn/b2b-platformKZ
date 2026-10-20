@@ -326,7 +326,10 @@ describe('приёмка', () => {
       where: { id: context.orderId },
       include: { items: { include: { offer: true } } },
     });
-    const first = order.items[0]!;
+    // Позиции приходят без сортировки: берём самую крупную, чтобы после брака что-то осталось.
+    const first = [...order.items].sort((a, b) =>
+      b.quantityConfirmed!.comparedTo(a.quantityConfirmed!),
+    )[0]!;
     const accepted = new Decimal(first.quantityConfirmed!.toString()).minus(4);
 
     await acceptDelivery(context.orderId, context.store.id, context.store.userId, [

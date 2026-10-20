@@ -6,8 +6,28 @@ import { nextDocumentNumber } from '@/lib/orders/numbering';
 import { applyBalanceChange, currentBalance } from '@/lib/stock/balance';
 import { consumeFefo, lotsCost } from '@/lib/stock/batches';
 import { fiscalize } from '@/mocks/fiscal';
+import { computeReceipt, parsePercent } from './receipt-math';
 
-export type SaleLine = { productId: string; quantity: string; price?: string };
+export type SaleLine = {
+  productId: string;
+  quantity: string;
+  price?: string;
+  /** Скидка на позицию, % (раздел 4.2 ТЗ). */
+  discountPercent?: string;
+};
+
+export type SaleInput = {
+  clientId: string;
+  paymentType: ReceiptPaymentType;
+  lines: SaleLine[];
+  /** Скидка на весь чек, %. */
+  receiptDiscountPercent?: string;
+  /** Смешанная оплата: сколько наличными и сколько картой. */
+  cashAmount?: string;
+  cardAmount?: string;
+  /** Получено наличными — для сдачи. */
+  cashReceived?: string;
+};
 
 export type SaleResult =
   | {
@@ -15,25 +35,46 @@ export type SaleResult =
       receiptId: string;
       number: string;
       total: string;
+      discount: string;
+      change: string;
       fiscalId: string | null;
       replayed: boolean;
     }
   | { status: 'no_open_shift' }
   | { status: 'empty_receipt' }
   | { status: 'invalid_quantity' }
+  | { status: 'invalid_discount' }
+  | { status: 'discount_too_high'; limit: string }
+  | { status: 'payment_mismatch'; total: string }
+  | { status: 'not_enough_cash'; total: string }
   | { status: 'no_price'; productId: string }
   | { status: 'not_enough_stock'; productId: string };
+
+function parseMoney(value: string | undefined): Decimal | null {
+  if (value === undefined || value === '') return null;
+  try {
+    const amount = new Decimal(value.replace(',', '.'));
+    return amount.isFinite() && amount.greaterThanOrEqualTo(0) && amount.decimalPlaces() <= 2
+      ? amount
+      : null;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Продажа на кассе (раздел 4.2 ТЗ): чек уменьшает остаток движением ISSUE,
  * себестоимость берётся из партий по FEFO, чек уходит на фискализацию.
+ * Скидки на позицию и на чек ограничены лимитом сотрудника (раздел 3.12 ТЗ),
+ * смешанная оплата должна сойтись с суммой чека, наличных — хватить на сдачу.
  * `clientId` делает повтор безопасным: офлайн-чеки синхронизируются без дублей.
  */
 export async function sell(
   companyId: string,
   userId: string,
   locationId: string,
-  input: { clientId: string; paymentType: ReceiptPaymentType; lines: SaleLine[] },
+  input: SaleInput,
+  options: { maxDiscount?: string | null } = {},
 ): Promise<SaleResult> {
   if (input.lines.length === 0) return { status: 'empty_receipt' };
 
@@ -46,6 +87,10 @@ export async function sell(
       receiptId: existing.id,
       number: existing.number,
       total: existing.total.toFixed(2),
+      discount: existing.discountTotal.toFixed(2),
+      change: existing.cashReceived
+        ? new Decimal(existing.cashReceived.toString()).minus(existing.total.toString()).toFixed(2)
+        : '0.00',
       fiscalId: existing.fiscalId,
       replayed: true,
     };
@@ -56,7 +101,12 @@ export async function sell(
   });
   if (!shift) return { status: 'no_open_shift' };
 
-  let lines: { productId: string; quantity: Decimal; price?: Decimal }[];
+  let lines: {
+    productId: string;
+    quantity: Decimal;
+    price?: Decimal;
+    discountPercent: Decimal;
+  }[];
   try {
     lines = input.lines.map((line) => {
       // Правило 2: количества до трёх знаков.
@@ -66,33 +116,71 @@ export async function sell(
         productId: line.productId,
         quantity: quantity.toDecimalPlaces(3, Decimal.ROUND_HALF_UP),
         price: line.price ? new Decimal(line.price.replace(',', '.')) : undefined,
+        discountPercent: parsePercent(line.discountPercent) ?? new Decimal(-1),
       };
     });
   } catch {
     return { status: 'invalid_quantity' };
+  }
+  const receiptPercent = parsePercent(input.receiptDiscountPercent);
+  if (!receiptPercent || lines.some((line) => line.discountPercent.lessThan(0))) {
+    return { status: 'invalid_discount' };
   }
 
   const prices = await prisma.retailPrice.findMany({
     where: { companyId, productId: { in: lines.map((line) => line.productId) } },
   });
   const priceByProduct = new Map(prices.map((row) => [row.productId, row.price]));
+  for (const line of lines) {
+    if (!line.price && !priceByProduct.has(line.productId)) {
+      return { status: 'no_price', productId: line.productId };
+    }
+  }
+
+  const priced = lines.map((line) => ({
+    ...line,
+    price: line.price ?? new Decimal(priceByProduct.get(line.productId)!.toString()),
+  }));
+  const receipt = computeReceipt(priced, receiptPercent);
+
+  // Раздел 3.12 ТЗ: максимальная скидка на кассе — у каждого сотрудника своя.
+  if (options.maxDiscount !== undefined && options.maxDiscount !== null) {
+    const limit = new Decimal(options.maxDiscount);
+    if (receipt.lines.some((line) => line.effectivePercent.greaterThan(limit))) {
+      return { status: 'discount_too_high', limit: limit.toFixed(2) };
+    }
+  }
+
+  // Оплата: смешанная сходится с итогом, наличных хватает на чек.
+  let cashAmount: Decimal | null = null;
+  let cardAmount: Decimal | null = null;
+  let cashReceived: Decimal | null = null;
+  if (input.paymentType === 'MIXED') {
+    cashAmount = parseMoney(input.cashAmount);
+    cardAmount = parseMoney(input.cardAmount);
+    if (!cashAmount || !cardAmount || !cashAmount.plus(cardAmount).equals(receipt.total)) {
+      return { status: 'payment_mismatch', total: receipt.total.toFixed(2) };
+    }
+  }
+  if (input.paymentType === 'CASH' && input.cashReceived) {
+    cashReceived = parseMoney(input.cashReceived);
+    if (!cashReceived || cashReceived.lessThan(receipt.total)) {
+      return { status: 'not_enough_cash', total: receipt.total.toFixed(2) };
+    }
+  }
 
   const result = await prisma.$transaction(async (tx) => {
-    for (const line of lines) {
+    for (const line of priced) {
       const balance = await currentBalance(tx, locationId, line.productId);
       if (balance.quantity.lessThan(line.quantity)) {
         return { status: 'not_enough_stock' as const, productId: line.productId };
       }
-      if (!line.price && !priceByProduct.has(line.productId)) {
-        return { status: 'no_price' as const, productId: line.productId };
-      }
     }
 
     const number = await nextDocumentNumber(tx, companyId, 'receipt');
-    let total = new Decimal(0);
     let costTotal = new Decimal(0);
 
-    const receipt = await tx.receipt.create({
+    const created = await tx.receipt.create({
       data: {
         number,
         clientId: input.clientId,
@@ -100,15 +188,18 @@ export async function sell(
         companyId,
         locationId,
         paymentType: input.paymentType,
-        total: '0',
+        total: receipt.total.toFixed(2),
+        discountTotal: receipt.discount.toFixed(2),
+        cashAmount: cashAmount?.toFixed(2) ?? null,
+        cardAmount: cardAmount?.toFixed(2) ?? null,
+        cashReceived: cashReceived?.toFixed(2) ?? null,
         userId,
       },
     });
 
-    for (const line of lines) {
+    for (const [index, line] of priced.entries()) {
+      const computed = receipt.lines[index]!;
       const balance = await currentBalance(tx, locationId, line.productId);
-      const price = line.price ?? new Decimal(priceByProduct.get(line.productId)!.toString());
-      const lineTotal = price.times(line.quantity).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
 
       // Себестоимость — из партий по FEFO: ближний срок уходит первым.
       const lots = await consumeFefo(tx, locationId, line.productId, line.quantity);
@@ -117,12 +208,13 @@ export async function sell(
 
       await tx.receiptItem.create({
         data: {
-          receiptId: receipt.id,
+          receiptId: created.id,
           productId: line.productId,
           quantity: line.quantity.toFixed(3),
-          price: price.toFixed(2),
+          price: line.price.toFixed(2),
           costPrice: cost.toFixed(2),
-          total: lineTotal.toFixed(2),
+          discount: computed.discount.toFixed(2),
+          total: computed.total.toFixed(2),
         },
       });
 
@@ -143,15 +235,13 @@ export async function sell(
         costPrice: cost,
       });
 
-      total = total.plus(lineTotal);
       costTotal = costTotal.plus(lineCost);
     }
 
-    const fiscal = fiscalize(number, total.toFixed(2));
+    const fiscal = fiscalize(number, receipt.total.toFixed(2));
     await tx.receipt.update({
-      where: { id: receipt.id },
+      where: { id: created.id },
       data: {
-        total: total.toFixed(2),
         costTotal: costTotal.toFixed(2),
         fiscalId: fiscal.fiscalId,
         fiscalUrl: fiscal.fiscalUrl,
@@ -160,9 +250,11 @@ export async function sell(
 
     return {
       status: 'ok' as const,
-      receiptId: receipt.id,
+      receiptId: created.id,
       number,
-      total: total.toFixed(2),
+      total: receipt.total.toFixed(2),
+      discount: receipt.discount.toFixed(2),
+      change: cashReceived ? cashReceived.minus(receipt.total).toFixed(2) : '0.00',
       fiscalId: fiscal.fiscalId,
       replayed: false,
     };
@@ -210,6 +302,13 @@ export async function refund(
         status: 'REFUNDED',
         total: new Decimal(receipt.total.toString()).negated().toFixed(2),
         costTotal: new Decimal(receipt.costTotal.toString()).negated().toFixed(2),
+        discountTotal: new Decimal(receipt.discountTotal.toString()).negated().toFixed(2),
+        cashAmount: receipt.cashAmount
+          ? new Decimal(receipt.cashAmount.toString()).negated().toFixed(2)
+          : null,
+        cardAmount: receipt.cardAmount
+          ? new Decimal(receipt.cardAmount.toString()).negated().toFixed(2)
+          : null,
         refundOf: receipt.id,
         userId,
       },
@@ -226,6 +325,7 @@ export async function refund(
           quantity: quantity.negated().toFixed(3),
           price: item.price,
           costPrice: item.costPrice,
+          discount: new Decimal(item.discount.toString()).negated().toFixed(2),
           total: new Decimal(item.total.toString()).negated().toFixed(2),
         },
       });

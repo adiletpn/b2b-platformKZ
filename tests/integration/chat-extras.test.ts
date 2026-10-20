@@ -14,8 +14,11 @@ import {
   searchMessages,
   sendCard,
   sendFile,
+  sendVoice,
   setBlocked,
 } from '@/lib/chat/extras';
+import { detectAudioType } from '@/lib/files/attachments';
+import { chatChangesSince } from '@/lib/chat/live';
 import { readAttachment } from '@/lib/files/attachments';
 
 const prisma = createTestPrisma();
@@ -86,7 +89,12 @@ describe('чат: шаблоны, поиск, файлы (раздел 3.7 ТЗ)
     if (sent.status !== 'ok') throw new Error(sent.status);
 
     const chat = await getMessages(context.chatId, context.storeId);
-    expect(chat!.messages[0]!.file).toEqual({ id: sent.id, image: true });
+    expect(chat!.messages[0]!.file).toEqual({
+      id: sent.id,
+      image: true,
+      voice: false,
+      durationMs: null,
+    });
     expect(await readAttachment(sent.id, context.storeId)).not.toBeNull();
     expect(await readAttachment(sent.id, other.storeId)).toBeNull();
     // В чужую переписку файл не отправить.
@@ -101,6 +109,53 @@ describe('чат: шаблоны, поиск, файлы (раздел 3.7 ТЗ)
         })
       ).status,
     ).toBe('not_found');
+  });
+});
+
+describe('чат: голосовые и реальное время (раздел 3.7 ТЗ)', () => {
+  const WEBM = new Uint8Array([0x1a, 0x45, 0xdf, 0xa3, 1, 2, 3, 4, 5]);
+
+  it('audio_containers_are_detected_by_first_bytes', () => {
+    expect(detectAudioType(WEBM)).toBe('audio/webm');
+    expect(detectAudioType(new Uint8Array([0x4f, 0x67, 0x67, 0x53, 0, 2]))).toBe('audio/ogg');
+    expect(
+      detectAudioType(new Uint8Array([0, 0, 0, 0x20, 0x66, 0x74, 0x79, 0x70, 0x4d, 0x34])),
+    ).toBe('audio/mp4');
+    // Картинка под видом голосового не пройдёт.
+    expect(detectAudioType(PNG)).toBeNull();
+  });
+
+  it('voice_message_is_limited_to_two_minutes_and_own_chats', async () => {
+    const context = await pairWithChat(8);
+    const other = await pairWithChat(9);
+    const base = {
+      chatId: context.chatId,
+      companyId: context.storeId,
+      userId: context.storeUserId,
+      data: WEBM,
+    };
+    expect((await sendVoice({ ...base, durationMs: 121_000 })).status).toBe('too_long');
+    expect((await sendVoice({ ...base, durationMs: 5_000, data: PNG })).status).toBe(
+      'unsupported_type',
+    );
+    expect((await sendVoice({ ...base, companyId: other.storeId, durationMs: 5_000 })).status).toBe(
+      'not_found',
+    );
+
+    const since = new Date(Date.now() - 1000);
+    const sent = await sendVoice({ ...base, durationMs: 15_000 });
+    if (sent.status !== 'ok') throw new Error(sent.status);
+    const chat = await getMessages(context.chatId, context.supplierId);
+    expect(chat!.messages[0]!.file).toEqual({
+      id: sent.id,
+      image: false,
+      voice: true,
+      durationMs: 15_000,
+    });
+
+    // Поток событий видит изменение только у сторон переписки (правило 4).
+    expect(await chatChangesSince(context.supplierId, since)).toEqual([context.chatId]);
+    expect(await chatChangesSince(other.supplierId, since)).toEqual([]);
   });
 });
 

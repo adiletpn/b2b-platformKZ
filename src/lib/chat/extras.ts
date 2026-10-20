@@ -1,7 +1,12 @@
 import { prisma } from '@/lib/prisma';
 import { formatDateTime } from '@/lib/format';
 import { notify } from '@/mocks/notifications';
-import { detectFileType, uploadAttachment, type UploadResult } from '@/lib/files/attachments';
+import {
+  detectAudioType,
+  detectFileType,
+  uploadAttachment,
+  type UploadResult,
+} from '@/lib/files/attachments';
 import { writeAdminAudit } from '@/lib/admin/session';
 
 /** Раздел 3.7 ТЗ: шаблоны быстрых ответов, поиск, файлы, жалобы и блокировка. */
@@ -183,6 +188,60 @@ export async function sendFile(input: {
   return result;
 }
 
+/** Голосовое сообщение: не длиннее двух минут (раздел 3.7 ТЗ), размер — в общем лимите файлов. */
+export const VOICE_MAX_MS = 120_000;
+
+/**
+ * Голосовое сообщение в чат (раздел 3.7 ТЗ): запись из браузера сохраняется вложением
+ * вида VOICE, тип аудио проверяется по первым байтам. Длину присылает запись браузера;
+ * больше двух минут не принимается.
+ */
+export async function sendVoice(input: {
+  chatId: string;
+  companyId: string;
+  userId: string;
+  durationMs: number;
+  data: Uint8Array;
+}): Promise<UploadResult | { status: 'blocked' } | { status: 'too_long' }> {
+  const chat = await ownChat(input.chatId, input.companyId);
+  if (!chat) return { status: 'not_found' };
+  const counterpartyId = chat.storeId === input.companyId ? chat.supplierId : chat.storeId;
+  if (await isBlocked(input.companyId, counterpartyId)) return { status: 'blocked' };
+
+  const durationMs = Math.round(input.durationMs);
+  if (!Number.isFinite(durationMs) || durationMs <= 0) return { status: 'empty' };
+  if (durationMs > VOICE_MAX_MS) return { status: 'too_long' };
+  const mime = detectAudioType(input.data);
+  if (!mime) return { status: 'unsupported_type' };
+
+  const extension = mime.split('/')[1];
+  const message = await prisma.message.create({
+    data: {
+      chatId: chat.id,
+      authorCompanyId: input.companyId,
+      authorUserId: input.userId,
+      // Текста нет: на экране вместо него плеер записи.
+      text: '',
+    },
+  });
+  const result = await uploadAttachment({
+    companyId: input.companyId,
+    userId: input.userId,
+    messageId: message.id,
+    kind: 'VOICE',
+    fileName: `voice.${extension}`,
+    data: input.data,
+    durationMs,
+  });
+  if (result.status !== 'ok') {
+    await prisma.message.delete({ where: { id: message.id } });
+    return result;
+  }
+  await prisma.chat.update({ where: { id: chat.id }, data: { updatedAt: new Date() } });
+  await notify(counterpartyId, 'message_received', { number: '', text: '🎤' });
+  return result;
+}
+
 // ---------- Карточки товара и документы ----------
 
 /** Что можно отправить в этот чат: товары поставщика пары и документы заявок пары. */
@@ -235,9 +294,7 @@ export async function listShareables(chatId: string, companyId: string, rawQuery
 }
 
 export type CardResult =
-  | { status: 'ok'; messageId: string }
-  | { status: 'not_found' }
-  | { status: 'blocked' };
+  { status: 'ok'; messageId: string } | { status: 'not_found' } | { status: 'blocked' };
 
 /**
  * Карточка товара или документ в чат (раздел 3.7 ТЗ). Отправить можно только товар

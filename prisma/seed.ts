@@ -195,6 +195,7 @@ const ROLE_TEMPLATES = [
       DOCUMENTS_PAYMENTS: ALL_ACTIONS,
       EMPLOYEES_REQUISITES: ALL_ACTIONS,
       DELIVERIES: ALL_ACTIONS,
+      SALES_REPS: ALL_ACTIONS,
     },
   },
   {
@@ -252,6 +253,16 @@ const ROLE_TEMPLATES = [
       SWIPE_ORDERS: ['VIEW', 'UPDATE'],
       DOCUMENTS_PAYMENTS: ['VIEW', 'CREATE'],
       STOCK: ['VIEW'],
+    },
+  },
+  {
+    // Этап 3 ТЗ: видит только закреплённые за ним магазины, отмечает визиты.
+    // TODO(open-question): заявка от имени магазина — нужен порядок согласия магазина.
+    code: 'SALES_REP',
+    nameRu: 'Торговый представитель',
+    nameKk: 'Сауда өкілі',
+    permissions: {
+      SALES_REPS: ['VIEW', 'CREATE'],
     },
   },
   {
@@ -332,6 +343,17 @@ const SETTINGS = [
   // TODO(open-question): часы и возраст сверяются с юристом и местными правилами акимата.
   { key: 'excise_sale_hours', value: '08:00-23:00' },
   { key: 'excise_min_age', value: '21' },
+  // Разделы 4.1 и 4.2 ТЗ: доля упаковки при продаже штуками округляется до 3 знаков.
+  // TODO(open-question): способ округления (half_up, up, down) подтверждает заказчик.
+  { key: 'piece_sale_rounding', value: 'half_up' },
+  // Этап 3 ТЗ, лояльность: начисление 5% от оплаченного деньгами, списание до 50% чека.
+  // TODO(open-question): процент и доля — значения по умолчанию, подтверждает заказчик.
+  { key: 'loyalty_earn_percent', value: '5' },
+  { key: 'loyalty_max_redeem_share', value: '50' },
+  // Этап 3 ТЗ, аналитика: пороги ABC (A до 80%, B до 95% выручки) и «залежавшийся» — 30 дней.
+  // TODO(open-question): пороги и срок подтверждает заказчик.
+  { key: 'analytics_abc_thresholds', value: '80,95' },
+  { key: 'analytics_stale_days', value: '30' },
 ];
 
 async function main() {

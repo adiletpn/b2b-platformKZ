@@ -230,6 +230,12 @@ model Company {
   chatBlocksMade       ChatBlock[]            @relation("ChatBlocker")
   chatBlocksReceived   ChatBlock[]            @relation("ChatBlocked")
   supportTickets       SupportTicket[]
+  loyaltyCustomers     LoyaltyCustomer[]
+  repStoresSupplier    SalesRepStore[]        @relation("RepSupplier")
+  repStoresStore       SalesRepStore[]        @relation("RepStore")
+  repVisitsSupplier    SalesRepVisit[]        @relation("VisitSupplier")
+  repVisitsStore       SalesRepVisit[]        @relation("VisitStore")
+  deliveryRoutes       DeliveryRoute[]
 
   license CompanyLicense?
 
@@ -270,6 +276,9 @@ model Membership {
   orderLimit         Decimal?         @db.Decimal(14, 2)
   maxDiscount        Decimal?         @db.Decimal(5, 2)
   createdAt          DateTime         @default(now())
+  repStores          SalesRepStore[]
+  repVisits          SalesRepVisit[]
+  driverRoutes       DeliveryRoute[]
 
   @@unique([userId, companyId])
   @@index([companyId])
@@ -546,6 +555,7 @@ model Order {
   ratings        Rating[]
   attachments    Attachment[]
   chats          Chat[]
+  routeStop      DeliveryRouteStop?
 
   // Раздел 3.5 ТЗ: нумерация отдельная у каждой компании, поэтому номер уникален в пределах магазина.
   @@unique([storeId, number])
@@ -834,35 +844,42 @@ model CashOperation {
 
 /// Чек кассы. `clientId` даёт идемпотентность при синхронизации офлайн-продаж.
 model Receipt {
-  id            String             @id @default(cuid())
-  number        String
-  clientId      String
-  shiftId       String
-  shift         PosShift           @relation(fields: [shiftId], references: [id], onDelete: Cascade)
-  companyId     String
-  company       Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  locationId    String
-  location      Location           @relation(fields: [locationId], references: [id])
-  paymentType   ReceiptPaymentType
-  status        ReceiptStatus      @default(PAID)
-  total         Decimal            @db.Decimal(14, 2)
-  costTotal     Decimal            @default(0) @db.Decimal(14, 2)
+  id                String             @id @default(cuid())
+  number            String
+  clientId          String
+  shiftId           String
+  shift             PosShift           @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  companyId         String
+  company           Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  locationId        String
+  location          Location           @relation(fields: [locationId], references: [id])
+  paymentType       ReceiptPaymentType
+  status            ReceiptStatus      @default(PAID)
+  total             Decimal            @db.Decimal(14, 2)
+  costTotal         Decimal            @default(0) @db.Decimal(14, 2)
   /// Скидки чека: сумма скидок по позициям и на весь чек (раздел 4.2 ТЗ).
-  discountTotal Decimal            @default(0) @db.Decimal(14, 2)
+  discountTotal     Decimal            @default(0) @db.Decimal(14, 2)
   /// Части смешанной оплаты и полученные наличные — для сдачи и ящика кассы.
-  cashAmount    Decimal?           @db.Decimal(14, 2)
-  cardAmount    Decimal?           @db.Decimal(14, 2)
-  cashReceived  Decimal?           @db.Decimal(14, 2)
+  cashAmount        Decimal?           @db.Decimal(14, 2)
+  cardAmount        Decimal?           @db.Decimal(14, 2)
+  cashReceived      Decimal?           @db.Decimal(14, 2)
   /// Кассир подтвердил возраст покупателя подакцизного товара (раздел 4.2 ТЗ).
-  ageConfirmed  Boolean            @default(false)
+  ageConfirmed      Boolean            @default(false)
   /// Ответ онлайн-кассы: номер фискального документа и ссылка в ОФД (в демо — мок).
-  fiscalId      String?
-  fiscalUrl     String?
-  userId        String?
-  user          User?              @relation(fields: [userId], references: [id])
+  fiscalId          String?
+  fiscalUrl         String?
+  userId            String?
+  user              User?              @relation(fields: [userId], references: [id])
   /// Старший, подтвердивший возврат кодом (разделы 4.2 и 3.12 ТЗ).
-  approvedById  String?
-  createdAt     DateTime           @default(now())
+  approvedById      String?
+  /// Программа лояльности (этап 3): покупатель по телефону, списано и начислено бонусами.
+  /// К оплате деньгами — `total − bonusRedeemed`.
+  loyaltyCustomerId String?
+  loyaltyCustomer   LoyaltyCustomer?   @relation(fields: [loyaltyCustomerId], references: [id])
+  bonusRedeemed     Decimal            @default(0) @db.Decimal(14, 2)
+  bonusEarned       Decimal            @default(0) @db.Decimal(14, 2)
+  loyaltyMovements  LoyaltyMovement[]
+  createdAt         DateTime           @default(now())
 
   items    ReceiptItem[]
   refundOf String?
@@ -887,6 +904,9 @@ model ReceiptItem {
   discount     Decimal  @default(0) @db.Decimal(14, 2)
   /// Коды DataMatrix маркированного товара, по одному на единицу (раздел 4.2 ТЗ).
   markingCodes String[] @default([])
+  /// Поштучная продажа из упаковки: сколько штук продано. `quantity` тогда — доля упаковки
+  /// для остатка, а `price` — цена штуки.
+  pieces       Int?
   total        Decimal  @db.Decimal(14, 2)
 
   @@index([receiptId])
@@ -909,13 +929,17 @@ model MarkupRule {
 
 /// Розничная цена товара в компании: результат наценки или ручной переоценки.
 model RetailPrice {
-  id        String   @id @default(cuid())
-  companyId String
-  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  productId String
-  product   Product  @relation(fields: [productId], references: [id])
-  price     Decimal  @db.Decimal(14, 2)
-  updatedAt DateTime @updatedAt
+  id            String   @id @default(cuid())
+  companyId     String
+  company       Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  productId     String
+  product       Product  @relation(fields: [productId], references: [id])
+  price         Decimal  @db.Decimal(14, 2)
+  /// Продажа поштучно из упаковки (разделы 4.1 и 4.2 ТЗ): штук в упаковке и цена штуки.
+  /// Пусто — товар продаётся только целой единицей учёта.
+  piecesPerPack Int?
+  piecePrice    Decimal? @db.Decimal(14, 2)
+  updatedAt     DateTime @updatedAt
 
   @@unique([companyId, productId])
   @@map("retail_prices")
@@ -1055,6 +1079,8 @@ enum AttachmentKind {
   LICENSE
   PHOTO
   OTHER
+  /// Голосовое сообщение чата (раздел 3.7 ТЗ): аудио webm, ogg или mp4.
+  VOICE
 }
 
 /// Файл, загруженный компанией: к заявке (видят обе стороны) или к самой компании.
@@ -1073,6 +1099,8 @@ model Attachment {
   mimeType     String
   size         Int
   sha256       String
+  /// Длина голосового сообщения в миллисекундах; у остальных файлов пусто.
+  durationMs   Int?
   uploadedById String?
   uploadedBy   User?           @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
   createdAt    DateTime        @default(now())
@@ -1126,6 +1154,8 @@ enum PermissionSection {
   DOCUMENTS_PAYMENTS
   EMPLOYEES_REQUISITES
   DELIVERIES
+  /// Торговые представители поставщика (этап 3): закреплённые магазины и визиты.
+  SALES_REPS
 }
 
 enum PermissionAction {
@@ -1279,6 +1309,7 @@ model AdminUser {
   templates       DocumentTemplate[]
   ticketsAssigned SupportTicket[]
   broadcasts      Broadcast[]
+  banners         Banner[]
 
   @@map("admin_users")
 }
@@ -1608,4 +1639,140 @@ model CompanyLicense {
   updatedAt  DateTime  @updatedAt
 
   @@map("company_licenses")
+}
+
+// ---------- Баннеры в кабинете (раздел 3.13 ТЗ) ----------
+
+/// Для кого баннер: все компании, только магазины или только поставщики.
+enum BannerAudience {
+  ALL
+  STORES
+  SUPPLIERS
+}
+
+/// Баннер в кабинете компаний: текст на двух языках и даты показа (раздел 3.13 ТЗ).
+model Banner {
+  id          String         @id @default(cuid())
+  textRu      String
+  textKk      String
+  audience    BannerAudience @default(ALL)
+  /// Даты показа включительно, по календарю Казахстана.
+  startsOn    DateTime       @db.Date
+  endsOn      DateTime       @db.Date
+  createdById String
+  createdBy   AdminUser      @relation(fields: [createdById], references: [id])
+  createdAt   DateTime       @default(now())
+
+  @@index([startsOn, endsOn])
+  @@map("banners")
+}
+
+// ---------- Программа лояльности на кассе (этап 3, раздел 4.2 ТЗ) ----------
+
+/// Покупатель магазина по номеру телефона. У каждой компании свои покупатели.
+/// Баланс меняется только движением бонусного счёта в транзакции чека (по образцу правила 3).
+model LoyaltyCustomer {
+  id        String   @id @default(cuid())
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  phone     String
+  balance   Decimal  @default(0) @db.Decimal(14, 2)
+  createdAt DateTime @default(now())
+
+  receipts  Receipt[]
+  movements LoyaltyMovement[]
+
+  @@unique([companyId, phone])
+  @@map("loyalty_customers")
+}
+
+/// Движение бонусного счёта: начисление, списание и их откат при возврате чека.
+enum LoyaltyMovementType {
+  EARN
+  REDEEM
+  EARN_REVERSAL
+  REDEEM_REVERSAL
+}
+
+model LoyaltyMovement {
+  id         String              @id @default(cuid())
+  customerId String
+  customer   LoyaltyCustomer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  receiptId  String
+  receipt    Receipt             @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+  type       LoyaltyMovementType
+  /// Со знаком: начисление плюсом, списание минусом.
+  amount     Decimal             @db.Decimal(14, 2)
+  createdAt  DateTime            @default(now())
+
+  @@index([customerId, createdAt])
+  @@map("loyalty_movements")
+}
+
+// ---------- Торговые представители (этап 3 ТЗ) ----------
+
+/// Магазин, закреплённый за торговым представителем поставщика. У магазина один представитель.
+model SalesRepStore {
+  id           String     @id @default(cuid())
+  supplierId   String
+  supplier     Company    @relation("RepSupplier", fields: [supplierId], references: [id], onDelete: Cascade)
+  membershipId String
+  membership   Membership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  storeId      String
+  store        Company    @relation("RepStore", fields: [storeId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+
+  @@unique([supplierId, storeId])
+  @@index([membershipId])
+  @@map("sales_rep_stores")
+}
+
+/// Отметка визита представителя в магазин с комментарием.
+model SalesRepVisit {
+  id           String     @id @default(cuid())
+  supplierId   String
+  supplier     Company    @relation("VisitSupplier", fields: [supplierId], references: [id], onDelete: Cascade)
+  membershipId String
+  membership   Membership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  storeId      String
+  store        Company    @relation("VisitStore", fields: [storeId], references: [id], onDelete: Cascade)
+  comment      String
+  visitedAt    DateTime   @default(now())
+
+  @@index([supplierId, storeId, visitedAt])
+  @@map("sales_rep_visits")
+}
+
+// ---------- Маршруты водителей (этап 3 ТЗ) ----------
+
+/// Рейс поставщика на день: водитель и точки по порядку. Порядок задаётся вручную —
+/// автопостроения маршрута и карты нет (это внешний провайдер).
+model DeliveryRoute {
+  id                 String              @id @default(cuid())
+  number             String
+  supplierId         String
+  supplier           Company             @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  date               DateTime            @db.Date
+  driverMembershipId String?
+  driver             Membership?         @relation(fields: [driverMembershipId], references: [id], onDelete: SetNull)
+  createdById        String?
+  createdAt          DateTime            @default(now())
+  stops              DeliveryRouteStop[]
+
+  @@unique([supplierId, number])
+  @@index([supplierId, date])
+  @@map("delivery_routes")
+}
+
+/// Точка рейса: заявка к отгрузке. Заявка входит не больше чем в один рейс.
+model DeliveryRouteStop {
+  id       String        @id @default(cuid())
+  routeId  String
+  route    DeliveryRoute @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  orderId  String        @unique
+  order    Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  position Int
+
+  @@unique([routeId, position])
+  @@map("delivery_route_stops")
 }

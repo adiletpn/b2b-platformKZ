@@ -11,6 +11,7 @@ export const PERMISSION_SECTIONS = [
   'DOCUMENTS_PAYMENTS',
   'EMPLOYEES_REQUISITES',
   'DELIVERIES',
+  'SALES_REPS',
 ] as const satisfies readonly PermissionSection[];
 
 export const PERMISSION_ACTIONS = [

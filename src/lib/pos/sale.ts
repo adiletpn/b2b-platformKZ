@@ -11,6 +11,14 @@ import { isWithinHours, markingCodeFits } from './restrictions';
 import { getSetting } from '@/lib/admin/settings';
 import { normalizePhone } from '@/lib/phone';
 import { sendReceiptLink } from '@/mocks/sms';
+import {
+  applyLoyalty,
+  earnedFor,
+  loyaltySettings,
+  maxRedeemFor,
+  NotEnoughBonusError,
+  revertLoyalty,
+} from './loyalty';
 
 export type SaleLine = {
   productId: string;
@@ -20,6 +28,8 @@ export type SaleLine = {
   discountPercent?: string;
   /** Коды DataMatrix маркированного товара: по одному на единицу. */
   markingCodes?: string[];
+  /** Продажа поштучно из упаковки: `quantity` — число штук (разделы 4.1 и 4.2 ТЗ). */
+  byPiece?: boolean;
 };
 
 export type SaleInput = {
@@ -35,6 +45,9 @@ export type SaleInput = {
   cashReceived?: string;
   /** Кассир проверил документ покупателя подакцизного товара. */
   ageConfirmed?: boolean;
+  /** Программа лояльности: телефон покупателя и сколько бонусов списать. */
+  customerPhone?: string;
+  bonusRedeem?: string;
 };
 
 export type SaleResult =
@@ -47,6 +60,10 @@ export type SaleResult =
       change: string;
       fiscalId: string | null;
       replayed: boolean;
+      /** К оплате деньгами, списано и начислено бонусами. */
+      toPay: string;
+      bonusRedeemed: string;
+      bonusEarned: string;
     }
   | { status: 'no_open_shift' }
   | { status: 'empty_receipt' }
@@ -56,11 +73,31 @@ export type SaleResult =
   | { status: 'payment_mismatch'; total: string }
   | { status: 'not_enough_cash'; total: string }
   | { status: 'no_price'; productId: string }
+  | { status: 'piece_sale_unavailable'; productId: string }
   | { status: 'marking_required'; productId: string }
   | { status: 'marking_reused'; productId: string }
   | { status: 'age_not_confirmed' }
   | { status: 'restricted_hours'; hours: string }
-  | { status: 'not_enough_stock'; productId: string };
+  | { status: 'not_enough_stock'; productId: string }
+  | { status: 'invalid_phone' }
+  | { status: 'invalid_bonus' }
+  | { status: 'bonus_limit'; limit: string }
+  | { status: 'not_enough_bonus'; available: string };
+
+/**
+ * Доля упаковки, которую списывает поштучная продажа. Остаток хранится с тремя знаками
+ * (правило 2), поэтому доля округляется; способ округления — в настройках платформы.
+ * TODO(open-question): как округлять долю упаковки (половина вверх, вверх, вниз) и как
+ * сводить копеечный хвост остатка, решает заказчик с бухгалтером.
+ */
+export async function pieceShare(pieces: Decimal, piecesPerPack: number): Promise<Decimal> {
+  const mode = await getSetting('piece_sale_rounding', 'half_up');
+  const rounding =
+    mode === 'up' ? Decimal.ROUND_UP : mode === 'down' ? Decimal.ROUND_DOWN : Decimal.ROUND_HALF_UP;
+  const share = pieces.div(piecesPerPack).toDecimalPlaces(3, rounding);
+  // Штука не может уйти бесплатно для остатка: минимум — одна тысячная.
+  return share.isZero() ? new Decimal('0.001') : share;
+}
 
 function parseMoney(value: string | undefined): Decimal | null {
   if (value === undefined || value === '') return null;
@@ -94,6 +131,7 @@ export async function sell(
     where: { companyId, clientId: input.clientId },
   });
   if (existing) {
+    const paid = new Decimal(existing.total.toString()).minus(existing.bonusRedeemed.toString());
     return {
       status: 'ok',
       receiptId: existing.id,
@@ -101,10 +139,13 @@ export async function sell(
       total: existing.total.toFixed(2),
       discount: existing.discountTotal.toFixed(2),
       change: existing.cashReceived
-        ? new Decimal(existing.cashReceived.toString()).minus(existing.total.toString()).toFixed(2)
+        ? new Decimal(existing.cashReceived.toString()).minus(paid).toFixed(2)
         : '0.00',
       fiscalId: existing.fiscalId,
       replayed: true,
+      toPay: paid.toFixed(2),
+      bonusRedeemed: existing.bonusRedeemed.toFixed(2),
+      bonusEarned: existing.bonusEarned.toFixed(2),
     };
   }
 
@@ -115,20 +156,25 @@ export async function sell(
 
   let lines: {
     productId: string;
+    /** Сколько продаётся: единиц учёта или штук при поштучной продаже. */
     quantity: Decimal;
     price?: Decimal;
     discountPercent: Decimal;
+    byPiece: boolean;
   }[];
   try {
     lines = input.lines.map((line) => {
       // Правило 2: количества до трёх знаков.
       const quantity = new Decimal(line.quantity.replace(',', '.'));
       if (!quantity.isFinite() || quantity.lessThanOrEqualTo(0)) throw new Error('invalid');
+      // Штуки из упаковки продаются только целыми.
+      if (line.byPiece && !quantity.isInteger()) throw new Error('invalid');
       return {
         productId: line.productId,
         quantity: quantity.toDecimalPlaces(3, Decimal.ROUND_HALF_UP),
         price: line.price ? new Decimal(line.price.replace(',', '.')) : undefined,
         discountPercent: parsePercent(line.discountPercent) ?? new Decimal(-1),
+        byPiece: Boolean(line.byPiece),
       };
     });
   } catch {
@@ -143,9 +189,14 @@ export async function sell(
     where: { companyId, productId: { in: lines.map((line) => line.productId) } },
   });
   const priceByProduct = new Map(prices.map((row) => [row.productId, row.price]));
+  const retailByProduct = new Map(prices.map((row) => [row.productId, row]));
   for (const line of lines) {
     if (!line.price && !priceByProduct.has(line.productId)) {
       return { status: 'no_price', productId: line.productId };
+    }
+    const retail = retailByProduct.get(line.productId);
+    if (line.byPiece && (!retail?.piecesPerPack || !retail.piecePrice)) {
+      return { status: 'piece_sale_unavailable', productId: line.productId };
     }
   }
 
@@ -160,6 +211,8 @@ export async function sell(
   for (const [index, line] of lines.entries()) {
     const product = productById.get(line.productId);
     if (!product?.isMarked) continue;
+    // Маркированный товар поштучно не продаётся: код DataMatrix — на единицу учёта.
+    if (line.byPiece) return { status: 'piece_sale_unavailable', productId: line.productId };
     const codes = (input.lines[index]!.markingCodes ?? []).map((code) => code.trim());
     const unique = new Set(codes);
     if (
@@ -189,10 +242,26 @@ export async function sell(
     }
   }
 
-  const priced = lines.map((line) => ({
-    ...line,
-    price: line.price ?? new Decimal(priceByProduct.get(line.productId)!.toString()),
-  }));
+  const priced = await Promise.all(
+    lines.map(async (line) => {
+      const retail = retailByProduct.get(line.productId);
+      if (line.byPiece) {
+        // Цена — за штуку, а остаток уменьшается на долю упаковки.
+        return {
+          ...line,
+          price: new Decimal(retail!.piecePrice!.toString()),
+          pieces: line.quantity.toNumber(),
+          stockQuantity: await pieceShare(line.quantity, retail!.piecesPerPack!),
+        };
+      }
+      return {
+        ...line,
+        price: line.price ?? new Decimal(priceByProduct.get(line.productId)!.toString()),
+        pieces: null,
+        stockQuantity: line.quantity,
+      };
+    }),
+  );
   const receipt = computeReceipt(priced, receiptPercent);
 
   // Раздел 3.12 ТЗ: максимальная скидка на кассе — у каждого сотрудника своя.
@@ -203,29 +272,57 @@ export async function sell(
     }
   }
 
-  // Оплата: смешанная сходится с итогом, наличных хватает на чек.
+  // Лояльность: телефон покупателя, списание не больше доли чека (этап 3 ТЗ).
+  let customerPhone: string | null = null;
+  let redeem = new Decimal(0);
+  if (input.customerPhone || input.bonusRedeem) {
+    customerPhone = normalizePhone(input.customerPhone ?? '');
+    if (!customerPhone) return { status: 'invalid_phone' };
+  }
+  const loyalty = customerPhone ? await loyaltySettings() : null;
+  if (input.bonusRedeem) {
+    const parsed = parseMoney(input.bonusRedeem);
+    if (!parsed) return { status: 'invalid_bonus' };
+    const limit = maxRedeemFor(receipt.total, loyalty!);
+    if (parsed.greaterThan(limit)) return { status: 'bonus_limit', limit: limit.toFixed(2) };
+    redeem = parsed;
+  }
+  // Списание уменьшает сумму к оплате деньгами.
+  const toPay = receipt.total.minus(redeem);
+  const earned = loyalty ? earnedFor(toPay, loyalty) : new Decimal(0);
+
+  // Оплата: смешанная сходится с суммой к оплате, наличных хватает на чек.
   let cashAmount: Decimal | null = null;
   let cardAmount: Decimal | null = null;
   let cashReceived: Decimal | null = null;
   if (input.paymentType === 'MIXED') {
     cashAmount = parseMoney(input.cashAmount);
     cardAmount = parseMoney(input.cardAmount);
-    if (!cashAmount || !cardAmount || !cashAmount.plus(cardAmount).equals(receipt.total)) {
-      return { status: 'payment_mismatch', total: receipt.total.toFixed(2) };
+    if (!cashAmount || !cardAmount || !cashAmount.plus(cardAmount).equals(toPay)) {
+      return { status: 'payment_mismatch', total: toPay.toFixed(2) };
     }
   }
   if (input.paymentType === 'CASH' && input.cashReceived) {
     cashReceived = parseMoney(input.cashReceived);
-    if (!cashReceived || cashReceived.lessThan(receipt.total)) {
-      return { status: 'not_enough_cash', total: receipt.total.toFixed(2) };
+    if (!cashReceived || cashReceived.lessThan(toPay)) {
+      return { status: 'not_enough_cash', total: toPay.toFixed(2) };
     }
   }
 
-  const result = await prisma.$transaction(async (tx) => {
-    for (const line of priced) {
-      const balance = await currentBalance(tx, locationId, line.productId);
-      if (balance.quantity.lessThan(line.quantity)) {
-        return { status: 'not_enough_stock' as const, productId: line.productId };
+  // Один товар может быть в чеке дважды: упаковкой и штуками — остаток проверяется по сумме.
+  const neededByProduct = new Map<string, Decimal>();
+  for (const line of priced) {
+    neededByProduct.set(
+      line.productId,
+      (neededByProduct.get(line.productId) ?? new Decimal(0)).plus(line.stockQuantity),
+    );
+  }
+
+  const transaction = prisma.$transaction(async (tx) => {
+    for (const [productId, needed] of neededByProduct) {
+      const balance = await currentBalance(tx, locationId, productId);
+      if (balance.quantity.lessThan(needed)) {
+        return { status: 'not_enough_stock' as const, productId };
       }
     }
 
@@ -255,15 +352,17 @@ export async function sell(
       const balance = await currentBalance(tx, locationId, line.productId);
 
       // Себестоимость — из партий по FEFO: ближний срок уходит первым.
-      const lots = await consumeFefo(tx, locationId, line.productId, line.quantity);
+      const lots = await consumeFefo(tx, locationId, line.productId, line.stockQuantity);
       const cost = lotsCost(lots ?? [], balance.averageCost);
-      const lineCost = cost.times(line.quantity).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
+      const lineCost = cost.times(line.stockQuantity).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
 
       await tx.receiptItem.create({
         data: {
           receiptId: created.id,
           productId: line.productId,
-          quantity: line.quantity.toFixed(3),
+          // В чеке остаётся доля упаковки для учёта и число проданных штук.
+          quantity: line.stockQuantity.toFixed(3),
+          pieces: line.pieces,
           price: line.price.toFixed(2),
           costPrice: cost.toFixed(2),
           discount: computed.discount.toFixed(2),
@@ -277,7 +376,7 @@ export async function sell(
         data: {
           locationId,
           productId: line.productId,
-          quantity: line.quantity.negated().toFixed(3),
+          quantity: line.stockQuantity.negated().toFixed(3),
           costPrice: cost.toFixed(2),
           type: 'ISSUE',
         },
@@ -285,20 +384,34 @@ export async function sell(
       await applyBalanceChange(tx, {
         locationId,
         productId: line.productId,
-        quantity: line.quantity.negated(),
+        quantity: line.stockQuantity.negated(),
         costPrice: cost,
       });
 
       costTotal = costTotal.plus(lineCost);
     }
 
-    const fiscal = fiscalize(number, receipt.total.toFixed(2));
+    // Начисление и списание бонусов — в той же транзакции, что и остатки.
+    const loyaltyCustomerId = customerPhone
+      ? await applyLoyalty(tx, {
+          companyId,
+          receiptId: created.id,
+          phone: customerPhone,
+          redeem,
+          earned,
+        })
+      : null;
+
+    const fiscal = fiscalize(number, toPay.toFixed(2), { bonus: redeem.toFixed(2) });
     await tx.receipt.update({
       where: { id: created.id },
       data: {
         costTotal: costTotal.toFixed(2),
         fiscalId: fiscal.fiscalId,
         fiscalUrl: fiscal.fiscalUrl,
+        loyaltyCustomerId,
+        bonusRedeemed: redeem.toFixed(2),
+        bonusEarned: earned.toFixed(2),
       },
     });
 
@@ -308,13 +421,23 @@ export async function sell(
       number,
       total: receipt.total.toFixed(2),
       discount: receipt.discount.toFixed(2),
-      change: cashReceived ? cashReceived.minus(receipt.total).toFixed(2) : '0.00',
+      change: cashReceived ? cashReceived.minus(toPay).toFixed(2) : '0.00',
       fiscalId: fiscal.fiscalId,
       replayed: false,
+      toPay: toPay.toFixed(2),
+      bonusRedeemed: redeem.toFixed(2),
+      bonusEarned: earned.toFixed(2),
     };
   }, LONG_TRANSACTION);
 
-  return result;
+  try {
+    return await transaction;
+  } catch (error) {
+    if (error instanceof NotEnoughBonusError) {
+      return { status: 'not_enough_bonus', available: error.available };
+    }
+    throw error;
+  }
 }
 
 export type RefundResult =
@@ -367,8 +490,21 @@ export async function refund(
         refundOf: receipt.id,
         userId,
         approvedById,
+        loyaltyCustomerId: receipt.loyaltyCustomerId,
+        bonusRedeemed: new Decimal(receipt.bonusRedeemed.toString()).negated().toFixed(2),
+        bonusEarned: new Decimal(receipt.bonusEarned.toString()).negated().toFixed(2),
       },
     });
+    // Возврат откатывает и начисление, и списание бонусов.
+    await revertLoyalty(
+      tx,
+      {
+        loyaltyCustomerId: receipt.loyaltyCustomerId,
+        bonusRedeemed: new Decimal(receipt.bonusRedeemed.toString()),
+        bonusEarned: new Decimal(receipt.bonusEarned.toString()),
+      },
+      created.id,
+    );
 
     for (const item of receipt.items) {
       const quantity = new Decimal(item.quantity.toString());
@@ -379,6 +515,7 @@ export async function refund(
           receiptId: created.id,
           productId: item.productId,
           quantity: quantity.negated().toFixed(3),
+          pieces: item.pieces === null ? null : -item.pieces,
           price: item.price,
           costPrice: item.costPrice,
           discount: new Decimal(item.discount.toString()).negated().toFixed(2),

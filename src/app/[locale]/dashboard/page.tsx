@@ -21,6 +21,8 @@ import { OrderStatusBadge } from '@/components/order-status-badge';
 import { getOnboardingProgress } from '@/lib/registration/onboarding';
 import { getDashboardSummary } from '@/lib/dashboard/summary';
 import { OnboardingWizard } from './onboarding-progress';
+import { activeBannersFor } from '@/lib/admin/banners';
+import { CabinetBanners } from '@/components/cabinet-banners';
 
 export default async function DashboardPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -37,9 +39,10 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
     },
   });
 
-  const [progress, summary] = await Promise.all([
+  const [progress, summary, banners] = await Promise.all([
     getOnboardingProgress(company.id),
     getDashboardSummary(company.id),
+    activeBannersFor(company.type),
   ]);
 
   const t = await getTranslations('dashboard');
@@ -84,6 +87,13 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
             ) : null}
           </>
         }
+      />
+
+      <CabinetBanners
+        banners={banners.map((banner) => ({
+          id: banner.id,
+          text: locale === 'kk' ? banner.textKk : banner.textRu,
+        }))}
       />
 
       <section className="grid grid-cols-2 gap-3 lg:grid-cols-4" data-testid="dashboard-stats">

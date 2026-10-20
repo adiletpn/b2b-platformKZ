@@ -161,6 +161,9 @@ export default async function StockPage({ params }: { params: Promise<{ locale: 
           productId: price.productId,
           name: locale === 'kk' ? price.nameKk : price.nameRu,
           price: price.price,
+          piecesPerPack: price.piecesPerPack,
+          piecePrice: price.piecePrice,
+          isMarked: price.isMarked,
         }))}
         markups={markups.map((rule) => ({
           categoryId: rule.categoryId,

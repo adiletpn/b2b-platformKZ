@@ -20,6 +20,10 @@ export function createTestPrisma() {
 
 /** Чистит операционные данные; справочники (города, НДС, единицы, категории) остаются. */
 export async function resetTransactionalData(prisma: PrismaClient) {
+  await prisma.deliveryRouteStop.deleteMany();
+  await prisma.deliveryRoute.deleteMany();
+  await prisma.salesRepVisit.deleteMany();
+  await prisma.salesRepStore.deleteMany();
   await prisma.supportMessage.deleteMany();
   await prisma.supportTicket.deleteMany();
   await prisma.chatComplaint.deleteMany();
@@ -28,10 +32,12 @@ export async function resetTransactionalData(prisma: PrismaClient) {
   await prisma.message.deleteMany();
   await prisma.chat.deleteMany();
   await prisma.rating.deleteMany();
+  await prisma.loyaltyMovement.deleteMany();
   await prisma.receiptItem.deleteMany();
   await prisma.cashOperation.deleteMany();
   await prisma.receipt.deleteMany();
   await prisma.posShift.deleteMany();
+  await prisma.loyaltyCustomer.deleteMany();
   await prisma.retailPrice.deleteMany();
   await prisma.markupRule.deleteMany();
   await prisma.stockBatch.deleteMany();
@@ -73,6 +79,7 @@ export async function resetPlatformFlags(prisma: PrismaClient) {
   // Шаблоны печатных форм глобальные: чужой шаблон не должен влиять на другие тесты.
   await prisma.documentTemplate.deleteMany();
   await prisma.broadcast.deleteMany();
+  await prisma.banner.deleteMany();
   await prisma.adminAuditLog.deleteMany();
   await prisma.impersonationLog.deleteMany();
   await prisma.adminSession.deleteMany();

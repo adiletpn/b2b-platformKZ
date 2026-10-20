@@ -9,7 +9,14 @@ import { Field } from '@/components/ui/field';
 import { Card, CardTitle } from '@/components/ui/card';
 
 type Category = { id: string; name: string };
-type Price = { productId: string; name: string; price: string };
+type Price = {
+  productId: string;
+  name: string;
+  price: string;
+  piecesPerPack: number | null;
+  piecePrice: string | null;
+  isMarked: boolean;
+};
 
 /** Наценка, массовая переоценка и ценники со штрихкодом (раздел 4.1 ТЗ). */
 export function PricingPanel({
@@ -133,15 +140,90 @@ export function PricingPanel({
       ) : null}
 
       {prices.length > 0 ? (
-        <ul className="mt-3 space-y-1 text-sm" data-testid="retail-prices">
+        <ul className="divide-border mt-3 divide-y text-sm" data-testid="retail-prices">
           {prices.map((price) => (
-            <li key={price.productId} className="flex flex-wrap justify-between gap-2">
-              <span className="break-words">{price.name}</span>
-              <span className="tabular-nums">{price.price} ₸</span>
-            </li>
+            <PriceRow
+              key={price.productId}
+              price={price}
+              onSave={(pieces) => post({ action: 'pieces', productId: price.productId, ...pieces })}
+            />
           ))}
         </ul>
       ) : null}
     </Card>
+  );
+}
+
+/**
+ * Розничная цена и продажа поштучно из упаковки (разделы 4.1 и 4.2 ТЗ): сколько штук
+ * в упаковке и цена штуки. Маркированный товар поштучно не продаётся.
+ */
+function PriceRow({
+  price,
+  onSave,
+}: {
+  price: Price;
+  onSave: (pieces: { piecesPerPack: string; piecePrice: string }) => Promise<unknown>;
+}) {
+  const t = useTranslations('stock');
+  const [open, setOpen] = useState(false);
+  const [pieces, setPieces] = useState(price.piecesPerPack ? String(price.piecesPerPack) : '');
+  const [piecePrice, setPiecePrice] = useState(price.piecePrice ?? '');
+
+  return (
+    <li className="py-1.5" data-testid="retail-price-row">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="min-w-0 break-words">{price.name}</span>
+        <span className="flex items-center gap-2">
+          <span className="tabular-nums">{price.price} ₸</span>
+          {price.piecesPerPack ? (
+            <span className="text-muted-foreground text-xs" data-testid="piece-sale-info">
+              {t('pieceSaleInfo', { pieces: price.piecesPerPack, price: price.piecePrice ?? '' })}
+            </span>
+          ) : null}
+          {price.isMarked ? null : (
+            <Button
+              variant="ghost"
+              size="sm"
+              data-testid="piece-sale-toggle"
+              onClick={() => setOpen((value) => !value)}
+            >
+              {t('pieceSale')}
+            </Button>
+          )}
+        </span>
+      </div>
+      {open ? (
+        <div className="mt-2 flex flex-wrap items-end gap-2">
+          <Field label={t('piecesPerPack')}>
+            <Input
+              className="w-24"
+              inputMode="numeric"
+              value={pieces}
+              data-testid="pieces-per-pack"
+              onChange={(event) => setPieces(event.target.value)}
+            />
+          </Field>
+          <Field label={t('piecePrice')}>
+            <Input
+              className="w-28"
+              inputMode="decimal"
+              value={piecePrice}
+              data-testid="piece-price"
+              onChange={(event) => setPiecePrice(event.target.value)}
+            />
+          </Field>
+          <Button
+            variant="outline"
+            data-testid="piece-sale-save"
+            onClick={async () => {
+              if (await onSave({ piecesPerPack: pieces, piecePrice })) setOpen(false);
+            }}
+          >
+            {t('markupSave')}
+          </Button>
+        </div>
+      ) : null}
+    </li>
   );
 }

@@ -19,11 +19,14 @@ export function DeliveriesScreen({
   title,
   initial,
   canUpdate,
+  children,
 }: {
   locale: 'ru' | 'kk';
   title: string;
   initial: DeliveryRow[];
   canUpdate: boolean;
+  /** Рейсы водителей (этап 3 ТЗ) над списком доставок. */
+  children?: React.ReactNode;
 }) {
   const t = useTranslations('deliveries');
   const router = useRouter();
@@ -56,6 +59,7 @@ export function DeliveriesScreen({
   return (
     <Page>
       <PageHeader title={title} description={t('subtitle')} />
+      {children}
       {initial.length === 0 ? (
         <EmptyState>
           <span data-testid="deliveries-empty">{t('empty')}</span>

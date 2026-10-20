@@ -2,6 +2,7 @@
 
 import {
   Archive,
+  BarChart3,
   Boxes,
   Calculator,
   ClipboardList,
@@ -14,6 +15,7 @@ import {
   ShoppingCart,
   Star,
   Truck,
+  UserCheck,
   Users,
   Wallet,
   type LucideIcon,
@@ -28,10 +30,12 @@ const ICONS: Record<string, LucideIcon> = {
   feed: ShoppingBasket,
   cart: ShoppingCart,
   orders: ClipboardList,
+  analytics: BarChart3,
   stock: Boxes,
   pos: Calculator,
   catalog: Package,
   deliveries: Truck,
+  reps: UserCheck,
   settlements: Wallet,
   archive: Archive,
   chat: MessagesSquare,

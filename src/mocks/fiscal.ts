@@ -5,11 +5,17 @@
  */
 export type FiscalResult = { fiscalId: string; fiscalUrl: string; offline: boolean };
 
-export function fiscalize(receiptNumber: string, total: string): FiscalResult {
+/** `total` — оплачено деньгами; `bonus` — оплачено бонусами программы лояльности. */
+export function fiscalize(
+  receiptNumber: string,
+  total: string,
+  options: { bonus?: string } = {},
+): FiscalResult {
   const live = Boolean(process.env.FISCAL_API_KEY);
   const fiscalId = `${live ? 'ofd' : 'mock'}-${Date.now().toString(36)}`;
 
-  console.info(`[fiscal-${live ? 'live' : 'mock'}] чек ${receiptNumber} на ${total}`);
+  const bonus = options.bonus && options.bonus !== '0.00' ? `, бонусами ${options.bonus}` : '';
+  console.info(`[fiscal-${live ? 'live' : 'mock'}] чек ${receiptNumber} на ${total}${bonus}`);
   return {
     fiscalId,
     fiscalUrl: `https://ofd.kz/check/${fiscalId}`,

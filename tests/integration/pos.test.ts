@@ -246,7 +246,7 @@ describe('возврат и Z-отчёт', () => {
     // Критерий этапа 2: Z-отчёт совпадает с суммой чеков смены.
     expect(report.receipts).toBe(2);
     expect(report.total).toBe('390.00');
-    expect(report.byPayment).toEqual({ CASH: '260.00', CARD: '0.00', QR: '130.00' });
+    expect(report.byPayment).toEqual({ CASH: '260.00', CARD: '0.00', QR: '130.00', BONUS: '0.00' });
     expect(report.cost).toBe('300.00');
     expect(report.margin).toBe('90.00');
     // В кассе должно остаться: начальные 1000 плюс наличная выручка.
@@ -370,7 +370,7 @@ describe('скидки, оплата и наличные (раздел 4.2 ТЗ)
     // В отчёте смешанная оплата делится на наличные и карту.
     const shift = await prisma.posShift.findFirstOrThrow({ where: { companyId: shop.companyId } });
     const report = (await getZReport(shop.companyId, shift.id))!;
-    expect(report.byPayment).toEqual({ CASH: '230.00', CARD: '30.00', QR: '0.00' });
+    expect(report.byPayment).toEqual({ CASH: '230.00', CARD: '30.00', QR: '0.00', BONUS: '0.00' });
     expect(report.averageCheck).toBe('130.00');
     expect(report.margin).toBe('60.00');
   });
@@ -426,7 +426,7 @@ describe('скидки, оплата и наличные (раздел 4.2 ТЗ)
       new Date(now + 3_600_000),
     );
     expect(report).toMatchObject({ receipts: 2, refunds: 1, total: '130.00' });
-    expect(report.byPayment).toEqual({ CASH: '0.00', CARD: '0.00', QR: '130.00' });
+    expect(report.byPayment).toEqual({ CASH: '0.00', CARD: '0.00', QR: '130.00', BONUS: '0.00' });
     expect(report.byCashier).toHaveLength(1);
     expect(report.topProducts[0]).toMatchObject({ quantity: '1.000', total: '130.00' });
     // Правило 4: чужая компания отчёта не получит.

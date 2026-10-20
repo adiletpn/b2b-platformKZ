@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import { setRequestLocale } from 'next-intl/server';
 import { redirect } from '@/i18n/navigation';
 import { getActiveCompany } from '@/lib/auth/active-company';
-import { permissionFlags } from '@/lib/auth/permissions';
+import { getAccess, hasPermission, permissionFlags } from '@/lib/auth/permissions';
 import { formatDateTime } from '@/lib/format';
 import { getOnlinePayment } from '@/lib/payments/online';
 import { listDocumentVersions } from '@/lib/documents/versions';
@@ -31,6 +31,12 @@ export default async function OrderPage({
 
   const active = await getActiveCompany();
   if (!active) redirect({ href: '/login', locale });
+  // Раздел 3.12 ТЗ: заявки видит тот, у кого есть на них право. Торговый представитель
+  // смотрит заявки своих магазинов в разделе представителей, а не все заявки компании.
+  const access = await getAccess();
+  if (!access || !(await hasPermission(access, 'SWIPE_ORDERS', 'VIEW'))) {
+    redirect({ href: '/dashboard', locale });
+  }
 
   const order = await prisma.order.findUnique({
     where: { id },

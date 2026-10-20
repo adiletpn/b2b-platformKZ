@@ -10,7 +10,9 @@ import {
   listOpenComplaints,
   listTemplates,
   resolveComplaint,
+  listShareables,
   searchMessages,
+  sendCard,
   sendFile,
   setBlocked,
 } from '@/lib/chat/extras';
@@ -19,13 +21,13 @@ import { readAttachment } from '@/lib/files/attachments';
 const prisma = createTestPrisma();
 const PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2]);
 
-async function pairWithChat(index: number) {
+async function pairWithChat(index: number, upTo: 'SENT' | 'ACCEPTED' = 'SENT') {
   const base = await orderFixture(prisma, {
     index,
     phones: ['7743', '7744'],
     binBase: 600,
     productBase: 290000,
-    upTo: 'SENT',
+    upTo,
   });
   const opened = await openChat({ companyId: base.storeId, counterpartyId: base.supplierId });
   if (opened.status !== 'ok') throw new Error(opened.status);
@@ -103,6 +105,60 @@ describe('чат: шаблоны, поиск, файлы (раздел 3.7 ТЗ)
 });
 
 describe('чат: блокировка и жалобы', () => {
+  it('offer_and_document_cards_only_from_own_pair', async () => {
+    const context = await pairWithChat(6, 'ACCEPTED');
+    const other = await pairWithChat(7, 'ACCEPTED');
+
+    const shareables = await listShareables(context.chatId, context.storeId);
+    expect(shareables!.offers.map((offer) => offer.id)).toContain(context.offerId);
+    expect(shareables!.documents.length).toBeGreaterThan(0);
+    expect(await listShareables(context.chatId, other.storeId)).toBeNull();
+
+    const offerCard = await sendCard({
+      chatId: context.chatId,
+      companyId: context.storeId,
+      userId: context.storeUserId,
+      offerId: context.offerId,
+    });
+    expect(offerCard.status).toBe('ok');
+    const documentCard = await sendCard({
+      chatId: context.chatId,
+      companyId: context.supplierId,
+      userId: context.supplierUserId,
+      documentId: shareables!.documents[0]!.id,
+    });
+    expect(documentCard.status).toBe('ok');
+
+    // Правило 4: товар и документ чужой пары в этот чат не уходят.
+    const otherDocument = await prisma.document.findFirstOrThrow({
+      where: { orderId: other.orderId },
+    });
+    expect(
+      (
+        await sendCard({
+          chatId: context.chatId,
+          companyId: context.storeId,
+          userId: context.storeUserId,
+          offerId: other.offerId,
+        })
+      ).status,
+    ).toBe('not_found');
+    expect(
+      (
+        await sendCard({
+          chatId: context.chatId,
+          companyId: context.storeId,
+          userId: context.storeUserId,
+          documentId: otherDocument.id,
+        })
+      ).status,
+    ).toBe('not_found');
+
+    const chat = await getMessages(context.chatId, context.supplierId);
+    expect(chat!.messages.filter((message) => message.offer)).toHaveLength(1);
+    expect(chat!.messages.filter((message) => message.document)).toHaveLength(1);
+  });
+
   it('blocked_chat_refuses_messages_both_ways', async () => {
     const context = await pairWithChat(6);
     expect(await setBlocked(context.chatId, context.storeId, true)).toEqual({ status: 'ok' });

@@ -1,8 +1,8 @@
 'use client';
 
 import { useCallback, useRef, useState } from 'react';
-import { useTranslations } from 'next-intl';
-import { Ban, Flag, Paperclip, Search, Send, Sparkles, X } from 'lucide-react';
+import { useLocale, useTranslations } from 'next-intl';
+import { Ban, FileText, Flag, Package, Paperclip, Search, Send, Sparkles, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -25,6 +25,19 @@ type Message = {
   read: boolean;
   createdAt: string;
   file: { id: string; image: boolean } | null;
+  offer: { id: string; nameRu: string; nameKk: string; barcode: string; price: string } | null;
+  document: { id: string; type: DocumentKind; number: string } | null;
+};
+
+type DocumentKind =
+  | 'WAYBILL'
+  | 'INVOICE'
+  | 'DISCREPANCY_ACT'
+  | 'RETURN_WAYBILL'
+  | 'SETTLEMENT_ACT';
+type Shareables = {
+  offers: { id: string; nameRu: string; nameKk: string; price: string }[];
+  documents: { id: string; type: DocumentKind; number: string }[];
 };
 
 type Block = { blockedByMe: boolean; blockedMe: boolean } | null;
@@ -68,6 +81,10 @@ export function ChatScreen({
   templates: Template[];
 }) {
   const t = useTranslations('chat');
+  const tDoc = useTranslations('documents.types');
+  const locale = useLocale();
+  const [share, setShare] = useState<Shareables | null>(null);
+  const [shareQuery, setShareQuery] = useState('');
   const [list, setList] = useState(chats);
   const [activeId, setActiveId] = useState(initialChatId);
   const [messages, setMessages] = useState<Message[]>(initialMessages);
@@ -140,6 +157,35 @@ export function ChatScreen({
       return;
     }
     setText('');
+    await loadChat(activeId);
+  }
+
+  async function loadShareables(value: string) {
+    if (!activeId) return;
+    setShareQuery(value);
+    const response = await fetch(
+      `/api/chats/${activeId}/cards?q=${encodeURIComponent(value.trim())}`,
+    );
+    if (response.ok) setShare((await response.json()) as Shareables);
+  }
+
+  /** Карточка товара или документ в чат (раздел 3.7 ТЗ). */
+  async function sendCard(card: { offerId: string } | { documentId: string }) {
+    if (!activeId) return;
+    setPending(true);
+    setError(null);
+    const response = await fetch(`/api/chats/${activeId}/cards`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(card),
+    });
+    const data = (await response.json().catch(() => ({}))) as { status?: string };
+    setPending(false);
+    if (data.status !== 'ok') {
+      fail(data.status);
+      return;
+    }
+    setShare(null);
     await loadChat(activeId);
   }
 
@@ -367,7 +413,28 @@ export function ChatScreen({
                               <Paperclip aria-hidden className="size-3.5" />
                               {message.text}
                             </a>
-                          ) : message.file ? null : (
+                          ) : message.file ? null : message.offer ? (
+                            <span className="block" data-testid="chat-offer-card">
+                              <span className="flex items-center gap-1.5 font-medium">
+                                <Package aria-hidden className="size-3.5 shrink-0" />
+                                {locale === 'kk' ? message.offer.nameKk : message.offer.nameRu}
+                              </span>
+                              <span className="mt-0.5 block text-xs opacity-80">
+                                {message.offer.barcode} · {message.offer.price} ₸
+                              </span>
+                            </span>
+                          ) : message.document ? (
+                            <a
+                              href={`/api/documents/${message.document.id}/pdf?locale=${locale}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="flex items-center gap-1.5 underline"
+                              data-testid="chat-document-card"
+                            >
+                              <FileText aria-hidden className="size-3.5 shrink-0" />
+                              {tDoc(message.document.type)} № {message.document.number}
+                            </a>
+                          ) : (
                             message.text
                           )}
                           {message.mine ? (
@@ -452,6 +519,58 @@ export function ChatScreen({
                         ))}
                       </ul>
                     ) : null}
+                    {share ? (
+                      <div
+                        className="border-border mt-3 rounded-lg border p-3"
+                        data-testid="chat-share-panel"
+                      >
+                        <Input
+                          className="h-9"
+                          value={shareQuery}
+                          placeholder={t('shareSearch')}
+                          data-testid="chat-share-search"
+                          onChange={(event) => void loadShareables(event.target.value)}
+                        />
+                        <p className="text-muted-foreground mt-2 text-xs">{t('shareOffers')}</p>
+                        <ul className="mt-1 flex max-h-32 flex-wrap gap-1.5 overflow-y-auto">
+                          {share.offers.map((offer) => (
+                            <li key={offer.id}>
+                              <Button
+                                type="button"
+                                variant="secondary"
+                                size="sm"
+                                data-testid="chat-share-offer"
+                                onClick={() => void sendCard({ offerId: offer.id })}
+                              >
+                                {locale === 'kk' ? offer.nameKk : offer.nameRu}
+                              </Button>
+                            </li>
+                          ))}
+                        </ul>
+                        {share.documents.length > 0 ? (
+                          <>
+                            <p className="text-muted-foreground mt-2 text-xs">
+                              {t('shareDocuments')}
+                            </p>
+                            <ul className="mt-1 flex max-h-32 flex-wrap gap-1.5 overflow-y-auto">
+                              {share.documents.map((document) => (
+                                <li key={document.id}>
+                                  <Button
+                                    type="button"
+                                    variant="secondary"
+                                    size="sm"
+                                    data-testid="chat-share-document"
+                                    onClick={() => void sendCard({ documentId: document.id })}
+                                  >
+                                    {tDoc(document.type)} № {document.number}
+                                  </Button>
+                                </li>
+                              ))}
+                            </ul>
+                          </>
+                        ) : null}
+                      </div>
+                    ) : null}
                     <form className="mt-3 flex gap-2" onSubmit={send}>
                       <input
                         ref={fileInput}
@@ -474,6 +593,19 @@ export function ChatScreen({
                         onClick={() => fileInput.current?.click()}
                       >
                         <Paperclip aria-hidden />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="shrink-0"
+                        aria-label={t('shareCard')}
+                        title={t('shareCard')}
+                        disabled={pending}
+                        data-testid="chat-share"
+                        onClick={() => (share ? setShare(null) : void loadShareables(''))}
+                      >
+                        <Package aria-hidden />
                       </Button>
                       <Input
                         value={text}

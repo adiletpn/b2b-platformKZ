@@ -41,6 +41,27 @@ test.afterAll(async () => {
   await pair?.supplierPage.context().close();
 });
 
+/** Этап 3 ТЗ: рейс на день, водитель видит свой рейс, маршрутный лист в PDF. */
+test('supplier_builds_route_and_driver_sees_it', async () => {
+  const { supplierPage } = pair;
+  await supplierPage.goto('/ru/deliveries');
+  const planner = supplierPage.getByTestId('route-planner');
+  await planner.getByTestId('route-add').first().click();
+  await expect(planner.getByTestId('route-selected-stop')).toHaveCount(1);
+  await planner.getByTestId('route-save').click();
+  await expect(planner.getByTestId('route-message')).toHaveText('Рейс сохранён');
+
+  // Водитель здесь — сам Владелец: он видит свой рейс по порядку.
+  const myRoute = supplierPage.getByTestId('my-route');
+  await expect(myRoute.getByTestId('route-stop')).toHaveCount(1);
+  await expect(myRoute).toContainText('Демонстрационная, 12');
+  const pdf = await supplierPage.request.get(
+    (await myRoute.getByTestId('my-route-pdf').getAttribute('href'))!,
+  );
+  expect(pdf.headers()['content-type']).toBe('application/pdf');
+  await expectNoHorizontalScroll(supplierPage);
+});
+
 test('driver_delivers_order_with_photo_of_signed_waybill', async () => {
   const { supplierPage, storePage } = pair;
   await supplierPage.getByTestId('go-deliveries').click();

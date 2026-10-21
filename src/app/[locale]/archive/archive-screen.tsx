@@ -106,7 +106,7 @@ export function ArchiveScreen({
           </Field>
           <Field label={t('type')}>
             <select
-              className="border-border bg-card h-11 w-full rounded-lg border px-3"
+              className="border-border bg-card h-11 w-full rounded-[14px] border-[1.5px] px-3.5 font-medium"
               value={type}
               data-testid="archive-type"
               onChange={(event) => {

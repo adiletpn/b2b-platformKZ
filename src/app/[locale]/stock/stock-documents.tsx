@@ -134,7 +134,7 @@ export function StockDocuments({
         <div className="mt-3 flex flex-wrap items-end gap-3">
           <Field label={t('documentType')}>
             <select
-              className="border-border bg-card h-11 rounded-lg border px-3"
+              className="border-border bg-card h-11 rounded-[14px] border-[1.5px] px-3.5 font-medium"
               value={type}
               data-testid="document-type"
               onChange={(event) => setType(event.target.value as DocumentRow['type'])}
@@ -149,7 +149,7 @@ export function StockDocuments({
 
           <Field label={t('location')}>
             <select
-              className="border-border bg-card h-11 rounded-lg border px-3"
+              className="border-border bg-card h-11 rounded-[14px] border-[1.5px] px-3.5 font-medium"
               value={locationId}
               data-testid="document-location"
               onChange={(event) => setLocationId(event.target.value)}
@@ -165,7 +165,7 @@ export function StockDocuments({
           {type === 'TRANSFER' ? (
             <Field label={t('targetLocation')}>
               <select
-                className="border-border bg-card h-11 rounded-lg border px-3"
+                className="border-border bg-card h-11 rounded-[14px] border-[1.5px] px-3.5 font-medium"
                 value={targetLocationId}
                 data-testid="document-target"
                 onChange={(event) => setTargetLocationId(event.target.value)}
@@ -182,7 +182,7 @@ export function StockDocuments({
           {type === 'WRITE_OFF' ? (
             <Field label={t('reason')}>
               <select
-                className="border-border bg-card h-11 rounded-lg border px-3"
+                className="border-border bg-card h-11 rounded-[14px] border-[1.5px] px-3.5 font-medium"
                 value={reason}
                 data-testid="document-reason"
                 onChange={(event) => setReason(event.target.value as (typeof REASONS)[number])}
@@ -214,7 +214,7 @@ export function StockDocuments({
 
           <Field label={t('product')}>
             <select
-              className="border-border bg-card h-11 rounded-lg border px-3"
+              className="border-border bg-card h-11 rounded-[14px] border-[1.5px] px-3.5 font-medium"
               value={productId}
               data-testid="document-product"
               onChange={(event) => setProductId(event.target.value)}
@@ -253,7 +253,7 @@ export function StockDocuments({
         </div>
 
         {scanError ? (
-          <p className="mt-2 text-sm text-red-600" role="alert" data-testid="scan-error">
+          <p className="text-danger mt-2 text-sm" role="alert" data-testid="scan-error">
             {t('scanNotFound')}
           </p>
         ) : null}
@@ -263,7 +263,7 @@ export function StockDocuments({
           </p>
         ) : null}
         {error ? (
-          <p className="mt-2 text-sm text-red-600" role="alert" data-testid="document-error">
+          <p className="text-danger mt-2 text-sm" role="alert" data-testid="document-error">
             {t(`errors.${error}` as 'errors.unknown')}
           </p>
         ) : null}
@@ -298,7 +298,7 @@ export function StockDocuments({
         <div className="mt-4 flex flex-wrap items-end gap-3">
           <Field label={t('ledgerFor')}>
             <select
-              className="border-border bg-card h-11 rounded-lg border px-3"
+              className="border-border bg-card h-11 rounded-[14px] border-[1.5px] px-3.5 font-medium"
               value={productId}
               data-testid="ledger-product"
               onChange={(event) => setProductId(event.target.value)}

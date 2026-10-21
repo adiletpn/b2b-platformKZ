@@ -6,7 +6,9 @@ import { useRouter } from '@/i18n/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardHint, CardTitle } from '@/components/ui/card';
 import { Field } from '@/components/ui/field';
+import { NotYetButton } from '@/components/ui/not-yet';
 import { qrMatrix, qrPath } from '@/lib/qr/qr';
+import { money } from '@/lib/format';
 
 export type OnlinePayment = {
   provider: string;
@@ -30,7 +32,7 @@ function QrImage({ text, label }: { text: string; label: string }) {
       aria-label={label}
       viewBox={`0 0 ${side} ${side}`}
       shapeRendering="crispEdges"
-      className="size-44 rounded-lg border border-black/10 bg-white"
+      className="size-44 rounded-2xl border border-black/10 bg-white"
       data-testid="online-payment-qr"
     >
       <path fill="#000" d={qrPath(modules)} />
@@ -102,6 +104,7 @@ export function OnlinePaymentPanel({
     router.refresh();
   }
 
+  const tSoon = useTranslations('common.notYetItems');
   return (
     <Card className="mt-5" data-testid="online-payment">
       <CardTitle>{t('title')}</CardTitle>
@@ -117,7 +120,9 @@ export function OnlinePaymentPanel({
                 {t(`providers.${payment.provider}` as 'providers.kaspi')}
               </span>
             </p>
-            <p data-testid="online-payment-amount">{t('amount', { amount: payment.amount })}</p>
+            <p data-testid="online-payment-amount">
+              {t('amount', { amount: money(payment.amount) })}
+            </p>
             <p className="text-muted-foreground text-xs">{t('qr')}</p>
             <a
               href={payment.payUrl}
@@ -128,9 +133,10 @@ export function OnlinePaymentPanel({
             >
               {payment.payUrl}
             </a>
+            <NotYetButton className="sm:w-auto">{tSoon('bankApp')}</NotYetButton>
             <p className="text-muted-foreground text-xs">{t('waiting')}</p>
             {mockGateway ? (
-              <div className="border-border rounded-lg border border-dashed p-3">
+              <div className="border-border rounded-2xl border-[1.5px] border-dashed p-3">
                 <p className="text-muted-foreground text-xs">{t('mockHint')}</p>
                 <Button
                   className="mt-2"
@@ -150,7 +156,7 @@ export function OnlinePaymentPanel({
           <div className="w-full sm:w-56">
             <Field label={t('provider')}>
               <select
-                className="border-border bg-card h-11 w-full rounded-lg border px-3"
+                className="border-border bg-card h-11 w-full rounded-[14px] border-[1.5px] px-3.5 font-medium"
                 value={provider}
                 data-testid="online-payment-provider"
                 onChange={(event) => setProvider(event.target.value as typeof provider)}

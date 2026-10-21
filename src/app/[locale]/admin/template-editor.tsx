@@ -112,7 +112,7 @@ export function TemplateEditor({ initial }: { initial: TemplateEditorData }) {
         <div className="w-full sm:w-64">
           <Field label={t('type')}>
             <select
-              className="border-border bg-card h-11 w-full rounded-lg border px-3"
+              className="border-border bg-card h-11 w-full rounded-[14px] border-[1.5px] px-3.5 font-medium"
               value={data.type}
               disabled={pending}
               data-testid="template-type"
@@ -129,7 +129,7 @@ export function TemplateEditor({ initial }: { initial: TemplateEditorData }) {
         <div className="w-full sm:w-40">
           <Field label={t('locale')}>
             <select
-              className="border-border bg-card h-11 w-full rounded-lg border px-3"
+              className="border-border bg-card h-11 w-full rounded-[14px] border-[1.5px] px-3.5 font-medium"
               value={data.locale}
               disabled={pending}
               data-testid="template-locale"
@@ -153,7 +153,7 @@ export function TemplateEditor({ initial }: { initial: TemplateEditorData }) {
       </div>
 
       <textarea
-        className="border-border bg-card mt-4 h-96 w-full rounded-lg border p-3 font-mono text-xs"
+        className="border-border bg-card mt-4 h-96 w-full rounded-[14px] border-[1.5px] p-3.5 font-mono text-xs font-medium"
         spellCheck={false}
         value={body}
         data-testid="template-body"
@@ -225,7 +225,7 @@ export function TemplateEditor({ initial }: { initial: TemplateEditorData }) {
           <iframe
             title={t('preview')}
             src={preview}
-            className="border-border mt-2 h-[32rem] w-full rounded-lg border"
+            className="border-border mt-2 h-[32rem] w-full rounded-2xl border"
             data-testid="template-preview-frame"
           />
         </div>

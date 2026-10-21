@@ -186,7 +186,7 @@ export function OnboardingForm({ cities, demoBins }: { cities: City[]; demoBins:
 
           {found ? (
             <dl
-              className="border-border bg-card rounded-lg border p-3 text-sm"
+              className="border-border bg-card rounded-[14px] border-[1.5px] p-3.5 text-sm font-medium"
               data-testid="bin-found"
             >
               <div className="flex justify-between gap-3">
@@ -205,7 +205,10 @@ export function OnboardingForm({ cities, demoBins }: { cities: City[]; demoBins:
           ) : null}
 
           {manual ? (
-            <div className="border-border space-y-3 rounded-lg border p-3" data-testid="bin-manual">
+            <div
+              className="border-border space-y-3 rounded-2xl border p-3"
+              data-testid="bin-manual"
+            >
               <Notice tone="info">{t('manualHint')}</Notice>
               <Field label={t('companyName')}>
                 <Input
@@ -226,7 +229,7 @@ export function OnboardingForm({ cities, demoBins }: { cities: City[]; demoBins:
               </Field>
               <Field label={t('legalForm')}>
                 <select
-                  className="border-border bg-card h-11 w-full rounded-lg border px-3"
+                  className="border-border bg-card h-11 w-full rounded-[14px] border-[1.5px] px-3.5 font-medium"
                   value={manual.legalForm}
                   data-testid="manual-legal-form"
                   onChange={(event) =>
@@ -258,11 +261,11 @@ export function OnboardingForm({ cities, demoBins }: { cities: City[]; demoBins:
           <h2 className="text-muted-foreground text-sm font-medium">{t('stepDetails')}</h2>
 
           {needsLocation ? (
-            <div className="border-border space-y-3 rounded-lg border p-3">
+            <div className="border-border space-y-3 rounded-2xl border p-3">
               <h3 className="text-sm font-medium">{t('storeSection')}</h3>
               <Field label={t('cityLabel')}>
                 <select
-                  className="border-border bg-card h-11 w-full rounded-lg border px-3"
+                  className="border-border bg-card h-11 w-full rounded-[14px] border-[1.5px] px-3.5 font-medium"
                   value={cityId}
                   data-testid="city-select"
                   onChange={(event) => setCityId(event.target.value)}
@@ -283,7 +286,7 @@ export function OnboardingForm({ cities, demoBins }: { cities: City[]; demoBins:
               </Field>
               <Field label={t('formatLabel')}>
                 <select
-                  className="border-border bg-card h-11 w-full rounded-lg border px-3"
+                  className="border-border bg-card h-11 w-full rounded-[14px] border-[1.5px] px-3.5 font-medium"
                   value={format}
                   data-testid="format-select"
                   onChange={(event) => setFormat(event.target.value)}
@@ -299,7 +302,7 @@ export function OnboardingForm({ cities, demoBins }: { cities: City[]; demoBins:
           ) : null}
 
           {needsDelivery ? (
-            <div className="border-border space-y-2 rounded-lg border p-3">
+            <div className="border-border space-y-2 rounded-2xl border p-3">
               <h3 className="text-sm font-medium">{t('supplierSection')}</h3>
               <p className="text-muted-foreground text-xs">{t('supplierHint')}</p>
               <p className="text-muted-foreground text-xs">{t('supplierZonesLater')}</p>
@@ -339,7 +342,7 @@ export function OnboardingForm({ cities, demoBins }: { cities: City[]; demoBins:
         </Button>
 
         {error ? (
-          <p className="text-sm text-red-600" role="alert" data-testid="onboarding-error">
+          <p className="text-danger text-sm" role="alert" data-testid="onboarding-error">
             {t(`errors.${error}` as 'errors.unknown')}
           </p>
         ) : null}

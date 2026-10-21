@@ -8,7 +8,8 @@ import { Input } from '@/components/ui/input';
 import { DemoHint, Field } from '@/components/ui/field';
 import { formatPhone } from '@/lib/phone';
 import { Card } from '@/components/ui/card';
-import { FileCheck2, ShieldCheck, Zap } from 'lucide-react';
+import { NotYetBadge, NotYetButton } from '@/components/ui/not-yet';
+import { FileCheck2, KeyRound, ShieldCheck, Zap } from 'lucide-react';
 
 /** demoCode есть только у мока SMS; с настоящим провайдером код приходит в SMS. */
 type Step = { name: 'phone' } | { name: 'code'; phone: string; demoCode: string | null };
@@ -16,6 +17,7 @@ type Step = { name: 'phone' } | { name: 'code'; phone: string; demoCode: string 
 export function LoginForm() {
   const t = useTranslations('auth');
   const tApp = useTranslations('app');
+  const tSoon = useTranslations('common.notYetItems');
   const router = useRouter();
   const locale = useLocale();
   const [step, setStep] = useState<Step>({ name: 'phone' });
@@ -100,6 +102,19 @@ export function LoginForm() {
 
         {step.name === 'phone' ? (
           <form className="mt-6 space-y-4" onSubmit={requestCode}>
+            {/* Макет M01: канал кода. WhatsApp ждёт ключа WhatsApp Business API. */}
+            <div className="bg-muted flex rounded-full p-[3px]">
+              <span className="bg-card flex h-[38px] flex-1 items-center justify-center rounded-full text-[13px] font-bold shadow-[0_1px_4px_rgb(0_0_0/0.08)]">
+                {tSoon('smsCode')}
+              </span>
+              <span className="text-muted-foreground flex h-[38px] flex-1 cursor-not-allowed items-center justify-center rounded-full text-[13px] font-bold">
+                {tSoon('whatsappCode')}
+              </span>
+            </div>
+            <p className="text-muted-foreground -mt-2 flex items-center justify-end gap-1.5 text-xs font-semibold">
+              {tSoon('whatsappCode')}
+              <NotYetBadge />
+            </p>
             <Field label={t('phoneLabel')}>
               <Input
                 name="phone"
@@ -121,6 +136,9 @@ export function LoginForm() {
             >
               {t('requestCode')}
             </Button>
+            <NotYetButton icon={<KeyRound aria-hidden className="size-4" />}>
+              {tSoon('ecpLogin')}
+            </NotYetButton>
           </form>
         ) : (
           <form className="mt-6 space-y-4" onSubmit={verify}>

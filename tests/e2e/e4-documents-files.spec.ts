@@ -1,3 +1,4 @@
+import { open } from '../helpers/open';
 import { expect, test } from '@playwright/test';
 import {
   expectNoHorizontalScroll,
@@ -61,16 +62,16 @@ test('supplier_corrects_invoice_and_old_version_stays_in_history', async () => {
 
 test('store_sees_correction_but_cannot_correct_incoming_document', async () => {
   const { storePage } = pair;
-  await storePage.goto(orderPath);
+  await open(storePage, orderPath);
   const invoice = storePage.getByTestId('document-INVOICE');
 
   await expect(invoice.getByTestId('document-version')).toContainText('Версия 2');
   // Исправляет только выписавшая сторона.
   await expect(invoice.getByRole('button', { name: 'Исправить' })).toHaveCount(0);
 
-  await storePage.goto('/ru/orders');
+  await open(storePage, '/ru/orders');
   await expect(storePage.getByTestId('notifications')).toContainText('исправлен, версия 2');
-  await storePage.goto(orderPath);
+  await open(storePage, orderPath);
 });
 
 test('store_attaches_photo_and_supplier_downloads_it', async () => {
@@ -112,7 +113,7 @@ test('html_disguised_as_pdf_is_refused', async () => {
 
 test('company_keeps_contract_in_archive', async () => {
   const { storePage, supplierPage } = pair;
-  await storePage.goto('/ru/archive');
+  await open(storePage, '/ru/archive');
   await expect(storePage.getByTestId('archive-version')).toHaveText('версия 2');
 
   const files = storePage.getByTestId('company-files');
@@ -127,7 +128,7 @@ test('company_keeps_contract_in_archive', async () => {
   await expectNoHorizontalScroll(storePage);
 
   // Файл компании не виден контрагенту.
-  await supplierPage.goto('/ru/archive');
+  await open(supplierPage, '/ru/archive');
   await expect(supplierPage.getByTestId('company-files')).not.toContainText('договор-поставки');
 
   await files.getByTestId('file-delete').click();

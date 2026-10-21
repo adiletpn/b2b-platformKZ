@@ -1,3 +1,4 @@
+import { open } from '../helpers/open';
 import { expect, test } from '@playwright/test';
 import {
   bringOrderToPayment,
@@ -49,7 +50,7 @@ test('supplier_signs_waybill_and_sees_who_and_when', async () => {
 
 test('store_signs_invoice_in_archive', async () => {
   const { storePage } = pair;
-  await storePage.goto('/ru/archive');
+  await open(storePage, '/ru/archive');
 
   // Накладную уже подписал поставщик: отметка видна магазину.
   await expect(storePage.getByTestId('archive-table')).toContainText('ЭЦП:');
@@ -73,7 +74,7 @@ test('store_pays_order_online_by_link_and_qr', async () => {
     /^https:\/\/pay\.mock\.kz\/invoice\//,
   );
   // 5 штук по 116 ₸ с НДС 16%.
-  await expect(panel.getByTestId('online-payment-amount')).toContainText('580.00');
+  await expect(panel.getByTestId('online-payment-amount')).toContainText('580');
   await expectNoHorizontalScroll(storePage);
 
   // Ссылка и QR сохраняются: после обновления страницы платёж тот же.

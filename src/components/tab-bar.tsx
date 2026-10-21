@@ -15,7 +15,8 @@ import { Link, usePathname } from '@/i18n/navigation';
 import { cn } from '@/lib/utils';
 
 export type TabItem = {
-  href: '/feed' | '/cart' | '/orders' | '/pos' | '/dashboard' | '/catalog' | '/deliveries' | '/chat';
+  href:
+    '/feed' | '/cart' | '/orders' | '/pos' | '/dashboard' | '/catalog' | '/deliveries' | '/chat';
   label: string;
   icon: string;
 };

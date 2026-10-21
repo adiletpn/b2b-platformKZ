@@ -9,7 +9,7 @@ export function NotificationList({ notifications }: { notifications: Item[] }) {
   const t = useTranslations('orders');
 
   return (
-    <section className="border-border mt-8 rounded-lg border border-dashed p-4">
+    <section className="border-border mt-8 rounded-2xl border-[1.5px] border-dashed p-4">
       <h2 className="text-sm font-medium">{t('notifications')}</h2>
       {notifications.length === 0 ? (
         <p className="text-muted-foreground mt-2 text-sm" data-testid="notifications-empty">

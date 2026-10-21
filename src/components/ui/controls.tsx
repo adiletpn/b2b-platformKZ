@@ -232,9 +232,12 @@ export function Avatar({
   name,
   tone = 'primary',
   size = 32,
+  letters = 2,
   className,
 }: {
   name: string;
+  /** Сколько букв инициалов показать: в карточке компании макета M13 — одна. */
+  letters?: 1 | 2;
   tone?: 'primary' | 'dark' | 'beige';
   size?: 32 | 34 | 36 | 40 | 52;
   className?: string;
@@ -257,7 +260,7 @@ export function Avatar({
         className,
       )}
     >
-      {initials(name)}
+      {initials(name).slice(0, letters)}
     </span>
   );
 }

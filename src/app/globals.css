@@ -39,6 +39,8 @@
 /* Палитра Arbafind по макету дизайнера (handoff ArbaFood B2B): тёплый тёмно-коричневый
    текст, оранжевый акцент, мягкие бежевые поверхности. Меняется здесь одним блоком. */
 :root {
+  /* Макет только светлый: тёмную тему системы не подхватываем. */
+  color-scheme: light;
   --background: #ffffff;
   --surface: #f6f2ec;
   --foreground: #3e342e;
@@ -69,40 +71,6 @@
   --shadow-soft: 0 6px 16px rgb(70 50 15 / 0.04);
   --shadow-strong: 0 24px 40px -20px rgb(70 50 15 / 0.35);
   --shadow-primary: 0 8px 18px -8px rgb(245 130 12 / 0.7);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #1c1815;
-    --surface: #24201c;
-    --foreground: #f3eee8;
-    --muted: #2c2723;
-    --muted-foreground: #b3aa9f;
-    --border: #3a332d;
-    --primary: #ff9a2e;
-    --primary-foreground: #1c1815;
-    --primary-soft: #3d2a17;
-    --primary-text: #ffb366;
-    --card: #24201c;
-    --success: #5cc488;
-    --success-soft: #1f3327;
-    --warning: #ffb366;
-    --warning-soft: #3d2a17;
-    --danger: #f0776e;
-    --danger-soft: #3b2220;
-    --accent: #7fa6e3;
-    --accent-soft: #1f2a3b;
-    --sidebar: #201c19;
-    --sidebar-foreground: #f3eee8;
-    --sidebar-muted: #b3aa9f;
-    --sidebar-active: #3d2a17;
-    --track: #3a332d;
-    --table-head: #2a2521;
-    --row-highlight: #2f261d;
-    --shadow-soft: 0 6px 16px rgb(0 0 0 / 0.25);
-    --shadow-strong: 0 24px 40px -20px rgb(0 0 0 / 0.6);
-    --shadow-primary: 0 8px 18px -8px rgb(255 154 46 / 0.45);
-  }
 }
 
 body {

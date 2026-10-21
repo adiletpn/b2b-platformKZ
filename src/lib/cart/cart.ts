@@ -27,6 +27,7 @@ export type CartSupplierGroup = {
     offerId: string;
     nameRu: string;
     nameKk: string;
+    photoUrl: string | null;
     unitRu: string;
     unitKk: string;
     quantity: string;
@@ -86,6 +87,7 @@ export async function getCartGroups(
       offerId: item.offerId,
       nameRu: item.offer.product.nameRu,
       nameKk: item.offer.product.nameKk,
+      photoUrl: item.offer.product.photoUrls[0] ?? null,
       unitRu: item.offer.product.unit.nameRu,
       unitKk: item.offer.product.unit.nameKk,
       quantity: quantity.toFixed(3),

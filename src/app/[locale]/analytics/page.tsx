@@ -4,7 +4,7 @@ import { redirect } from '@/i18n/navigation';
 import { getAccess, hasPermission } from '@/lib/auth/permissions';
 import { prisma } from '@/lib/prisma';
 import { parsePeriod, storeAnalytics, supplierAnalytics } from '@/lib/analytics/analytics';
-import { kzDayKey } from '@/lib/format';
+import { kzDayKey, money } from '@/lib/format';
 import { Badge } from '@/components/ui/badge';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardTitle, StatCard } from '@/components/ui/card';
@@ -85,12 +85,12 @@ export default async function AnalyticsPage({
       {store ? (
         <section className="space-y-4" data-testid="analytics-store">
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-            <StatCard icon={ShoppingBag} label={t('revenue')} value={`${store.revenue} ₸`} />
+            <StatCard icon={ShoppingBag} label={t('revenue')} value={`${money(store.revenue)} ₸`} />
             <StatCard
               icon={TrendingUp}
               tone="success"
               label={t('profit')}
-              value={`${store.profit} ₸`}
+              value={`${money(store.profit)} ₸`}
             />
             <StatCard icon={BarChart3} label={t('receipts')} value={store.receipts} />
           </div>
@@ -236,7 +236,11 @@ export default async function AnalyticsPage({
         >
           {store ? <h2 className="text-lg font-semibold">{t('supplierTitle')}</h2> : null}
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-            <StatCard icon={Truck} label={t('turnoverTotal')} value={`${supplier.turnover} ₸`} />
+            <StatCard
+              icon={Truck}
+              label={t('turnoverTotal')}
+              value={`${money(supplier.turnover)} ₸`}
+            />
             <StatCard icon={BarChart3} label={t('ordersShipped')} value={supplier.orders} />
             <StatCard
               icon={TrendingUp}

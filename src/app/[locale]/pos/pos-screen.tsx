@@ -24,6 +24,8 @@ import { Card, CardHint, CardTitle } from '@/components/ui/card';
 import { Page, PageHeader } from '@/components/ui/page';
 import { cn } from '@/lib/utils';
 import { CameraScanButton } from '@/components/camera-scanner';
+import { NotYetButton } from '@/components/ui/not-yet';
+import { money as formatMoney } from '@/lib/format';
 
 type Product = {
   productId: string;
@@ -143,6 +145,7 @@ export function PosScreen({
   minAge: string;
 }) {
   const t = useTranslations('pos');
+  const tSoon = useTranslations('common.notYetItems');
   const locale = useLocale();
 
   const [shift, setShift] = useState<Shift>(initialShift);
@@ -566,8 +569,8 @@ export function PosScreen({
               <p className="text-muted-foreground mt-1 text-sm" data-testid="pos-report">
                 {t('reportLine', {
                   receipts: report.receipts,
-                  total: report.total,
-                  cash: report.expectedCash,
+                  total: formatMoney(report.total),
+                  cash: formatMoney(report.expectedCash),
                 })}
               </p>
             ) : null}
@@ -628,7 +631,7 @@ export function PosScreen({
         </div>
 
         {cashOp ? (
-          <div className="border-border mt-4 grid grid-cols-1 items-end gap-3 rounded-lg border border-dashed p-3 sm:grid-cols-[8rem_1fr_auto]">
+          <div className="border-border mt-4 grid grid-cols-1 items-end gap-3 rounded-2xl border-[1.5px] border-dashed p-3 sm:grid-cols-[8rem_1fr_auto]">
             <Field label={cashOp.type === 'CASH_IN' ? t('cashInAmount') : t('cashOutAmount')}>
               <Input
                 inputMode="decimal"
@@ -732,6 +735,8 @@ export function PosScreen({
                 />
               </div>
             </Field>
+            {/* Макет D08: весовой товар с весов. Нужен драйвер весов (REMAINING.md). */}
+            <NotYetButton className="sm:col-span-2">{tSoon('scales')}</NotYetButton>
           </div>
 
           <ul
@@ -742,13 +747,15 @@ export function PosScreen({
               <li key={product.productId}>
                 <button
                   type="button"
-                  className="border-border hover:border-primary hover:bg-primary-soft/40 flex h-full w-full flex-col justify-between gap-2 rounded-lg border p-3 text-left text-sm transition-colors active:scale-[0.98]"
+                  className="border-border hover:border-primary hover:bg-primary-soft/40 flex h-full w-full flex-col justify-between gap-2 rounded-2xl border p-3 text-left text-sm transition-colors active:scale-[0.98]"
                   data-testid="pos-tile"
                   onClick={() => add(product)}
                 >
                   <span className="line-clamp-2 font-medium break-words">{product.name}</span>
                   <span className="flex items-baseline justify-between gap-2">
-                    <span className="font-semibold tabular-nums">{product.price} ₸</span>
+                    <span className="font-semibold tabular-nums">
+                      {formatMoney(product.price)} ₸
+                    </span>
                     <span className="text-muted-foreground text-xs tabular-nums">
                       {product.stock}
                     </span>
@@ -757,12 +764,14 @@ export function PosScreen({
                 {product.piecesPerPack && product.piecePrice && !product.isMarked ? (
                   <button
                     type="button"
-                    className="border-border hover:border-primary mt-1 flex w-full items-baseline justify-between gap-2 rounded-lg border border-dashed px-3 py-1.5 text-left text-xs"
+                    className="border-border hover:border-primary mt-1 flex w-full items-baseline justify-between gap-2 rounded-2xl border-[1.5px] border-dashed px-3 py-1.5 text-left text-xs"
                     data-testid="pos-tile-piece"
                     onClick={() => add(product, true)}
                   >
                     <span>{t('byPiece')}</span>
-                    <span className="font-semibold tabular-nums">{product.piecePrice} ₸</span>
+                    <span className="font-semibold tabular-nums">
+                      {formatMoney(product.piecePrice)} ₸
+                    </span>
                   </button>
                 ) : null}
               </li>
@@ -775,7 +784,7 @@ export function PosScreen({
           <div className="mt-4">
             <Field label={t('product')}>
               <select
-                className="border-border bg-card h-11 w-full rounded-lg border px-3"
+                className="border-border bg-card h-11 w-full rounded-[14px] border-[1.5px] px-3.5 font-medium"
                 data-testid="pos-product"
                 defaultValue=""
                 onChange={(event) => {
@@ -787,7 +796,7 @@ export function PosScreen({
                 <option value="">—</option>
                 {products.map((product) => (
                   <option key={product.productId} value={product.productId}>
-                    {product.name} · {product.price} ₸
+                    {product.name} · {formatMoney(product.price)} ₸
                   </option>
                 ))}
               </select>
@@ -827,7 +836,7 @@ export function PosScreen({
                         </Badge>
                       ) : null}
                     </span>
-                    <span className="tabular-nums">{item.price} ₸</span>
+                    <span className="tabular-nums">{formatMoney(item.price)} ₸</span>
                   </div>
                   {item.isMarked ? (
                     <div className="space-y-1" data-testid="pos-marking">
@@ -961,7 +970,7 @@ export function PosScreen({
           </div>
 
           <div
-            className="border-border mt-3 rounded-lg border border-dashed p-3"
+            className="border-border mt-3 rounded-2xl border-[1.5px] border-dashed p-3"
             data-testid="pos-loyalty"
           >
             <p className="text-muted-foreground text-xs">{t('loyalty.title')}</p>
@@ -992,7 +1001,10 @@ export function PosScreen({
             {customer ? (
               <div className="mt-2 flex flex-wrap items-end gap-2 text-sm">
                 <p className="w-full" data-testid="pos-customer-balance">
-                  {t('loyalty.balance', { phone: customer.phone, balance: customer.balance })}
+                  {t('loyalty.balance', {
+                    phone: customer.phone,
+                    balance: formatMoney(customer.balance),
+                  })}
                 </p>
                 <Field label={t('loyalty.redeem', { share: customer.maxRedeemShare })}>
                   <Input
@@ -1009,7 +1021,7 @@ export function PosScreen({
           </div>
 
           {cart.some((item) => item.isExcise) ? (
-            <label className="bg-warning-soft text-warning mt-3 flex items-center gap-2 rounded-lg px-3 py-2 text-sm">
+            <label className="bg-warning-soft text-warning mt-3 flex items-center gap-2 rounded-2xl px-3 py-2 text-sm">
               <input
                 type="checkbox"
                 checked={ageConfirmed}
@@ -1035,7 +1047,7 @@ export function PosScreen({
                   aria-checked={payment === type}
                   data-testid={`pos-pay-${type}`}
                   className={cn(
-                    'flex flex-col items-center gap-1 rounded-lg border px-1 py-2 text-[11px] transition-colors',
+                    'flex flex-col items-center gap-1 rounded-2xl border px-1 py-2 text-[11px] transition-colors',
                     payment === type
                       ? 'border-primary bg-primary-soft text-primary'
                       : 'border-border hover:bg-muted',
@@ -1065,7 +1077,9 @@ export function PosScreen({
             {totals.gross !== totals.total ? (
               <p className="text-muted-foreground flex justify-between">
                 <span>{t('discount')}</span>
-                <span className="tabular-nums">−{money(totals.gross - totals.total)} ₸</span>
+                <span className="tabular-nums">
+                  {formatMoney(money(-(totals.gross - totals.total)))} ₸
+                </span>
               </p>
             ) : null}
             {redeemValue > 0 ? (
@@ -1074,7 +1088,7 @@ export function PosScreen({
                 data-testid="pos-bonus-line"
               >
                 <span>{t('loyalty.paidByBonus')}</span>
-                <span className="tabular-nums">−{money(redeemValue)} ₸</span>
+                <span className="tabular-nums">{formatMoney(money(-redeemValue))} ₸</span>
               </p>
             ) : null}
             {payment === 'MIXED' && cart.length > 0 ? (
@@ -1083,19 +1097,21 @@ export function PosScreen({
                 data-testid="pos-mixed-card"
               >
                 <span>{t('mixedCard')}</span>
-                <span className="tabular-nums">{money(toPay - Number(mixedCash || '0'))} ₸</span>
+                <span className="tabular-nums">
+                  {formatMoney(money(toPay - Number(mixedCash || '0')))} ₸
+                </span>
               </p>
             ) : null}
             {change !== null && change >= 0 ? (
               <p className="flex justify-between font-medium" data-testid="pos-change">
                 <span>{t('change')}</span>
-                <span className="tabular-nums">{money(change)} ₸</span>
+                <span className="tabular-nums">{formatMoney(money(change))} ₸</span>
               </p>
             ) : null}
             <p className="flex items-baseline justify-between">
               <span>{t('total')}</span>
               <span className="text-2xl font-semibold tabular-nums" data-testid="pos-total">
-                {money(toPay)} ₸
+                {formatMoney(money(toPay))} ₸
               </span>
             </p>
           </div>
@@ -1202,7 +1218,7 @@ export function PosScreen({
             ) : null}
             {approval ? (
               <div
-                className="border-border flex w-full flex-wrap items-end gap-2 rounded-lg border border-dashed p-3"
+                className="border-border flex w-full flex-wrap items-end gap-2 rounded-2xl border-[1.5px] border-dashed p-3"
                 data-testid="pos-approval"
               >
                 <p className="w-full text-sm">{t('approvalTitle')}</p>
@@ -1261,10 +1277,10 @@ export function PosScreen({
             <p className="text-success mt-2 text-sm" data-testid="pos-notice">
               {t(`notices.${notice.key}` as 'notices.sold')}
               {notice.change && notice.change !== '0.00'
-                ? ` ${t('changeGiven', { change: notice.change })}`
+                ? ` ${t('changeGiven', { change: formatMoney(notice.change) })}`
                 : ''}
               {notice.bonus && notice.bonus !== '0.00'
-                ? ` ${t('loyalty.earned', { bonus: notice.bonus })}`
+                ? ` ${t('loyalty.earned', { bonus: formatMoney(notice.bonus) })}`
                 : ''}
             </p>
           ) : null}
@@ -1284,20 +1300,20 @@ function ReportPanel({ report }: { report: NonNullable<Report> }) {
   const t = useTranslations('pos.report');
   const locale = useLocale();
   const rows: [string, string][] = [
-    [t('total'), `${report.total} ₸`],
+    [t('total'), `${formatMoney(report.total)} ₸`],
     [t('receipts'), `${report.receipts} / ${report.refunds}`],
-    [t('averageCheck'), `${report.averageCheck} ₸`],
-    [t('discounts'), `${report.discounts} ₸`],
-    [t('margin'), `${report.margin} ₸`],
-    [t('cash'), `${report.byPayment.CASH} ₸`],
-    [t('card'), `${report.byPayment.CARD} ₸`],
-    [t('qr'), `${report.byPayment.QR} ₸`],
-    [t('bonus'), `${report.byPayment.BONUS} ₸`],
-    [t('bonusEarned'), `${report.bonusEarned} ₸`],
-    [t('opening'), `${report.openingCash} ₸`],
-    [t('cashIn'), `${report.cashIn} ₸`],
-    [t('cashOut'), `${report.cashOut} ₸`],
-    [t('expectedCash'), `${report.expectedCash} ₸`],
+    [t('averageCheck'), `${formatMoney(report.averageCheck)} ₸`],
+    [t('discounts'), `${formatMoney(report.discounts)} ₸`],
+    [t('margin'), `${formatMoney(report.margin)} ₸`],
+    [t('cash'), `${formatMoney(report.byPayment.CASH)} ₸`],
+    [t('card'), `${formatMoney(report.byPayment.CARD)} ₸`],
+    [t('qr'), `${formatMoney(report.byPayment.QR)} ₸`],
+    [t('bonus'), `${formatMoney(report.byPayment.BONUS)} ₸`],
+    [t('bonusEarned'), `${formatMoney(report.bonusEarned)} ₸`],
+    [t('opening'), `${formatMoney(report.openingCash)} ₸`],
+    [t('cashIn'), `${formatMoney(report.cashIn)} ₸`],
+    [t('cashOut'), `${formatMoney(report.cashOut)} ₸`],
+    [t('expectedCash'), `${formatMoney(report.expectedCash)} ₸`],
   ];
   return (
     <div
@@ -1318,7 +1334,7 @@ function ReportPanel({ report }: { report: NonNullable<Report> }) {
           {report.byCashier.map((row) => (
             <li key={row.name} className="flex justify-between gap-3">
               <span className="truncate">{row.name}</span>
-              <span className="tabular-nums">{row.total} ₸</span>
+              <span className="tabular-nums">{formatMoney(row.total)} ₸</span>
             </li>
           ))}
         </ul>
@@ -1329,7 +1345,7 @@ function ReportPanel({ report }: { report: NonNullable<Report> }) {
           {report.topProducts.map((row) => (
             <li key={row.nameRu} className="flex justify-between gap-3">
               <span className="truncate">{locale === 'kk' ? row.nameKk : row.nameRu}</span>
-              <span className="tabular-nums">{row.total} ₸</span>
+              <span className="tabular-nums">{formatMoney(row.total)} ₸</span>
             </li>
           ))}
         </ul>

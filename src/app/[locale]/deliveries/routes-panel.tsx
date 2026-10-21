@@ -84,7 +84,8 @@ export function RoutesPanel({
     router.refresh();
   }
 
-  const select = 'border-border bg-card h-11 w-full rounded-lg border px-3';
+  const select =
+    'border-border bg-card h-11 w-full rounded-[14px] border-[1.5px] px-3.5 font-medium';
   return (
     <div className="mb-4 space-y-4">
       {myRoutes.map((route) => (

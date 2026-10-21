@@ -55,7 +55,8 @@ export function BannersPanel({ initial, today }: { initial: BannerRow[]; today: 
     await reload();
   }
 
-  const select = 'border-border bg-card h-11 w-full rounded-lg border px-3';
+  const select =
+    'border-border bg-card h-11 w-full rounded-[14px] border-[1.5px] px-3.5 font-medium';
   return (
     <Card data-testid="admin-banners">
       <div className="flex items-start gap-3">

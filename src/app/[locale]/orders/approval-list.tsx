@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Field } from '@/components/ui/field';
 import { Card, CardTitle } from '@/components/ui/card';
+import { money } from '@/lib/format';
 
 type Approval = {
   orderId: string;
@@ -60,7 +61,7 @@ export function ApprovalList({ approvals }: { approvals: Approval[] }) {
               <p className="font-mono text-xs">{approval.number}</p>
               <p className="text-sm break-words">{approval.supplierName}</p>
               <p className="text-muted-foreground text-xs">
-                {t('approvalAuthor')}: {approval.authorPhone} · {approval.total} ₸
+                {t('approvalAuthor')}: {approval.authorPhone} · {money(approval.total)} ₸
               </p>
             </div>
 
@@ -101,7 +102,7 @@ export function ApprovalList({ approvals }: { approvals: Approval[] }) {
       </ul>
 
       {error ? (
-        <p className="mt-2 text-sm text-red-600" role="alert" data-testid="approval-error">
+        <p className="text-danger mt-2 text-sm" role="alert" data-testid="approval-error">
           {t(`errors.${error}` as 'errors.reason_required')}
         </p>
       ) : null}

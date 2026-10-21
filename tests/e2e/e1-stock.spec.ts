@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { testPoolBin } from '@/mocks/bin-registry';
+import { open } from '../helpers/open';
 
 /** Склад (этап 2, раздел 4.1 ТЗ): уровень логики, достаточно одного прогона. */
 test.describe.configure({ mode: 'serial' });
@@ -46,7 +47,7 @@ test('stock_screen_explains_there_is_nothing_to_count_yet', async ({}, testInfo)
   const response = await storePage.request.get('/api/stock');
   expect(response.status()).toBe(200);
 
-  await storePage.goto('/ru/stock');
+  await open(storePage, '/ru/stock');
   await expect(storePage.getByTestId('stock-empty')).toBeVisible();
   // Проводить нечего, пока товар не принят по накладной — экран об этом говорит.
   await expect(storePage.getByTestId('stock-documents-empty')).toBeVisible();
@@ -77,7 +78,7 @@ test('stock_documents_are_closed_for_another_company', async ({ browser }, testI
 test('markup_rule_is_saved_and_prices_need_stock', async ({}, testInfo) => {
   test.skip(testInfo.project.name !== ONLY_PROJECT, 'склад');
 
-  await storePage.goto('/ru/stock');
+  await open(storePage, '/ru/stock');
   await storePage.getByTestId('markup-percent').fill('25');
   await storePage.getByTestId('markup-save').click();
   await expect(storePage.getByTestId('pricing-error')).toBeHidden();
@@ -90,7 +91,7 @@ test('markup_rule_is_saved_and_prices_need_stock', async ({}, testInfo) => {
 test('stock_screen_fits_phone_width', async ({}, testInfo) => {
   test.skip(testInfo.project.name !== ONLY_PROJECT, 'склад');
 
-  await storePage.goto('/ru/stock');
+  await open(storePage, '/ru/stock');
   for (const width of [375, 1280]) {
     await storePage.setViewportSize({ width, height: 800 });
     const overflow = await storePage.evaluate(

@@ -95,7 +95,7 @@ export function SupportScreen({ initial }: { initial: TicketRow[] }) {
               </Field>
               <Field label={t('text')}>
                 <textarea
-                  className="border-border bg-card focus-visible:border-primary min-h-28 w-full rounded-lg border p-3 text-base outline-none"
+                  className="border-border bg-card focus-visible:border-primary min-h-28 w-full rounded-2xl border p-3 text-base outline-none"
                   value={form.text}
                   data-testid="support-text"
                   onChange={(event) => setForm({ ...form, text: event.target.value })}

@@ -53,10 +53,10 @@ export function NavLinks({ groups }: { groups: NavGroup[] }) {
   const pathname = usePathname();
 
   return (
-    <nav className="order-3 -mx-1 flex w-full scrollbar-none gap-1 overflow-x-auto [mask-image:linear-gradient(to_right,black_88%,transparent)] px-1 pb-2 lg:order-3 lg:mx-0 lg:flex-1 lg:flex-col lg:gap-0.5 lg:overflow-y-auto lg:[mask-image:none] lg:px-3 lg:pb-4">
+    <nav className="order-3 -mx-1 flex w-full scrollbar-none gap-1.5 overflow-x-auto [mask-image:linear-gradient(to_right,black_88%,transparent)] px-1 pt-1 pb-2.5 lg:order-3 lg:mx-0 lg:flex-1 lg:flex-col lg:gap-0.5 lg:overflow-y-auto lg:[mask-image:none] lg:px-0 lg:pt-0 lg:pb-4">
       {groups.map((group) => (
         <div key={group.label} className="contents lg:block lg:pt-4 lg:first:pt-1">
-          <p className="text-sidebar-muted hidden px-3 pb-1.5 text-[11px] font-medium tracking-wider uppercase lg:block">
+          <p className="text-sidebar-muted hidden px-3 pb-1.5 text-[11px] font-bold tracking-wider uppercase lg:block">
             {group.label}
           </p>
           {group.items.map((item) => {
@@ -69,14 +69,20 @@ export function NavLinks({ groups }: { groups: NavGroup[] }) {
                 data-testid={item.testId}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
-                  'flex shrink-0 items-center gap-2 rounded-lg px-3 py-1.5 text-sm whitespace-nowrap transition-colors lg:py-2',
+                  'group flex shrink-0 items-center gap-3 rounded-full px-3.5 py-2 text-[13px] whitespace-nowrap transition-colors lg:rounded-[14px] lg:px-3 lg:py-[11px] lg:text-sm',
                   active
-                    ? 'bg-primary-soft text-primary lg:bg-sidebar-active lg:text-white'
-                    : 'text-muted-foreground hover:bg-muted hover:text-foreground lg:text-sidebar-muted lg:hover:text-sidebar-foreground lg:hover:bg-white/5',
+                    ? 'bg-primary-soft text-primary-text font-extrabold'
+                    : 'border-border bg-card text-foreground hover:bg-muted border font-semibold lg:border-0 lg:bg-transparent',
                 )}
               >
-                <Icon aria-hidden className="size-4 shrink-0" />
-                {item.label}
+                <Icon
+                  aria-hidden
+                  className={cn(
+                    'size-4 shrink-0 lg:size-5',
+                    active ? 'text-primary' : 'text-muted-foreground',
+                  )}
+                />
+                <span className="lg:truncate">{item.label}</span>
               </Link>
             );
           })}

@@ -10,6 +10,10 @@
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary-soft: var(--primary-soft);
+  --color-primary-text: var(--primary-text);
+  --color-track: var(--track);
+  --color-table-head: var(--table-head);
+  --color-row-highlight: var(--row-highlight);
   --color-card: var(--card);
   --color-success: var(--success);
   --color-success-soft: var(--success-soft);
@@ -24,68 +28,80 @@
   --color-sidebar-muted: var(--sidebar-muted);
   --color-sidebar-active: var(--sidebar-active);
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.6);
+  --radius-xl: calc(var(--radius) * 1.45);
+  --radius-2xl: calc(var(--radius) * 1.6);
   --shadow-card: var(--shadow-soft);
   --shadow-lift: var(--shadow-strong);
-  --font-sans: 'Inter', 'SF Pro Text', 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  --shadow-cta: var(--shadow-primary);
+  --font-sans: var(--font-onest), 'Onest', 'SF Pro Text', 'Segoe UI', 'Roboto', Arial, sans-serif;
 }
 
-/* Палитра-плейсхолдер: меняется здесь одним блоком, когда появятся фирменные цвета (TZ-demo 8.6).
-   Основной — глубокий бирюзово-синий (степь и небо), акцент — тёплый янтарь для промо и подсказок. */
+/* Палитра Arbafind по макету дизайнера (handoff ArbaFood B2B): тёплый тёмно-коричневый
+   текст, оранжевый акцент, мягкие бежевые поверхности. Меняется здесь одним блоком. */
 :root {
-  --background: oklch(0.982 0.005 230);
-  --surface: oklch(0.97 0.007 230);
-  --foreground: oklch(0.22 0.025 255);
-  --muted: oklch(0.955 0.009 235);
-  --muted-foreground: oklch(0.52 0.024 250);
-  --border: oklch(0.91 0.012 240);
-  --primary: oklch(0.5 0.13 228);
-  --primary-foreground: oklch(0.99 0 0);
-  --primary-soft: oklch(0.95 0.035 228);
-  --card: oklch(1 0 0);
-  --success: oklch(0.52 0.12 155);
-  --success-soft: oklch(0.95 0.045 155);
-  --warning: oklch(0.55 0.12 70);
-  --warning-soft: oklch(0.955 0.055 85);
-  --danger: oklch(0.55 0.19 25);
-  --danger-soft: oklch(0.955 0.04 25);
-  --accent: oklch(0.72 0.16 65);
-  --accent-soft: oklch(0.96 0.05 80);
-  --sidebar: oklch(0.24 0.04 250);
-  --sidebar-foreground: oklch(0.96 0.01 240);
-  --sidebar-muted: oklch(0.72 0.03 245);
-  --sidebar-active: oklch(0.34 0.06 240);
-  --radius: 0.7rem;
-  --shadow-soft: 0 1px 2px oklch(0.22 0.025 255 / 0.05), 0 4px 14px oklch(0.22 0.025 255 / 0.05);
-  --shadow-strong: 0 2px 6px oklch(0.22 0.025 255 / 0.08), 0 12px 32px oklch(0.22 0.025 255 / 0.1);
+  --background: #fbfaf8;
+  --surface: #f6f2ec;
+  --foreground: #3e342e;
+  --muted: #f1efec;
+  --muted-foreground: #8f877d;
+  --border: #ece9e4;
+  --primary: #f5820c;
+  --primary-foreground: #ffffff;
+  --primary-soft: #ffeeda;
+  --primary-text: #c25f00;
+  --card: #ffffff;
+  --success: #2f9a5a;
+  --success-soft: #e2f3e8;
+  --warning: #c25f00;
+  --warning-soft: #ffeeda;
+  --danger: #d9443a;
+  --danger-soft: #fce7e5;
+  --accent: #3d74c9;
+  --accent-soft: #e6eefa;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #3e342e;
+  --sidebar-muted: #8f877d;
+  --sidebar-active: #ffeeda;
+  --track: #e6e2dc;
+  --table-head: #faf8f5;
+  --row-highlight: #fff8ef;
+  --radius: 0.875rem;
+  --shadow-soft: 0 6px 16px rgb(70 50 15 / 0.04);
+  --shadow-strong: 0 24px 40px -20px rgb(70 50 15 / 0.35);
+  --shadow-primary: 0 8px 18px -8px rgb(245 130 12 / 0.7);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: oklch(0.165 0.018 255);
-    --surface: oklch(0.2 0.02 255);
-    --foreground: oklch(0.97 0 0);
-    --muted: oklch(0.25 0.02 255);
-    --muted-foreground: oklch(0.72 0.02 250);
-    --border: oklch(0.31 0.02 255);
-    --primary: oklch(0.7 0.12 225);
-    --primary-foreground: oklch(0.17 0.02 255);
-    --primary-soft: oklch(0.3 0.06 228);
-    --card: oklch(0.205 0.02 255);
-    --success: oklch(0.72 0.13 155);
-    --success-soft: oklch(0.28 0.05 155);
-    --warning: oklch(0.78 0.12 85);
-    --warning-soft: oklch(0.3 0.05 85);
-    --danger: oklch(0.7 0.16 25);
-    --danger-soft: oklch(0.3 0.07 25);
-    --accent: oklch(0.78 0.14 70);
-    --accent-soft: oklch(0.32 0.06 70);
-    --sidebar: oklch(0.13 0.018 255);
-    --sidebar-foreground: oklch(0.96 0.01 240);
-    --sidebar-muted: oklch(0.68 0.03 245);
-    --sidebar-active: oklch(0.25 0.04 240);
-    --shadow-soft: 0 1px 2px oklch(0 0 0 / 0.3), 0 4px 14px oklch(0 0 0 / 0.25);
-    --shadow-strong: 0 2px 6px oklch(0 0 0 / 0.35), 0 12px 32px oklch(0 0 0 / 0.35);
+    --background: #1c1815;
+    --surface: #24201c;
+    --foreground: #f3eee8;
+    --muted: #2c2723;
+    --muted-foreground: #b3aa9f;
+    --border: #3a332d;
+    --primary: #ff9a2e;
+    --primary-foreground: #1c1815;
+    --primary-soft: #3d2a17;
+    --primary-text: #ffb366;
+    --card: #24201c;
+    --success: #5cc488;
+    --success-soft: #1f3327;
+    --warning: #ffb366;
+    --warning-soft: #3d2a17;
+    --danger: #f0776e;
+    --danger-soft: #3b2220;
+    --accent: #7fa6e3;
+    --accent-soft: #1f2a3b;
+    --sidebar: #201c19;
+    --sidebar-foreground: #f3eee8;
+    --sidebar-muted: #b3aa9f;
+    --sidebar-active: #3d2a17;
+    --track: #3a332d;
+    --table-head: #2a2521;
+    --row-highlight: #2f261d;
+    --shadow-soft: 0 6px 16px rgb(0 0 0 / 0.25);
+    --shadow-strong: 0 24px 40px -20px rgb(0 0 0 / 0.6);
+    --shadow-primary: 0 8px 18px -8px rgb(255 154 46 / 0.45);
   }
 }
 
@@ -96,16 +112,48 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Таблицы: числа в колонках должны выравниваться по разрядам. */
+/* Основная кнопка по макету: оранжевый градиент сверху вниз. */
+.bg-cta {
+  background: linear-gradient(180deg, #ff9a2e, #f5820c);
+}
+
+/* Заголовок секции с оранжевой планкой 4×20 (макет: «Часто покупаете»). */
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  font-size: 1.125rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.section-title::before {
+  content: '';
+  width: 4px;
+  height: 20px;
+  border-radius: 2px;
+  background: var(--primary);
+  flex: none;
+}
+
+/* Таблицы: числа выравниваются по разрядам, шапка — бежевая полоса, как в макете. */
 table {
   font-variant-numeric: tabular-nums;
+}
+thead th {
+  background: var(--table-head);
+  color: var(--muted-foreground);
+  font-size: 12px;
+  font-weight: 700;
+}
+tbody tr:hover {
+  background: var(--row-highlight);
 }
 
 /* Фон главной и шапок разделов: мягкое свечение основного цвета без картинок. */
 .bg-hero {
   background:
-    radial-gradient(60rem 30rem at 85% -10%, oklch(0.5 0.13 228 / 0.16), transparent 60%),
-    radial-gradient(40rem 24rem at -10% 10%, oklch(0.72 0.16 65 / 0.12), transparent 60%),
+    radial-gradient(60rem 30rem at 85% -10%, rgb(245 130 12 / 0.12), transparent 60%),
+    radial-gradient(40rem 24rem at -10% 10%, rgb(255 154 46 / 0.1), transparent 60%),
     var(--background);
 }
 

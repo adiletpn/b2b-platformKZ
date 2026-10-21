@@ -3,7 +3,6 @@
 import { useRouter } from '@/i18n/navigation';
 import { LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { SHELL_OUTLINE } from '@/components/language-switcher';
 
 export function LogoutButton({ label }: { label: string }) {
   const router = useRouter();
@@ -18,15 +17,14 @@ export function LogoutButton({ label }: { label: string }) {
 
   return (
     <Button
-      variant="outline"
-      size="sm"
-      className={SHELL_OUTLINE}
+      variant="secondary"
+      size="icon"
+      className="size-9"
       aria-label={label}
       onClick={logout}
       data-testid="logout"
     >
       <LogOut aria-hidden />
-      <span className="hidden sm:inline lg:hidden">{label}</span>
     </Button>
   );
 }

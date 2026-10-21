@@ -5,27 +5,27 @@ import { cn } from '@/lib/utils';
 function Card({ className, ...props }: React.ComponentProps<'section'>) {
   return (
     <section
-      className={cn('border-border bg-card shadow-card rounded-xl border p-4 sm:p-5', className)}
+      className={cn('border-border bg-card shadow-card rounded-[20px] border p-4 sm:p-5', className)}
       {...props}
     />
   );
 }
 
 function CardTitle({ className, ...props }: React.ComponentProps<'h2'>) {
-  return <h2 className={cn('text-base font-semibold', className)} {...props} />;
+  return <h2 className={cn('text-base font-extrabold tracking-[-0.01em]', className)} {...props} />;
 }
 
 function CardHint({ className, ...props }: React.ComponentProps<'p'>) {
-  return <p className={cn('text-muted-foreground mt-1 text-xs', className)} {...props} />;
+  return <p className={cn('text-muted-foreground mt-1 text-xs font-semibold', className)} {...props} />;
 }
 
 const TONES = {
   primary: 'bg-primary-soft text-primary',
   success: 'bg-success-soft text-success',
-  warning: 'bg-warning-soft text-warning',
+  warning: 'bg-warning-soft text-primary',
   danger: 'bg-danger-soft text-danger',
-  accent: 'bg-accent-soft text-warning',
-  neutral: 'bg-muted text-muted-foreground',
+  accent: 'bg-accent-soft text-accent',
+  neutral: 'bg-muted text-foreground',
 } as const;
 
 /** Иконка в цветной плашке: заголовки карточек, показатели, пустые состояния. */
@@ -41,9 +41,9 @@ function IconBadge({
   return (
     <span
       aria-hidden
-      className={cn('grid size-9 shrink-0 place-items-center rounded-lg', TONES[tone], className)}
+      className={cn('grid size-11 shrink-0 place-items-center rounded-[14px]', TONES[tone], className)}
     >
-      <Icon className="size-[18px]" />
+      <Icon className="size-[20px]" />
     </span>
   );
 }
@@ -71,8 +71,10 @@ function StatCard({
     >
       <IconBadge icon={icon} tone={tone} />
       <div className="min-w-0">
-        <p className="text-muted-foreground text-xs">{label}</p>
-        <p className="mt-0.5 text-lg font-semibold tabular-nums sm:text-xl">{value}</p>
+        <p className="text-muted-foreground text-xs font-bold">{label}</p>
+        <p className="mt-0.5 text-xl font-black tracking-[-0.02em] tabular-nums sm:text-2xl">
+          {value}
+        </p>
         {hint ? <p className="text-muted-foreground mt-0.5 text-xs">{hint}</p> : null}
       </div>
     </Card>

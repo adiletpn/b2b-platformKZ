@@ -60,10 +60,11 @@ export default async function OrdersPage({ params }: { params: Promise<{ locale:
           <span data-testid="orders-empty">{t('empty')}</span>
         </EmptyState>
       ) : (
-        <Card className="overflow-hidden p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[640px] text-sm">
-              <thead className="text-muted-foreground border-border bg-muted/50 border-b text-left">
+        // На телефоне та же таблица складывается в карточки (макет M07): один DOM, без дублей.
+        <Card className="overflow-hidden p-0 max-md:overflow-visible max-md:border-0 max-md:bg-transparent max-md:shadow-none">
+          <div className="overflow-x-auto max-md:overflow-visible">
+            <table className="w-full min-w-[640px] text-sm max-md:block max-md:min-w-0">
+              <thead className="border-border border-b text-left max-md:hidden">
                 <tr>
                   <th className="px-4 py-2.5 font-medium">{t('number')}</th>
                   <th className="px-4 py-2.5 font-medium">{t('counterparty')}</th>
@@ -72,20 +73,23 @@ export default async function OrdersPage({ params }: { params: Promise<{ locale:
                   <th className="px-4 py-2.5" />
                 </tr>
               </thead>
-              <tbody className="divide-border divide-y" data-testid="orders-table">
+              <tbody
+                className="divide-border divide-y max-md:block max-md:space-y-2.5 max-md:divide-y-0"
+                data-testid="orders-table"
+              >
                 {orders.map((order) => (
                   <tr
                     key={order.id}
-                    className="hover:bg-muted/40"
+                    className="max-md:border-border max-md:bg-card max-md:shadow-card max-md:flex max-md:flex-wrap max-md:items-center max-md:gap-x-2 max-md:gap-y-1.5 max-md:rounded-[20px] max-md:border max-md:px-4 max-md:py-3.5"
                     data-testid={`order-row-${order.number}`}
                   >
-                    <td className="px-4 py-2.5 font-mono text-xs whitespace-nowrap">
+                    <td className="px-4 py-3.5 font-mono text-xs whitespace-nowrap max-md:flex-1 max-md:p-0 max-md:font-sans max-md:text-[15px] max-md:font-extrabold">
                       {order.number}
                     </td>
-                    <td className="px-4 py-2.5 break-words">
+                    <td className="px-4 py-3.5 font-semibold break-words max-md:order-3 max-md:w-full max-md:p-0">
                       {order.storeId === companyId ? order.supplier.name : order.store.name}
                     </td>
-                    <td className="px-4 py-2.5">
+                    <td className="px-4 py-3.5 max-md:order-2 max-md:p-0">
                       <OrderStatusBadge
                         status={order.status}
                         testId={`order-status-${order.number}`}
@@ -96,10 +100,10 @@ export default async function OrdersPage({ params }: { params: Promise<{ locale:
                         </Badge>
                       ) : null}
                     </td>
-                    <td className="px-4 py-2.5 text-right whitespace-nowrap">
+                    <td className="px-4 py-3.5 text-right font-extrabold whitespace-nowrap max-md:order-4 max-md:flex-1 max-md:p-0 max-md:text-left">
                       {order.totalWithVat.toFixed(2)} ₸
                     </td>
-                    <td className="px-4 py-2.5 text-right">
+                    <td className="px-4 py-3.5 text-right max-md:order-5 max-md:p-0">
                       <Link
                         href={`/orders/${order.id}`}
                         className={buttonVariants({ variant: 'outline', size: 'sm' })}

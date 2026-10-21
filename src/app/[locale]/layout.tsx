@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { notFound } from 'next/navigation';
 import { hasLocale, NextIntlClientProvider } from 'next-intl';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
+import { Onest } from 'next/font/google';
 import { routing } from '@/i18n/routing';
 import { AppShell } from '@/components/app-header';
 import { ServiceWorkerRegistration } from '@/components/service-worker';
@@ -11,7 +12,15 @@ import '../globals.css';
 // иначе навигация и выход пропадают.
 export const dynamic = 'force-dynamic';
 
-export const viewport: Viewport = { themeColor: '#1f6f9f' };
+export const viewport: Viewport = { themeColor: '#f5820c' };
+
+// Шрифт макета — Onest: кириллица с казахскими буквами, грузится при сборке, без внешних запросов.
+const onest = Onest({
+  subsets: ['latin', 'cyrillic', 'cyrillic-ext'],
+  weight: ['400', '500', '600', '700', '800', '900'],
+  variable: '--font-onest',
+  display: 'swap',
+});
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
@@ -39,7 +48,7 @@ export default async function LocaleLayout({
   setRequestLocale(locale);
 
   return (
-    <html lang={locale}>
+    <html lang={locale} className={onest.variable}>
       <body>
         <NextIntlClientProvider>
           {/* Шапка общая: разделы, язык и выход доступны с любого экрана. */}

@@ -28,9 +28,13 @@ function PageHeader({
   return (
     <header className="mb-5 flex flex-wrap items-start justify-between gap-3">
       <div className="min-w-0">
-        <h1 className="text-2xl font-semibold break-words sm:text-[1.75rem]">{title}</h1>
+        <h1 className="text-[28px] leading-tight font-black tracking-[-0.025em] break-words lg:text-2xl">
+          {title}
+        </h1>
         {description ? (
-          <p className="text-muted-foreground mt-1 text-sm break-words">{description}</p>
+          <p className="text-muted-foreground mt-1 text-sm font-semibold break-words">
+            {description}
+          </p>
         ) : null}
       </div>
       {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
@@ -40,7 +44,7 @@ function PageHeader({
 
 function EmptyState({ children }: { children: React.ReactNode }) {
   return (
-    <p className="border-border text-muted-foreground rounded-xl border border-dashed px-4 py-8 text-center text-sm">
+    <p className="border-border text-muted-foreground rounded-[20px] border-[1.5px] border-dashed px-4 py-10 text-center text-sm font-semibold">
       {children}
     </p>
   );

@@ -97,7 +97,7 @@ export function AttachmentsPanel({
         <div className="mt-4 grid grid-cols-1 items-end gap-3 sm:grid-cols-[12rem_1fr_auto]">
           <Field label={t('kind')}>
             <select
-              className="border-border bg-card h-11 w-full rounded-lg border px-3"
+              className="border-border bg-card h-11 w-full rounded-[14px] border-[1.5px] px-3.5 font-medium"
               value={kind}
               data-testid="file-kind"
               onChange={(event) => setKind(event.target.value as typeof kind)}
@@ -114,7 +114,7 @@ export function AttachmentsPanel({
               ref={input}
               type="file"
               accept=".pdf,.png,.jpg,.jpeg,.webp,.docx,.xlsx"
-              className="border-border bg-card file:bg-muted h-11 w-full min-w-0 rounded-lg border px-2 py-2 text-sm file:mr-3 file:rounded-md file:border-0 file:px-2"
+              className="border-border bg-card file:bg-muted h-11 w-full min-w-0 rounded-2xl border px-2 py-2 text-sm file:mr-3 file:rounded-xl file:border-0 file:px-2"
               data-testid="file-input"
             />
           </Field>

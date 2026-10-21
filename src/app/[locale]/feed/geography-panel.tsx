@@ -5,7 +5,9 @@ import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Card, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { MapPinned } from 'lucide-react';
 import type { Geography } from '@/lib/feed/geography';
+import { NotYetCard } from '@/components/ui/not-yet';
 
 /**
  * Раздел 3.9 ТЗ: точки и склады поставщиков в городе и поставщики соседних городов.
@@ -14,6 +16,7 @@ import type { Geography } from '@/lib/feed/geography';
  */
 export function GeographyPanel({ locale }: { locale: 'ru' | 'kk' }) {
   const t = useTranslations('feed');
+  const tSoon = useTranslations('common.notYetItems');
   const [geography, setGeography] = useState<Geography | null>(null);
   const [open, setOpen] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -58,6 +61,12 @@ export function GeographyPanel({ locale }: { locale: 'ru' | 'kk' }) {
         </Button>
       </div>
       <p className="text-muted-foreground mt-1 text-xs">{t('geography.hint')}</p>
+      <NotYetCard
+        className="mt-3"
+        icon={<MapPinned aria-hidden className="size-5" />}
+        title={tSoon('map')}
+        description={tSoon('mapHint')}
+      />
 
       {geography === null ? (
         <p className="text-muted-foreground mt-3 text-sm">

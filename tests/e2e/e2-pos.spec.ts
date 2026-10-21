@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { testPoolBin } from '@/mocks/bin-registry';
+import { open } from '../helpers/open';
 
 /** Касса (этап 2, раздел 4.2 ТЗ): уровень логики, один прогон. */
 test.describe.configure({ mode: 'serial' });
@@ -39,7 +40,7 @@ test.afterAll(async () => {
 test('cashier_opens_and_closes_shift', async ({}, testInfo) => {
   test.skip(testInfo.project.name !== ONLY_PROJECT, 'касса');
 
-  await storePage.goto('/ru/pos');
+  await open(storePage, '/ru/pos');
   await storePage.getByTestId('pos-cash').fill('5000');
   await storePage.getByTestId('open-shift').click();
   await expect(storePage.getByTestId('pos-shift')).toContainText('открыта');
@@ -76,7 +77,7 @@ test('pos_routes_are_closed_without_session', async ({ browser }, testInfo) => {
 test('pos_screen_fits_phone_width', async ({}, testInfo) => {
   test.skip(testInfo.project.name !== ONLY_PROJECT, 'касса');
 
-  await storePage.goto('/ru/pos');
+  await open(storePage, '/ru/pos');
   for (const width of [375, 1280]) {
     await storePage.setViewportSize({ width, height: 800 });
     const overflow = await storePage.evaluate(

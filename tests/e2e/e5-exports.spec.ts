@@ -1,3 +1,4 @@
+import { open } from '../helpers/open';
 import { expect, test } from '@playwright/test';
 import {
   bringOrderToPayment,
@@ -37,7 +38,7 @@ test.afterAll(async () => {
 
 test('supplier_downloads_documents_of_period_as_zip', async () => {
   const { supplierPage } = pair;
-  await supplierPage.goto('/ru/archive');
+  await open(supplierPage, '/ru/archive');
   const panel = supplierPage.getByTestId('exports-panel');
   await expectNoHorizontalScroll(supplierPage);
 
@@ -67,7 +68,7 @@ test('one_c_and_csv_exports_are_downloaded', async () => {
   const catalog = await supplierPage.request.get('/api/exports/csv/catalog');
   expect(await catalog.text()).toContain(pair.productName);
 
-  await storePage.goto('/ru/archive');
+  await open(storePage, '/ru/archive');
   // Магазину CSV каталога не нужен, остатков — нужен.
   await expect(storePage.getByTestId('export-csv-catalog')).toHaveCount(0);
   const href = await storePage.getByTestId('export-csv-stock').getAttribute('href');
@@ -88,7 +89,7 @@ test('anyone_with_qr_checks_document_without_login', async ({ browser }) => {
 
   const anonymous = await browser.newContext();
   const page = await anonymous.newPage();
-  await page.goto(`/ru/verify/${invoice.verificationCode}?v=1`);
+  await open(page, `/ru/verify/${invoice.verificationCode}?v=1`);
   await expect(page.getByTestId('verify-status')).toHaveText(
     'Документ найден, версия на бумаге актуальна',
   );

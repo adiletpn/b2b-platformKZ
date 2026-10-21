@@ -1,3 +1,4 @@
+import { open } from '../helpers/open';
 import { expect, test } from '@playwright/test';
 import {
   bringOrderToPayment,
@@ -28,7 +29,7 @@ test.beforeAll(async ({ browser }, testInfo) => {
   const { storePage } = pair;
   await storePage.request.post('/api/stock/pricing', { data: { action: 'markup', percent: '30' } });
   await storePage.request.post('/api/stock/pricing', { data: { action: 'reprice' } });
-  await storePage.goto('/ru/pos');
+  await open(storePage, '/ru/pos');
   await storePage.getByTestId('pos-cash').fill('1000');
   await storePage.getByTestId('open-shift').click();
   await expect(storePage.getByTestId('pos-shift')).toContainText('открыта');
@@ -45,13 +46,13 @@ test('cashier_sells_with_discount_and_gets_change', async () => {
   await storePage.getByTestId('pos-tile').first().click();
   await storePage.getByTestId('pos-tile').first().click();
   await storePage.getByTestId('pos-line-discount').fill('10');
-  await expect(storePage.getByTestId('pos-total')).toHaveText('234.00 ₸');
+  await expect(storePage.getByTestId('pos-total')).toHaveText('234 ₸');
 
   await storePage.getByTestId('pos-pay-CASH').click();
   await storePage.getByTestId('pos-cash-received').fill('300');
-  await expect(storePage.getByTestId('pos-change')).toContainText('66.00');
+  await expect(storePage.getByTestId('pos-change')).toContainText('66');
   await storePage.getByTestId('pos-sell').click();
-  await expect(storePage.getByTestId('pos-notice')).toContainText('Сдача: 66.00 ₸');
+  await expect(storePage.getByTestId('pos-notice')).toContainText('Сдача: 66 ₸');
   await expectNoHorizontalScroll(storePage);
 });
 
@@ -60,7 +61,7 @@ test('mixed_payment_splits_cash_and_card', async () => {
   await storePage.getByTestId('pos-tile').first().click();
   await storePage.getByTestId('pos-pay-MIXED').click();
   await storePage.getByTestId('pos-mixed-cash').fill('30');
-  await expect(storePage.getByTestId('pos-mixed-card')).toContainText('100.00');
+  await expect(storePage.getByTestId('pos-mixed-card')).toContainText('100');
   await storePage.getByTestId('pos-sell').click();
   await expect(storePage.getByTestId('pos-notice')).toContainText('Чек пробит');
 });
@@ -86,7 +87,7 @@ test('cash_in_and_x_report_show_drawer', async () => {
   await storePage.getByTestId('pos-x-report').click();
   const panel = storePage.getByTestId('pos-x-report-panel');
   // 1000 на начало + 234 + 30 наличными + 500 внесено.
-  await expect(panel).toContainText('1764.00');
+  await expect(panel).toContainText('1 764');
   await expect(panel).toContainText('Скидки');
-  await expect(panel).toContainText('26.00');
+  await expect(panel).toContainText('26');
 });

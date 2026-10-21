@@ -1,3 +1,4 @@
+import { open } from '../helpers/open';
 import { expect, test } from '@playwright/test';
 import {
   bringOrderToPayment,
@@ -53,7 +54,7 @@ test('cashier_opens_pos_and_sells_without_network', async ({}, testInfo) => {
   test.skip(testInfo.project.name !== ONLY_PROJECT, 'PWA, один прогон');
   const { storePage, productName } = pair;
 
-  await storePage.goto('/ru/pos');
+  await open(storePage, '/ru/pos');
   await storePage.getByTestId('pos-cash').fill('1000');
   await storePage.getByTestId('open-shift').click();
   await expect(storePage.getByTestId('pos-shift')).toContainText('открыта');

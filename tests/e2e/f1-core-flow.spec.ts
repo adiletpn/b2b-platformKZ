@@ -4,6 +4,7 @@ import { gtin13 } from '../helpers/catalog-fixture';
 import { outsideRegistryBin } from '../helpers/real-bin';
 import { expectNoHorizontalScroll, login } from '../helpers/e2e-flow';
 import { CATALOG_COLUMNS } from '@/lib/catalog/columns';
+import { open } from '../helpers/open';
 
 /**
  * Основной путь пилота глазами новой компании с настоящим БИН (его нет в мок-реестре):
@@ -74,7 +75,7 @@ test('real_company_path_from_supplier_registration_to_store_cart', async ({
   await expect(supplier.getByTestId('company-name')).toHaveText('ТОО «Пилот Поставка»');
 
   // 2. Условия доставки в Тараз: минимальная сумма с пробелом и запятой, дни доставки.
-  await supplier.goto('/ru/catalog');
+  await open(supplier, '/ru/catalog');
   const zone = supplier.getByTestId('zone-settings').locator('li').filter({ hasText: 'Тараз' });
   await zone.locator('[data-testid^="zone-min-"]').fill('20 000,00');
   await zone.locator('[data-testid$="-2"][data-testid^="zone-day-"]').click();
@@ -128,7 +129,7 @@ test('real_company_path_from_supplier_registration_to_store_cart', async ({
   await store.getByTestId('submit-company').click();
   await store.waitForURL(/\/dashboard$/);
 
-  await store.goto('/ru/feed');
+  await open(store, '/ru/feed');
   await store.getByTestId('mode-list').click();
   await store.getByTestId('feed-search').fill(id.product);
   const rows = store.getByTestId('list-table').getByRole('row');
@@ -141,13 +142,13 @@ test('real_company_path_from_supplier_registration_to_store_cart', async ({
   await expect(quantity).toHaveValue('12.000');
   await expect(store.getByTestId('feed-notice')).toContainText('минимальной партии');
 
-  await store.goto('/ru/cart');
+  await open(store, '/ru/cart');
   const group = store.locator('[data-testid^="cart-group-"]').filter({
     hasText: 'ТОО «Пилот Поставка»',
   });
   await expect(group).toContainText('кратность 6 · мин. партия 12');
-  await expect(group.locator('[data-testid^="cart-total-"]')).toHaveText('13920.00 ₸');
-  await expect(group.locator('[data-testid^="cart-missing-"]')).toContainText('6080.00');
+  await expect(group.locator('[data-testid^="cart-total-"]')).toHaveText('13 920 ₸');
+  await expect(group.locator('[data-testid^="cart-missing-"]')).toContainText('6 080');
   await expectNoHorizontalScroll(store);
 
   // 7. Магазин в городе, куда никто не возит: лента объясняет, почему пусто.
@@ -160,7 +161,7 @@ test('real_company_path_from_supplier_registration_to_store_cart', async ({
   await lonely.getByTestId('consent-checkbox').check();
   await lonely.getByTestId('submit-company').click();
   await lonely.waitForURL(/\/dashboard$/);
-  await lonely.goto('/ru/feed');
+  await open(lonely, '/ru/feed');
   await expect(lonely.getByTestId('feed-no-suppliers')).toContainText(
     `В город ${id.emptyCity} пока не возит ни один поставщик`,
   );

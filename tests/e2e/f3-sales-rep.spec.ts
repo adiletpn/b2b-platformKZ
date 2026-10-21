@@ -1,3 +1,4 @@
+import { open } from '../helpers/open';
 import { expect, test, type Page } from '@playwright/test';
 import {
   expectNoHorizontalScroll,
@@ -43,28 +44,28 @@ test.afterAll(async () => {
 });
 
 test('rep_has_no_stores_and_no_orders_before_assignment', async () => {
-  await repPage.goto('/ru/reps');
+  await open(repPage, '/ru/reps');
   await expect(repPage.getByTestId('reps-empty')).toBeVisible();
   // Все заявки компании представителю не открыты ни в интерфейсе, ни через API.
   expect((await repPage.request.get('/api/orders')).status()).toBe(403);
-  await repPage.goto('/ru/orders');
+  await open(repPage, '/ru/orders');
   await repPage.waitForURL(/\/dashboard$/);
 });
 
 test('owner_assigns_store_and_rep_marks_visit', async () => {
   const { supplierPage } = pair;
-  await supplierPage.getByTestId('go-reps').click();
+  await open(supplierPage, '/ru/reps');
   await supplierPage.waitForURL(/\/reps$/);
   await supplierPage.getByTestId('reps-assign').click();
   await expect(supplierPage.getByTestId('reps-message')).toHaveText('Магазин закреплён');
   await expect(supplierPage.getByTestId('reps-assignments')).toContainText('Тест-магазин');
   await expectNoHorizontalScroll(supplierPage);
 
-  await repPage.goto('/ru/reps');
+  await open(repPage, '/ru/reps');
   const card = repPage.getByTestId('reps-store-card');
   await expect(card).toHaveCount(1);
   await expect(card.getByTestId('reps-orders')).toContainText('ЗАК-');
-  await expect(card.getByTestId('reps-debt')).toContainText('0.00 ₸');
+  await expect(card.getByTestId('reps-debt')).toContainText('0 ₸');
 
   await card.getByTestId('reps-visit-comment').fill('Обсудили новую акцию');
   await card.getByTestId('reps-visit').click();

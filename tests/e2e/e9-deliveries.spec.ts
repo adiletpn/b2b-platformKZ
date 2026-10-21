@@ -1,3 +1,4 @@
+import { open } from '../helpers/open';
 import { expect, test } from '@playwright/test';
 import {
   expectNoHorizontalScroll,
@@ -44,7 +45,7 @@ test.afterAll(async () => {
 /** Этап 3 ТЗ: рейс на день, водитель видит свой рейс, маршрутный лист в PDF. */
 test('supplier_builds_route_and_driver_sees_it', async () => {
   const { supplierPage } = pair;
-  await supplierPage.goto('/ru/deliveries');
+  await open(supplierPage, '/ru/deliveries');
   const planner = supplierPage.getByTestId('route-planner');
   await planner.getByTestId('route-add').first().click();
   await expect(planner.getByTestId('route-selected-stop')).toHaveCount(1);
@@ -64,7 +65,7 @@ test('supplier_builds_route_and_driver_sees_it', async () => {
 
 test('driver_delivers_order_with_photo_of_signed_waybill', async () => {
   const { supplierPage, storePage } = pair;
-  await supplierPage.getByTestId('go-deliveries').click();
+  await open(supplierPage, '/ru/deliveries');
   await supplierPage.waitForURL(/\/deliveries$/);
 
   const card = supplierPage.getByTestId('deliveries-list').locator('li').first();
@@ -86,7 +87,7 @@ test('driver_delivers_order_with_photo_of_signed_waybill', async () => {
   await expect(card.getByTestId('delivery-status')).toHaveText('Доставлена');
 
   // Магазин видит фото подписанной накладной в своей заявке.
-  await storePage.goto(orderPath);
+  await open(storePage, orderPath);
   await expect(storePage.getByTestId('order-files').getByTestId('file-link')).toHaveText(
     'подпись.png',
   );

@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { expectNoHorizontalScroll } from '../helpers/e2e-flow';
+import { open } from '../helpers/open';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -10,7 +11,7 @@ const MODERATOR_PHONE = '+77009000002';
 
 async function adminLogin(page: Page, phone: string) {
   await page.request.post('/api/admin/logout').catch(() => undefined);
-  await page.goto('/ru/admin');
+  await open(page, '/ru/admin');
   await page.getByTestId('admin-phone').fill(phone);
   await page.getByTestId('admin-request-code').click();
   const code = await page.getByTestId('admin-demo-code').textContent();

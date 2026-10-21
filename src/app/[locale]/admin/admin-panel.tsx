@@ -7,11 +7,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Field } from '@/components/ui/field';
 import { Badge } from '@/components/ui/badge';
+import { NotYetBadge } from '@/components/ui/not-yet';
 import { Card, CardTitle } from '@/components/ui/card';
 import type { DashboardMetrics, DisputeRow, DisputeResolution } from '@/lib/admin/dashboard';
 import type { PlanRow, SubscriptionRow } from '@/lib/admin/tariffs';
 import type { ReferenceData, ReferenceKind } from '@/lib/admin/reference';
 import { Page } from '@/components/ui/page';
+import { money } from '@/lib/format';
 
 type QueueItem = {
   id: string;
@@ -54,6 +56,7 @@ export function AdminPanel({
   activeImpersonation: { id: string; companyName: string } | null;
 }) {
   const t = useTranslations('admin');
+  const tSoon = useTranslations('common.notYetItems');
   const router = useRouter();
 
   const [reasons, setReasons] = useState<Record<string, string>>({});
@@ -126,7 +129,7 @@ export function AdminPanel({
 
       {activeImpersonation ? (
         <div
-          className="mt-4 rounded-lg border border-amber-500 bg-amber-50 p-3 text-sm text-amber-900"
+          className="bg-warning-soft text-primary-text mt-4 rounded-2xl border p-3.5 text-sm font-semibold"
           data-testid="impersonation-banner"
         >
           {t('impersonationBanner', { company: activeImpersonation.companyName })}
@@ -150,8 +153,8 @@ export function AdminPanel({
           [
             ['newCompanies', String(metrics.newCompaniesToday)],
             ['ordersToday', String(metrics.ordersToday)],
-            ['gmvToday', `${metrics.gmvToday} ₸`],
-            ['gmvMonth', `${metrics.gmvMonth} ₸`],
+            ['gmvToday', `${money(metrics.gmvToday)} ₸`],
+            ['gmvMonth', `${money(metrics.gmvMonth)} ₸`],
             ['activeStores', String(metrics.activeStores)],
             ['activeSuppliers', String(metrics.activeSuppliers)],
             ['conversion', `${metrics.conversion}%`],
@@ -175,7 +178,7 @@ export function AdminPanel({
               <li key={row.city} className="flex justify-between gap-3">
                 <span>{row.city}</span>
                 <span className="tabular-nums">
-                  {row.orders} · {row.gmv} ₸
+                  {row.orders} · {money(row.gmv)} ₸
                 </span>
               </li>
             ))}
@@ -210,7 +213,7 @@ export function AdminPanel({
 
                 <Field label={t('resolution')}>
                   <select
-                    className="border-border bg-card h-11 rounded-lg border px-3"
+                    className="border-border bg-card h-11 rounded-[14px] border-[1.5px] px-3.5 font-medium"
                     value={disputeForm[dispute.orderId]?.resolution ?? 'AWAITING_PAYMENT'}
                     data-testid={`dispute-resolution-${dispute.number}`}
                     onChange={(event) =>
@@ -299,6 +302,10 @@ export function AdminPanel({
                     {item.status === 'APPROVED' ? (
                       <Badge tone="info">{t('autoApproved')}</Badge>
                     ) : null}
+                    <span className="text-muted-foreground inline-flex items-center gap-1.5 text-xs font-semibold">
+                      {tSoon('ecpCheck')}
+                      <NotYetBadge />
+                    </span>
                   </div>
                 </div>
 
@@ -348,7 +355,7 @@ export function AdminPanel({
           <div className="mt-3 flex flex-wrap items-end gap-3">
             <Field label={t('company')}>
               <select
-                className="border-border bg-card h-11 rounded-lg border px-3"
+                className="border-border bg-card h-11 rounded-[14px] border-[1.5px] px-3.5 font-medium"
                 value={impersonation.companyId}
                 data-testid="impersonation-company"
                 onChange={(event) =>
@@ -385,7 +392,7 @@ export function AdminPanel({
       ) : null}
 
       {error ? (
-        <p className="mt-3 text-sm text-red-600" role="alert" data-testid="admin-panel-error">
+        <p className="text-danger mt-3 text-sm" role="alert" data-testid="admin-panel-error">
           {t(`errors.${error}` as 'errors.unknown')}
         </p>
       ) : null}
@@ -412,7 +419,7 @@ export function AdminPanel({
                 {plans.map((plan) => (
                   <tr key={plan.id} data-testid={`plan-${plan.code}`}>
                     <td className="px-2 py-2">{plan.code}</td>
-                    <td className="px-2 py-2 tabular-nums">{plan.priceMonthly} ₸</td>
+                    <td className="px-2 py-2 tabular-nums">{money(plan.priceMonthly)} ₸</td>
                     <td className="px-2 py-2 text-xs">
                       {[plan.maxLocations, plan.maxEmployees, plan.maxProducts]
                         .map((value) => value ?? '∞')
@@ -428,7 +435,7 @@ export function AdminPanel({
           <div className="mt-4 flex flex-wrap items-end gap-3">
             <Field label={t('company')}>
               <select
-                className="border-border bg-card h-11 rounded-lg border px-3"
+                className="border-border bg-card h-11 rounded-[14px] border-[1.5px] px-3.5 font-medium"
                 value={subscriptionForm.companyId}
                 data-testid="subscription-company"
                 onChange={(event) =>
@@ -444,7 +451,7 @@ export function AdminPanel({
             </Field>
             <Field label={t('plan')}>
               <select
-                className="border-border bg-card h-11 rounded-lg border px-3"
+                className="border-border bg-card h-11 rounded-[14px] border-[1.5px] px-3.5 font-medium"
                 value={subscriptionForm.planCode}
                 data-testid="subscription-plan"
                 onChange={(event) =>
@@ -493,7 +500,7 @@ export function AdminPanel({
                   <span className="text-muted-foreground text-xs">
                     {row.planCode} ·{' '}
                     {t(`subscriptionStatus.${row.status}` as 'subscriptionStatus.TRIAL')} ·{' '}
-                    {row.amount} ₸
+                    {money(row.amount ?? '0')} ₸
                   </span>
                 </li>
               ))}
@@ -530,7 +537,7 @@ export function AdminPanel({
           <div className="mt-4 flex flex-wrap items-end gap-3">
             <Field label={t('referenceKind')}>
               <select
-                className="border-border bg-card h-11 rounded-lg border px-3"
+                className="border-border bg-card h-11 rounded-[14px] border-[1.5px] px-3.5 font-medium"
                 value={referenceForm.kind}
                 data-testid="reference-kind"
                 onChange={(event) =>

@@ -1,8 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 360" width="480" height="360">
-  <rect width="480" height="360" fill="#e8e2d2"/>
-  <circle cx="240" cy="150" r="74" fill="#7a6a43" opacity="0.14"/>
-  <text x="240" y="166" text-anchor="middle" font-family="Helvetica, Arial, sans-serif"
-        font-size="34" font-weight="600" fill="#7a6a43">Бакалея</text>
-  <text x="240" y="214" text-anchor="middle" font-family="Helvetica, Arial, sans-serif"
-        font-size="17" fill="#7a6a43" opacity="0.7">демо-изображение</text>
+  <!-- Демо-иллюстрация: пачка бакалеи. Реальные фото присылает поставщик. -->
+  <ellipse cx="240" cy="318" rx="96" ry="12" fill="#3e342e" opacity="0.08"/>
+  <path d="M170 92 Q 240 70 310 92 L 300 312 H180 Z" fill="#ffeeda" stroke="#e8b77f" stroke-width="3"/>
+  <path d="M170 92 Q 240 70 310 92 L 306 120 Q 240 100 174 120 Z" fill="#f5820c"/>
+  <rect x="190" y="170" width="100" height="74" rx="14" fill="#f5820c"/>
+  <rect x="206" y="190" width="68" height="10" rx="5" fill="#ffffff" opacity="0.9"/>
+  <rect x="216" y="210" width="48" height="8" rx="4" fill="#ffffff" opacity="0.6"/>
 </svg>

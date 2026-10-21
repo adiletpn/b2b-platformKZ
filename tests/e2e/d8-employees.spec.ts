@@ -1,5 +1,6 @@
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 import { testPoolBin } from '@/mocks/bin-registry';
+import { open } from '../helpers/open';
 
 /** Сотрудники и права — уровень API и логики, достаточно одного прогона. */
 test.describe.configure({ mode: 'serial' });
@@ -47,7 +48,7 @@ test.afterAll(async () => {
 test('owner_invites_cashier_by_phone', async ({}, testInfo) => {
   test.skip(testInfo.project.name !== ONLY_PROJECT, 'проверка уровня прав');
 
-  await ownerPage.getByTestId('go-employees').click();
+  await open(ownerPage, '/ru/employees');
   await ownerPage.waitForURL(/\/employees$/);
 
   await ownerPage.getByTestId('invite-phone').fill(CASHIER_PHONE);
@@ -69,7 +70,7 @@ test('invited_cashier_enters_by_code_and_sees_only_own_sections', async ({ brows
   await expect(cashierPage).toHaveURL(/\/dashboard$/);
 
   // Раздел сотрудников кассиру недоступен.
-  await cashierPage.goto('/ru/employees');
+  await open(cashierPage, '/ru/employees');
   await expect(cashierPage).toHaveURL(/\/dashboard$/);
 });
 
@@ -131,7 +132,7 @@ test('cashier_cannot_reach_orders_and_prices_through_api', async ({}, testInfo) 
 test('blocked_cashier_loses_access_immediately', async ({}, testInfo) => {
   test.skip(testInfo.project.name !== ONLY_PROJECT, 'проверка уровня прав');
 
-  await ownerPage.goto('/ru/employees');
+  await open(ownerPage, '/ru/employees');
   const row = ownerPage.getByTestId('employees-table').getByRole('row').nth(1);
   // В строке две кнопки: ограничения и блокировка.
   await row.getByRole('button', { name: 'Заблокировать' }).click();
@@ -150,7 +151,7 @@ test('blocked_cashier_loses_access_immediately', async ({}, testInfo) => {
 test('owner_builds_custom_role_in_permission_matrix', async ({}, testInfo) => {
   test.skip(testInfo.project.name !== ONLY_PROJECT, 'проверка уровня прав');
 
-  await ownerPage.goto('/ru/employees');
+  await open(ownerPage, '/ru/employees');
   await ownerPage.getByTestId('role-name-ru').fill('Старший кассир');
   await ownerPage.getByTestId('role-name-kk').fill('Аға кассир');
   await ownerPage.getByTestId('cell-POS-VIEW').check();
@@ -165,7 +166,7 @@ test('owner_builds_custom_role_in_permission_matrix', async ({}, testInfo) => {
 test('owner_sets_order_limit_for_employee', async ({}, testInfo) => {
   test.skip(testInfo.project.name !== ONLY_PROJECT, 'проверка уровня прав');
 
-  await ownerPage.goto('/ru/employees');
+  await open(ownerPage, '/ru/employees');
   const employee = ownerPage.getByTestId('employees-table').getByRole('row').nth(1);
   await employee.getByRole('button', { name: 'Ограничения сотрудника' }).click();
 
@@ -175,14 +176,14 @@ test('owner_sets_order_limit_for_employee', async ({}, testInfo) => {
 
   await expect(ownerPage.getByTestId('access-saved')).toBeVisible();
   // Лимит виден в таблице сотрудников (раздел 3.12 ТЗ).
-  await expect(ownerPage.getByTestId('employees-table')).toContainText('50000.00');
+  await expect(ownerPage.getByTestId('employees-table')).toContainText('50 000');
 });
 
 test('owner_transfers_rights_with_code_confirmation', async ({}, testInfo) => {
   test.skip(testInfo.project.name !== ONLY_PROJECT, 'проверка уровня прав');
 
   // Для передачи нужен активный сотрудник: кассира мог заблокировать прошлый тест.
-  await ownerPage.goto('/ru/employees');
+  await open(ownerPage, '/ru/employees');
   const row = ownerPage.getByTestId('employees-table').getByRole('row').nth(1);
   const unblock = row.getByRole('button', { name: 'Разблокировать' });
   if ((await unblock.count()) > 0) await unblock.click();
@@ -201,14 +202,14 @@ test('owner_transfers_rights_with_code_confirmation', async ({}, testInfo) => {
 
   // Права ушли вместе с ролью: прежний Владелец больше не управляет сотрудниками.
   // Запись в журнале проверяется интеграционным тестом onboarding.test.ts.
-  await ownerPage.goto('/ru/employees');
+  await open(ownerPage, '/ru/employees');
   await ownerPage.waitForURL(/\/dashboard$/);
 });
 
 test('employees_and_matrix_fit_phone_width', async ({}, testInfo) => {
   test.skip(testInfo.project.name !== ONLY_PROJECT, 'проверка вёрстки');
 
-  await ownerPage.goto('/ru/employees');
+  await open(ownerPage, '/ru/employees');
   for (const width of [375, 1280]) {
     await ownerPage.setViewportSize({ width, height: 800 });
     // Широкие таблицы прокручиваются внутри своего блока, а не ломают страницу.

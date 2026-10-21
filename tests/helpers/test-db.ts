@@ -83,6 +83,8 @@ export async function resetPlatformFlags(prisma: PrismaClient) {
   await prisma.adminAuditLog.deleteMany();
   await prisma.impersonationLog.deleteMany();
   await prisma.adminSession.deleteMany();
+  // Временный вход по паролю включён, пока флаг не выставлен.
+  await prisma.platformSetting.deleteMany({ where: { key: 'disable_password_login' } });
   await prisma.platformSetting.upsert({
     where: { key: 'auto_verify_companies' },
     update: { value: 'true' },

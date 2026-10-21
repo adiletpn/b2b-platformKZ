@@ -74,6 +74,9 @@ model User {
   consentAcceptedAt DateTime?
   /// Блокировка пользователя администратором (раздел 3.13 ТЗ): вход и сессии закрыты.
   blockedAt         DateTime?
+  /// Временный вход по паролю (просьба заказчика 21.10.2026), scrypt: «соль:хэш» в hex.
+  /// Выключается флагом `disable_password_login`; основной вход — по коду.
+  passwordHash      String?
 
   memberships     Membership[]
   sessions        Session[]

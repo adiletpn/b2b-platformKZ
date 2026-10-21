@@ -8,13 +8,15 @@ import { Input } from '@/components/ui/input';
 import { DemoHint, Field } from '@/components/ui/field';
 import { formatPhone } from '@/lib/phone';
 import { Card } from '@/components/ui/card';
+import { Segmented } from '@/components/ui/controls';
 import { NotYetBadge, NotYetButton } from '@/components/ui/not-yet';
 import { FileCheck2, KeyRound, ShieldCheck, Zap } from 'lucide-react';
 
 /** demoCode есть только у мока SMS; с настоящим провайдером код приходит в SMS. */
 type Step = { name: 'phone' } | { name: 'code'; phone: string; demoCode: string | null };
 
-export function LoginForm() {
+/** passwordLogin — временный вход по паролю, выключается флагом в админке. */
+export function LoginForm({ passwordLogin }: { passwordLogin: boolean }) {
   const t = useTranslations('auth');
   const tApp = useTranslations('app');
   const tSoon = useTranslations('common.notYetItems');
@@ -25,6 +27,33 @@ export function LoginForm() {
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [mode, setMode] = useState<'code' | 'password'>('code');
+  const [register, setRegister] = useState(false);
+  const [password, setPassword] = useState('');
+  const [passwordConfirm, setPasswordConfirm] = useState('');
+
+  async function submitPassword(event: React.FormEvent) {
+    event.preventDefault();
+    setError(null);
+    if (register && password !== passwordConfirm) {
+      setError('password_mismatch');
+      return;
+    }
+    setPending(true);
+    const response = await fetch('/api/auth/password', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ phone: phoneInput, password, mode: register ? 'register' : 'login' }),
+    });
+    const data = (await response.json()) as { hasCompany?: boolean; error?: string };
+    setPending(false);
+    if (!response.ok) {
+      setError(data.error ?? 'unknown');
+      return;
+    }
+    router.push(data.hasCompany ? '/dashboard' : '/onboarding');
+    router.refresh();
+  }
 
   async function requestCode(event: React.FormEvent) {
     event.preventDefault();
@@ -100,7 +129,85 @@ export function LoginForm() {
         <h1 className="mt-6 text-2xl font-black tracking-[-0.02em] sm:mt-0">{t('title')}</h1>
         <p className="text-muted-foreground mt-2 text-[15px] font-medium">{t('subtitle')}</p>
 
-        {step.name === 'phone' ? (
+        {passwordLogin && step.name === 'phone' ? (
+          <Segmented
+            className="mt-6"
+            value={mode}
+            onChange={(value) => {
+              setMode(value);
+              setError(null);
+            }}
+            options={[
+              { value: 'code', label: t('modeCode'), testId: 'mode-code' },
+              { value: 'password', label: t('modePassword'), testId: 'mode-password' },
+            ]}
+          />
+        ) : null}
+
+        {mode === 'password' && step.name === 'phone' ? (
+          <form className="mt-6 space-y-4" onSubmit={submitPassword}>
+            <Field label={t('phoneLabel')}>
+              <Input
+                name="phone"
+                inputMode="tel"
+                autoComplete="tel"
+                data-testid="phone-input"
+                className="h-[60px] rounded-[18px] border-2 px-[18px] text-xl font-bold tracking-[0.02em]"
+                placeholder={t('phonePlaceholder')}
+                value={phoneInput}
+                onChange={(event) => setPhoneInput(event.target.value)}
+              />
+            </Field>
+            <Field label={t('passwordLabel')}>
+              <Input
+                type="password"
+                name="password"
+                autoComplete={register ? 'new-password' : 'current-password'}
+                data-testid="password-input"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+              />
+              {register ? (
+                <p className="text-muted-foreground mt-1.5 text-xs font-medium">
+                  {t('passwordHint')}
+                </p>
+              ) : null}
+            </Field>
+            {register ? (
+              <Field label={t('passwordConfirmLabel')}>
+                <Input
+                  type="password"
+                  name="password-confirm"
+                  autoComplete="new-password"
+                  data-testid="password-confirm"
+                  value={passwordConfirm}
+                  onChange={(event) => setPasswordConfirm(event.target.value)}
+                />
+              </Field>
+            ) : null}
+            <Button
+              type="submit"
+              size="lg"
+              className="w-full"
+              disabled={pending}
+              data-testid="password-submit"
+            >
+              {register ? t('register') : t('login')}
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              className="w-full"
+              data-testid="password-toggle"
+              onClick={() => {
+                setRegister(!register);
+                setError(null);
+              }}
+            >
+              {register ? t('toLogin') : t('toRegister')}
+            </Button>
+          </form>
+        ) : step.name === 'phone' ? (
           <form className="mt-6 space-y-4" onSubmit={requestCode}>
             {/* Макет M01: канал кода. WhatsApp ждёт ключа WhatsApp Business API. */}
             <div className="bg-muted flex rounded-full p-[3px]">

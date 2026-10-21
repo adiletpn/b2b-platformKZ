@@ -13,7 +13,7 @@ export async function isAutoVerifyEnabled(): Promise<boolean> {
 }
 
 /** Флаги, которые суперадмин переключает в админке. */
-export const ADMIN_FLAGS = ['hide_demo_companies'] as const;
+export const ADMIN_FLAGS = ['hide_demo_companies', 'disable_password_login'] as const;
 
 /** Пилот с настоящими магазинами: тестовые компании мок-реестра им не показываются. */
 export async function isHideDemoCompaniesEnabled(): Promise<boolean> {

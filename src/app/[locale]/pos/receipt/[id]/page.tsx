@@ -48,7 +48,7 @@ export default async function ReceiptPrintPage({
   @page { margin: 2mm; }
 }`}</style>
       <div
-        className="receipt-paper border-border bg-card rounded-lg border p-4 font-mono text-xs leading-relaxed"
+        className="receipt-paper border-border bg-card rounded-2xl border p-4 font-mono text-xs leading-relaxed"
         data-testid="receipt-paper"
       >
         <p className="text-center font-bold">{receipt.company.name}</p>

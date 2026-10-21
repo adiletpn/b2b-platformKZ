@@ -17,6 +17,7 @@ import { OnlinePaymentPanel, type OnlinePayment } from './online-payment-panel';
 import { DocumentVersions, type VersionRow } from './document-versions';
 
 import type { DocumentType, OrderStatus as Status } from '@/generated/prisma/enums';
+import { money } from '@/lib/format';
 
 type Item = {
   id: string;
@@ -365,12 +366,15 @@ export function OrderDetail({
       ) : null}
 
       {order.status === 'CHANGED_BY_SUPPLIER' && side === 'store' ? (
-        <p className="mt-3 text-sm text-amber-700" data-testid="order-changed-notice">
+        <p
+          className="bg-warning-soft text-primary-text mt-3 rounded-2xl px-4 py-3 text-sm font-bold"
+          data-testid="order-changed-notice"
+        >
           {t('changedNotice')}
         </p>
       ) : null}
       {order.status === 'REJECTED' ? (
-        <p className="mt-3 text-sm text-red-600" data-testid="order-rejected-notice">
+        <p className="text-danger mt-3 text-sm" data-testid="order-rejected-notice">
           {t('rejectedNotice', { reason: order.rejectionReason ?? '' })}
         </p>
       ) : null}
@@ -408,7 +412,7 @@ export function OrderDetail({
                       {substituteOffers.length > 0 ? (
                         <>
                           <select
-                            className="border-input bg-background h-8 max-w-48 rounded-md border px-2 text-xs"
+                            className="border-input bg-background h-8 max-w-48 rounded-xl border px-2 text-xs"
                             aria-label={t('substitute')}
                             value={substitutes[item.id]?.offerId ?? ''}
                             data-testid={`substitute-offer-${item.id}`}
@@ -425,7 +429,7 @@ export function OrderDetail({
                             <option value="">{t('substituteNone')}</option>
                             {substituteOffers.map((offer) => (
                               <option key={offer.id} value={offer.id}>
-                                {offer.name} · {offer.priceWithVat} ₸
+                                {offer.name} · {money(offer.priceWithVat)} ₸
                               </option>
                             ))}
                           </select>
@@ -475,7 +479,7 @@ export function OrderDetail({
         <p className="border-border border-t px-3 py-2 text-right text-sm">
           {t('total')}:{' '}
           <span className="font-medium tabular-nums" data-testid="order-total">
-            {order.total}
+            {money(order.total)}
           </span>{' '}
           ₸
         </p>
@@ -574,7 +578,7 @@ export function OrderDetail({
         ) : null}
 
         {error ? (
-          <p className="text-sm text-red-600" role="alert" data-testid="order-error">
+          <p className="text-danger text-sm" role="alert" data-testid="order-error">
             {t(`errors.${error}` as 'errors.unknown')}
           </p>
         ) : null}
@@ -611,7 +615,7 @@ export function OrderDetail({
                     {tDocuments(`types.${document.type}`)} № {document.number}
                   </span>
                   <span className="flex items-center gap-3">
-                    <span className="tabular-nums">{document.totalWithVat} ₸</span>
+                    <span className="tabular-nums">{money(document.totalWithVat)} ₸</span>
                     <a
                       href={`/api/documents/${document.id}/pdf?locale=${locale}`}
                       target="_blank"
@@ -813,7 +817,7 @@ export function OrderDetail({
                 </div>
               </>
             ) : (
-              <p className="text-sm text-red-600">{tPayment('noRequisites')}</p>
+              <p className="text-danger text-sm">{tPayment('noRequisites')}</p>
             )}
           </dl>
 
@@ -830,7 +834,7 @@ export function OrderDetail({
             </Field>
             <Field label={tPayment('method')}>
               <select
-                className="border-border bg-card h-11 w-full rounded-lg border px-3"
+                className="border-border bg-card h-11 w-full rounded-[14px] border-[1.5px] px-3.5 font-medium"
                 value={payment.method}
                 data-testid="payment-method"
                 onChange={(event) =>
@@ -881,7 +885,7 @@ export function OrderDetail({
 
       {paymentResult ? (
         <p className="mt-4 text-sm" data-testid="payment-result">
-          {tPayment('done', { amount: paymentResult })}
+          {tPayment('done', { amount: money(paymentResult) })}
         </p>
       ) : null}
 
@@ -892,7 +896,7 @@ export function OrderDetail({
             {order.payments.map((item) => (
               <li key={item.id} className="flex justify-between gap-3">
                 <span>{item.reference ?? '—'}</span>
-                <span className="tabular-nums">{item.amount} ₸</span>
+                <span className="tabular-nums">{money(item.amount)} ₸</span>
               </li>
             ))}
           </ul>
@@ -911,7 +915,7 @@ export function OrderDetail({
               >
                 <span>{tRatings(`criteria.${criterion}`)}</span>
                 <select
-                  className="border-border bg-card h-9 rounded-lg border px-2"
+                  className="border-border bg-card h-9 rounded-[14px] border-[1.5px] px-3.5 font-medium"
                   value={ratingValues[criterion] ?? 5}
                   data-testid={`rating-${criterion}`}
                   onChange={(event) =>

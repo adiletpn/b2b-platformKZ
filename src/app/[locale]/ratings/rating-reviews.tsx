@@ -36,7 +36,9 @@ export function RatingReviews({ reviews }: { reviews: Review[] }) {
     });
     const data = (await response.json()) as { status?: string };
     if (data.status !== 'ok') {
-      setDisputeError(data.status && DISPUTE_ERRORS.includes(data.status) ? data.status : 'unknown');
+      setDisputeError(
+        data.status && DISPUTE_ERRORS.includes(data.status) ? data.status : 'unknown',
+      );
       return;
     }
     setDisputing(null);
@@ -72,7 +74,7 @@ export function RatingReviews({ reviews }: { reviews: Review[] }) {
           {reviews.map((review) => (
             <li
               key={review.id}
-              className="border-border bg-card rounded-lg border p-3 text-sm"
+              className="border-border bg-card rounded-[14px] border-[1.5px] p-3.5 text-sm font-medium"
               data-testid={`review-${review.id}`}
             >
               <div className="flex flex-wrap justify-between gap-2">
@@ -81,7 +83,10 @@ export function RatingReviews({ reviews }: { reviews: Review[] }) {
               </div>
               {review.comment ? <p className="mt-1 break-words">{review.comment}</p> : null}
               {review.dispute !== 'none' ? (
-                <p className="text-muted-foreground mt-1 text-xs" data-testid="review-dispute-state">
+                <p
+                  className="text-muted-foreground mt-1 text-xs"
+                  data-testid="review-dispute-state"
+                >
                   {t(review.dispute === 'pending' ? 'disputed' : review.dispute)}
                 </p>
               ) : disputing === review.id ? (
@@ -150,7 +155,7 @@ export function RatingReviews({ reviews }: { reviews: Review[] }) {
         </p>
       ) : null}
       {error ? (
-        <p className="mt-2 text-sm text-red-600" role="alert" data-testid="reviews-error">
+        <p className="text-danger mt-2 text-sm" role="alert" data-testid="reviews-error">
           {t(`errors.${error}` as 'errors.unknown')}
         </p>
       ) : null}

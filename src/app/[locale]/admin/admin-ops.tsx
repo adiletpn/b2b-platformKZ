@@ -202,7 +202,7 @@ export function TicketsPanel({ initial }: { initial: TicketRow[] }) {
       </ul>
       {open ? (
         <div
-          className="border-border mt-3 space-y-2 rounded-lg border p-3"
+          className="border-border mt-3 space-y-2 rounded-2xl border p-3"
           data-testid="admin-ticket-thread"
         >
           <p className="font-medium">{open.subject}</p>
@@ -305,7 +305,8 @@ export function BroadcastPanel({
     if (data.status === 'ok') setForm({ ...form, text: '' });
   }
 
-  const select = 'border-border bg-card h-11 w-full rounded-lg border px-3';
+  const select =
+    'border-border bg-card h-11 w-full rounded-[14px] border-[1.5px] px-3.5 font-medium';
   return (
     <Card data-testid="admin-broadcast">
       <Header icon={Megaphone} title={t('title')} hint={t('hint')} />
@@ -356,7 +357,7 @@ export function BroadcastPanel({
       <div className="mt-3">
         <Field label={t('text')}>
           <textarea
-            className="border-border bg-card min-h-20 w-full rounded-lg border p-3 text-base"
+            className="border-border bg-card min-h-20 w-full rounded-[14px] border-[1.5px] p-3.5 text-base font-medium"
             value={form.text}
             data-testid="admin-broadcast-text"
             onChange={(event) => setForm({ ...form, text: event.target.value })}

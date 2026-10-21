@@ -98,7 +98,7 @@ export function AdminLogin() {
       )}
 
       {error ? (
-        <p className="text-sm text-red-600" role="alert" data-testid="admin-error">
+        <p className="text-danger text-sm" role="alert" data-testid="admin-error">
           {t(`errors.${error}` as 'errors.unknown')}
         </p>
       ) : null}

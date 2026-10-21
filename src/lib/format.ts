@@ -39,3 +39,23 @@ const dayKeyFormat = new Intl.DateTimeFormat('en-CA', {
 export function kzDayKey(date: Date): string {
   return dayKeyFormat.format(date);
 }
+
+/**
+ * Сумма как в макете: «1 251», «690», копейки только если они есть — «1 251,50».
+ * Вход — строка Decimal (правило 1), вычислений здесь нет, только вывод.
+ */
+export function money(value: string): string {
+  const [whole = '0', fraction = ''] = value.split('.');
+  const negative = whole.startsWith('-');
+  const digits = negative ? whole.slice(1) : whole;
+  const grouped = digits.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  const cents = fraction.replace(/0+$/, '') ? `,${fraction.padEnd(2, '0').slice(0, 2)}` : '';
+  return `${negative ? '−' : ''}${grouped}${cents}`;
+}
+
+/** Количество без лишних нулей: «12», «0,5», «2,125». */
+export function quantity(value: string): string {
+  const [whole = '0', fraction = ''] = value.split('.');
+  const trimmed = fraction.replace(/0+$/, '');
+  return trimmed ? `${whole},${trimmed}` : whole;
+}

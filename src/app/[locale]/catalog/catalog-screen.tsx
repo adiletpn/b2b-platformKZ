@@ -91,8 +91,11 @@ export function CatalogScreen({
     void loadOffers(value);
   }
 
-  async function upload(event: React.FormEvent) {
+  async function upload(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    // Файл берём и из поля: выбранный до гидратации не проходит через onChange.
+    const input = event.currentTarget.elements.namedItem('catalog-file') as HTMLInputElement | null;
+    const file = input?.files?.[0] ?? null;
     if (!file) {
       setUploadError('no_file');
       return;
@@ -172,7 +175,7 @@ export function CatalogScreen({
     <Page width="lg">
       <PageHeader title={t('title')} description={t('subtitle')} />
 
-      <section className="border-border bg-card mt-6 space-y-3 rounded-lg border p-4">
+      <section className="border-border bg-card mt-6 space-y-3 rounded-2xl border p-4">
         <a
           href={`/api/catalog/template?locale=${locale}`}
           className={buttonVariants({ variant: 'outline' })}
@@ -193,6 +196,7 @@ export function CatalogScreen({
                 </label>
                 <input
                   id="catalog-file"
+                  name="catalog-file"
                   type="file"
                   accept=".xlsx"
                   data-testid="catalog-file"
@@ -211,7 +215,7 @@ export function CatalogScreen({
         </form>
 
         {uploadError ? (
-          <p className="text-sm text-red-600" role="alert" data-testid="upload-error">
+          <p className="text-danger text-sm" role="alert" data-testid="upload-error">
             {t(`errors.${uploadError}` as 'errors.unknown')}
           </p>
         ) : null}
@@ -229,7 +233,7 @@ export function CatalogScreen({
             {result.errors.length > 0 ? <Notice tone="warning">{t('errorsHint')}</Notice> : null}
 
             {result.errors.length > 0 ? (
-              <div className="border-border mt-2 max-h-72 overflow-y-auto rounded-lg border">
+              <div className="border-border mt-2 max-h-72 overflow-y-auto rounded-2xl border">
                 <h3 className="border-border bg-muted border-b px-3 py-2 text-sm font-medium">
                   {t('errorsTitle')}
                 </h3>
@@ -334,7 +338,7 @@ export function CatalogScreen({
               return (
                 <li
                   key={city.id}
-                  className="border-border space-y-3 rounded-lg border p-3"
+                  className="border-border space-y-3 rounded-2xl border p-3"
                   data-testid={`zone-${city.id}`}
                 >
                   <p className="font-medium">{city.name}</p>

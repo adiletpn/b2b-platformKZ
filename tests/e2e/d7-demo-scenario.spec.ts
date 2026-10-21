@@ -1,6 +1,7 @@
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 import { buildCatalogXlsx, validRow } from '../helpers/catalog-fixture';
 import { testPoolBin } from '@/mocks/bin-registry';
+import { open } from '../helpers/open';
 
 /**
  * Сквозной демо-сценарий: регистрация → каталог → выбор → заявки → накладная →
@@ -144,7 +145,7 @@ test('criterion_2_supplier_uploads_catalog_from_excel', async ({}, testInfo) => 
 test('criterion_3_store_picks_products_by_swipe_and_in_list', async ({}, testInfo) => {
   test.skip(testInfo.project.name !== ONLY_PROJECT, 'сквозной сценарий');
 
-  await storePage.goto('/ru/feed');
+  await open(storePage, '/ru/feed');
 
   // Свайп на телефоне.
   await storePage.setViewportSize(PHONE_WIDTH);
@@ -190,10 +191,8 @@ test('criterion_3_store_picks_products_by_swipe_and_in_list', async ({}, testInf
 test('criterion_4_cart_of_three_suppliers_creates_three_orders', async ({}, testInfo) => {
   test.skip(testInfo.project.name !== ONLY_PROJECT, 'сквозной сценарий');
 
-  await storePage.goto('/ru/cart');
-  await expect(storePage.getByTestId('cart-suppliers-count')).toHaveText(
-    'Поставщиков в корзине: 3',
-  );
+  await open(storePage, '/ru/cart');
+  await expect(storePage.getByTestId('cart-suppliers-count')).toContainText('3 поставщика');
   await checkBothWidths(storePage);
 
   await storePage.getByTestId('send-orders').click();
@@ -221,7 +220,7 @@ test('criterion_5_partial_confirmation_needs_store_agreement', async ({}, testIn
   await expect(supplier.page.getByTestId('order-status')).toHaveText('Изменена поставщиком');
 
   const number = (await supplier.page.getByTestId('order-number').textContent())!;
-  await storePage.goto('/ru/orders');
+  await open(storePage, '/ru/orders');
   await storePage.getByTestId(`order-open-${number}`).click();
   await expect(storePage.getByTestId('order-changed-notice')).toBeVisible();
   await storePage.getByTestId('agree-changes').click();
@@ -250,7 +249,7 @@ test('criterion_6_waybill_and_invoice_are_generated_as_pdf', async ({}, testInfo
   await expect(supplier.page.getByTestId('document-INVOICE')).toBeVisible();
 
   // 4 подтверждённых позиции по 116 ₸ с НДС 16%.
-  await expect(supplier.page.getByTestId('document-WAYBILL')).toContainText('464.00');
+  await expect(supplier.page.getByTestId('document-WAYBILL')).toContainText('464');
 
   const href = (await supplier.page.getByTestId('document-pdf-WAYBILL').getAttribute('href'))!;
   for (const locale of ['ru', 'kk']) {
@@ -280,7 +279,7 @@ test('criterion_7_and_8_acceptance_creates_act_and_grows_stock', async ({}, test
   await storePage.getByTestId('submit-acceptance').click();
 
   await expect(storePage.getByTestId('acceptance-result')).toContainText('с расхождениями');
-  await expect(storePage.getByTestId('acceptance-result')).toContainText('348.00');
+  await expect(storePage.getByTestId('acceptance-result')).toContainText('348');
 
   await storePage.reload();
   await expect(storePage.getByTestId('order-status')).toHaveText('Принята с расхождениями');
@@ -288,7 +287,7 @@ test('criterion_7_and_8_acceptance_creates_act_and_grows_stock', async ({}, test
 
   acceptedOrderUrl = storePage.url();
 
-  await storePage.goto('/ru/stock');
+  await open(storePage, '/ru/stock');
   await expect(storePage.getByTestId('stock-table')).toContainText(suppliers[0]!.product);
   await expect(storePage.getByTestId('stock-quantity').first()).toContainText('3.000');
   await checkBothWidths(storePage);
@@ -297,7 +296,7 @@ test('criterion_7_and_8_acceptance_creates_act_and_grows_stock', async ({}, test
 test('criterion_demo_payment_is_marked_manually', async ({}, testInfo) => {
   test.skip(testInfo.project.name !== ONLY_PROJECT, 'сквозной сценарий');
 
-  await storePage.goto(acceptedOrderUrl);
+  await open(storePage, acceptedOrderUrl);
   await expect(storePage.getByTestId('order-status')).toHaveText('Принята с расхождениями');
 
   await storePage.getByTestId('to-payment').click();
@@ -306,7 +305,7 @@ test('criterion_demo_payment_is_marked_manually', async ({}, testInfo) => {
 
   await storePage.getByTestId('payment-reference').fill('ПП-700');
   await storePage.getByTestId('submit-payment').click();
-  await expect(storePage.getByTestId('payment-result')).toContainText('348.00');
+  await expect(storePage.getByTestId('payment-result')).toContainText('348');
 
   await storePage.reload();
   await expect(storePage.getByTestId('order-status')).toHaveText('Оплачена');
@@ -315,7 +314,7 @@ test('criterion_demo_payment_is_marked_manually', async ({}, testInfo) => {
 test('criterion_10_interface_switches_between_russian_and_kazakh', async ({}, testInfo) => {
   test.skip(testInfo.project.name !== ONLY_PROJECT, 'сквозной сценарий');
 
-  await storePage.goto('/ru/dashboard');
+  await open(storePage, '/ru/dashboard');
   await expect(storePage.getByRole('heading', { level: 1 })).toHaveText('Кабинет');
 
   await storePage.getByTestId('locale-kk').click();

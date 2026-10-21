@@ -59,3 +59,23 @@ export function quantity(value: string): string {
   const trimmed = fraction.replace(/0+$/, '');
   return trimmed ? `${whole},${trimmed}` : whole;
 }
+
+const shortDateFormats = {
+  ru: new Intl.DateTimeFormat('ru-RU', {
+    timeZone: KZ_TIME_ZONE,
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+  }),
+  kk: new Intl.DateTimeFormat('kk-KZ', {
+    timeZone: KZ_TIME_ZONE,
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+  }),
+};
+
+/** Короткая дата как в макете: «чт, 23 окт». */
+export function formatShortDate(date: Date, locale: string): string {
+  return shortDateFormats[locale === 'kk' ? 'kk' : 'ru'].format(date).replace('.', '');
+}

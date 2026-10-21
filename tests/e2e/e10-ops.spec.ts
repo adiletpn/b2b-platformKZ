@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { orderWithDocuments, registerPair, type Pair } from '../helpers/e2e-flow';
+import { open } from '../helpers/open';
 
 test.describe.configure({ mode: 'serial' });
 test.setTimeout(180_000);
@@ -13,7 +14,7 @@ let pair: Pair;
 let adminPage: Page;
 
 async function adminLogin(page: Page) {
-  await page.goto('/ru/admin');
+  await open(page, '/ru/admin');
   await page.getByTestId('admin-phone').fill('+77009000001');
   await page.getByTestId('admin-request-code').click();
   const code = await page.getByTestId('admin-demo-code').textContent();
@@ -57,7 +58,7 @@ test('supplier_answers_with_template_and_store_complains', async ({}, testInfo) 
   await supplierPage.getByTestId('chat-send').click();
   await expect(supplierPage.getByTestId('chat-message-mine')).toHaveCount(1);
 
-  await storePage.goto('/ru/chat');
+  await open(storePage, '/ru/chat');
   await storePage.getByTestId('chat-search').fill('обеда');
   await expect(storePage.getByTestId('chat-search-results')).toContainText('Привезём завтра');
   await storePage.getByTestId('chat-search').fill('');
@@ -76,7 +77,7 @@ test('store_asks_support_and_gets_answer', async ({}, testInfo) => {
   test.skip(testInfo.project.name !== ONLY_PROJECT, 'один прогон');
   const { storePage } = pair;
 
-  await storePage.getByTestId('go-support').click();
+  await open(storePage, '/ru/support');
   await storePage.getByTestId('support-subject').fill('Как подключить Kaspi');
   await storePage.getByTestId('support-text').fill('Подскажите, где ввести ключ');
   await storePage.getByTestId('support-create').click();
@@ -105,7 +106,7 @@ test('blocked_user_loses_access_and_cannot_log_in', async ({}, testInfo) => {
     'Пользователь заблокирован',
   );
 
-  await storePage.goto('/ru/dashboard');
+  await open(storePage, '/ru/dashboard');
   await expect(storePage).toHaveURL(/\/login$/);
   await storePage.getByTestId('phone-input').fill(STORE_PHONE);
   await storePage.getByTestId('request-code').click();

@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { buildCatalogXlsx, validRow } from '../helpers/catalog-fixture';
 import { testPoolBin } from '@/mocks/bin-registry';
+import { open } from '../helpers/open';
 
 /** Магазин и поставщики создаются один раз на файл: БИН в базе уникален. */
 test.describe.configure({ mode: 'serial' });
@@ -53,7 +54,7 @@ async function createSupplier(
   await browserPage.getByTestId('submit-company').click();
   await browserPage.waitForURL(/\/dashboard$/);
 
-  await browserPage.getByTestId('go-catalog').click();
+  await open(browserPage, '/ru/catalog');
   await browserPage.waitForURL(/\/catalog$/);
   await browserPage.getByTestId('catalog-file').setInputFiles({
     name: 'catalog.xlsx',
@@ -117,7 +118,7 @@ test.afterAll(async () => {
 });
 
 test('store_feed_shows_only_suppliers_delivering_to_its_city', async () => {
-  await page.getByTestId('go-feed').click();
+  await open(page, '/ru/feed');
   await page.waitForURL(/\/feed$/);
 
   await expect(page.getByTestId('feed-city')).toHaveText('Тараз');
@@ -200,7 +201,7 @@ test('store_sets_quantity_in_list_mode', async () => {
 });
 
 test('cart_is_split_by_supplier_with_totals_and_minimum', async () => {
-  await page.getByTestId('go-cart').click();
+  await open(page, '/ru/cart');
   await page.waitForURL(/\/cart$/);
 
   // Свайп мог взять карточку любого поставщика города, поэтому сверяем деление
@@ -217,13 +218,15 @@ test('cart_is_split_by_supplier_with_totals_and_minimum', async () => {
 });
 
 test('repeat_last_order_reports_no_history_before_first_order', async () => {
-  await page.goto('/ru/feed');
+  await open(page, '/ru/feed');
+  // В макете (M05) повтор заказа — баннер режима «Список».
+  await page.getByTestId('mode-list').click();
   await page.getByTestId('repeat-last-order').click();
   await expect(page.getByTestId('feed-notice')).toHaveText('Прошлых заказов пока нет');
 });
 
 test('swipe_up_sends_card_to_favorites', async () => {
-  await page.goto('/ru/feed');
+  await open(page, '/ru/feed');
   await page.getByTestId('mode-swipe').click();
   const card = page.getByTestId('swipe-card');
   await expect(card).toBeVisible();
@@ -249,7 +252,7 @@ test('swipe_up_sends_card_to_favorites', async () => {
 });
 
 test('tap_on_card_opens_details_with_price_comparison', async () => {
-  await page.goto('/ru/feed');
+  await open(page, '/ru/feed');
   await page.getByTestId('mode-swipe').click();
   await expect(page.getByTestId('swipe-card')).toBeVisible();
 

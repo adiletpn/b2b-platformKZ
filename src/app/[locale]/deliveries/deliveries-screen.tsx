@@ -9,6 +9,7 @@ import { Card, IconBadge } from '@/components/ui/card';
 import { EmptyState, Page, PageHeader } from '@/components/ui/page';
 import { OrderStatusBadge } from '@/components/order-status-badge';
 import type { DeliveryRow } from '@/lib/deliveries/deliveries';
+import { money } from '@/lib/format';
 
 /**
  * Приложение водителя (разделы 1.2 и 3.5 ТЗ): куда везти, накладная в PDF,
@@ -92,7 +93,7 @@ export function DeliveriesScreen({
                     </a>
                   ) : null}
                   <p>
-                    {t('total', { total: row.total })}
+                    {t('total', { total: money(row.total) })}
                     {row.deliveryDate ? ` · ${t('date', { date: row.deliveryDate })}` : ''}
                   </p>
                 </div>

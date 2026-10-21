@@ -46,11 +46,7 @@ export async function POST(request: Request) {
   if (!store) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
   const build = wantsRecommendations(request) ? buildRecommendationDraft : buildReplenishmentDraft;
-  const result = await build(
-    guard.access.companyId,
-    guard.access.userId,
-    store.locationId,
-  );
+  const result = await build(guard.access.companyId, guard.access.userId, store.locationId);
 
   return NextResponse.json(result, { status: result.status === 'ok' ? 200 : 400 });
 }

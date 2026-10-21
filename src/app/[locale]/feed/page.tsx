@@ -5,6 +5,7 @@ import { getFeed } from '@/lib/feed/query';
 import { visibleSupplierWhere } from '@/lib/admin/settings';
 import { prisma } from '@/lib/prisma';
 import { FeedScreen } from './feed-screen';
+import { getCartGroups } from '@/lib/cart/cart';
 
 export default async function FeedPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -15,7 +16,7 @@ export default async function FeedPage({ params }: { params: Promise<{ locale: s
 
   const { companyId, cityId, locationId } = store!;
   const visibleSuppliers = await visibleSupplierWhere();
-  const [swipeOffers, listOffers, city, categories, zones, cart] = await Promise.all([
+  const [swipeOffers, listOffers, city, categories, zones, cart, cartGroups] = await Promise.all([
     getFeed(companyId, cityId, { forSwipe: true }),
     getFeed(companyId, cityId, { forSwipe: false }),
     prisma.city.findUniqueOrThrow({ where: { id: cityId } }),
@@ -25,6 +26,7 @@ export default async function FeedPage({ params }: { params: Promise<{ locale: s
       include: { supplier: true },
     }),
     prisma.cart.findUnique({ where: { locationId }, include: { items: true } }),
+    getCartGroups(locationId, cityId),
   ]);
 
   const brands = [...new Set(listOffers.map((offer) => offer.brand).filter(Boolean))] as string[];
@@ -41,6 +43,7 @@ export default async function FeedPage({ params }: { params: Promise<{ locale: s
       }))}
       suppliers={zones.map((zone) => ({ id: zone.supplierId, name: zone.supplier.name }))}
       brands={brands}
+      initialCartGroups={cartGroups}
       cartQuantities={Object.fromEntries(
         (cart?.items ?? []).map((item) => [item.offerId, item.quantity.toFixed(3)]),
       )}

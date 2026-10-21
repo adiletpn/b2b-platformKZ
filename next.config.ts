@@ -9,6 +9,8 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ['playwright', 'playwright-core'],
   // Фото товаров приходят ссылками из каталога поставщика.
   images: { remotePatterns: [{ protocol: 'https', hostname: '**' }] },
+  // Переход между вкладками без ожидания: открытые страницы живут в кэше браузера 30 с.
+  experimental: { staleTimes: { dynamic: 30, static: 180 } },
 };
 
 export default withNextIntl(nextConfig);

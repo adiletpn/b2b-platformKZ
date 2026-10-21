@@ -176,7 +176,7 @@ export function ManualOfferForm({
 
         <Field label={t('unit')}>
           <select
-            className="border-border bg-card h-11 rounded-lg border px-3"
+            className="border-border bg-card h-11 rounded-[14px] border-[1.5px] px-3.5 font-medium"
             value={unitCode}
             data-testid="manual-unit"
             onChange={(event) => setUnitCode(event.target.value)}
@@ -190,7 +190,7 @@ export function ManualOfferForm({
         </Field>
         <Field label={t('category')}>
           <select
-            className="border-border bg-card h-11 rounded-lg border px-3"
+            className="border-border bg-card h-11 rounded-[14px] border-[1.5px] px-3.5 font-medium"
             value={categoryCode}
             data-testid="manual-category"
             onChange={(event) => setCategoryCode(event.target.value)}
@@ -205,7 +205,7 @@ export function ManualOfferForm({
         </Field>
         <Field label={t('vatRate')}>
           <select
-            className="border-border bg-card h-11 rounded-lg border px-3"
+            className="border-border bg-card h-11 rounded-[14px] border-[1.5px] px-3.5 font-medium"
             value={vatCode}
             data-testid="manual-vat"
             onChange={(event) => setVatCode(event.target.value)}
@@ -264,7 +264,7 @@ export function ManualOfferForm({
           </p>
         ) : null}
         {error ? (
-          <p className="text-sm text-red-600" role="alert" data-testid="manual-error">
+          <p className="text-danger text-sm" role="alert" data-testid="manual-error">
             {t(`manualErrors.${error}` as 'manualErrors.unknown')}
           </p>
         ) : null}

@@ -3,6 +3,7 @@
 import {
   Archive,
   BarChart3,
+  ChevronRight,
   Boxes,
   Calculator,
   ClipboardList,
@@ -49,11 +50,48 @@ const ICONS: Record<string, LucideIcon> = {
  * Разделы кабинета. Одна разметка на все экраны: на телефоне — прокручиваемая строка
  * под шапкой, на компьютере — колонка бокового меню с подписями групп.
  */
-export function NavLinks({ groups }: { groups: NavGroup[] }) {
+export function NavLinks({
+  groups,
+  variant = 'sidebar',
+}: {
+  groups: NavGroup[];
+  variant?: 'sidebar' | 'menu';
+}) {
   const pathname = usePathname();
 
+  // Список разделов на телефоне — внизу «Кабинета», как меню макета M13.
+  if (variant === 'menu') {
+    return (
+      <nav
+        className="border-border bg-card divide-border divide-y rounded-[22px] border px-4 py-0.5 lg:hidden"
+        data-testid="mobile-menu"
+      >
+        {groups
+          .flatMap((group) => group.items)
+          .filter((item) => item.href !== '/dashboard')
+          .map((item) => {
+            const Icon = ICONS[item.icon] ?? LayoutDashboard;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                data-testid={`menu-${item.href.slice(1)}`}
+                className="flex items-center gap-3.5 py-[13px]"
+              >
+                <span className="bg-muted grid size-[38px] shrink-0 place-items-center rounded-xl">
+                  <Icon aria-hidden className="size-[19px]" />
+                </span>
+                <span className="flex-1 text-[15px] font-bold">{item.label}</span>
+                <ChevronRight aria-hidden className="size-4 text-[#bdb5ab]" strokeWidth={2.4} />
+              </Link>
+            );
+          })}
+      </nav>
+    );
+  }
+
   return (
-    <nav className="order-3 -mx-1 flex w-full scrollbar-none gap-1.5 overflow-x-auto [mask-image:linear-gradient(to_right,black_88%,transparent)] px-1 pt-1 pb-2.5 lg:order-3 lg:mx-0 lg:flex-1 lg:flex-col lg:gap-0.5 lg:overflow-y-auto lg:[mask-image:none] lg:px-0 lg:pt-0 lg:pb-4">
+    <nav className="order-3 -mx-1 hidden w-full scrollbar-none gap-1.5 overflow-x-auto [mask-image:linear-gradient(to_right,black_88%,transparent)] px-1 pt-1 pb-2.5 lg:order-3 lg:mx-0 lg:flex lg:flex-1 lg:flex-col lg:gap-0.5 lg:overflow-y-auto lg:[mask-image:none] lg:px-0 lg:pt-0 lg:pb-4">
       {groups.map((group) => (
         <div key={group.label} className="contents lg:block lg:pt-4 lg:first:pt-1">
           <p className="text-sidebar-muted hidden px-3 pb-1.5 text-[11px] font-bold tracking-wider uppercase lg:block">

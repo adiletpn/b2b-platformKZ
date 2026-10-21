@@ -6,6 +6,7 @@ import { Onest } from 'next/font/google';
 import { routing } from '@/i18n/routing';
 import { AppShell } from '@/components/app-header';
 import { ServiceWorkerRegistration } from '@/components/service-worker';
+import { HydrationMark } from '@/components/hydration-mark';
 import '../globals.css';
 
 // Шапка читает сессию из cookie: макет не должен попадать в статическую сборку,
@@ -54,6 +55,7 @@ export default async function LocaleLayout({
           {/* Шапка общая: разделы, язык и выход доступны с любого экрана. */}
           <AppShell>{children}</AppShell>
           <ServiceWorkerRegistration />
+          <HydrationMark />
         </NextIntlClientProvider>
       </body>
     </html>

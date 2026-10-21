@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ProductPhoto } from '@/components/product-photo';
 import type { OfferDetails } from '@/lib/feed/offer-details';
+import { money } from '@/lib/format';
 
 /** Тап по карточке: подробности товара и сравнение цен (раздел 3.3 ТЗ). */
 export function OfferDetailsPanel({
@@ -110,7 +111,7 @@ export function OfferDetailsPanel({
                   {offer.supplierRating ? ` · ★ ${offer.supplierRating}` : ''}
                   {offer.isCurrent ? ` · ${t('details.current')}` : ''}
                 </td>
-                <td className="px-2 py-2 tabular-nums">{offer.priceWithVat} ₸</td>
+                <td className="px-2 py-2 tabular-nums">{money(offer.priceWithVat)} ₸</td>
                 <td className="px-2 py-2 tabular-nums">{offer.minBatch}</td>
                 <td className="px-2 py-2 tabular-nums">{offer.leadTimeDays}</td>
                 <td className="px-2 py-2 text-right">

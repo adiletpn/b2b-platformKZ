@@ -7,6 +7,7 @@ import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Field } from '@/components/ui/field';
 import { Card, CardTitle } from '@/components/ui/card';
+import { money } from '@/lib/format';
 
 type Category = { id: string; name: string };
 type Price = {
@@ -67,7 +68,7 @@ export function PricingPanel({
       <div className="mt-3 flex flex-wrap items-end gap-3">
         <Field label={t('markupCategory')}>
           <select
-            className="border-border bg-card h-11 rounded-lg border px-3"
+            className="border-border bg-card h-11 rounded-[14px] border-[1.5px] px-3.5 font-medium"
             value={categoryId}
             data-testid="markup-category"
             onChange={(event) => {
@@ -134,7 +135,7 @@ export function PricingPanel({
         </p>
       ) : null}
       {error ? (
-        <p className="mt-2 text-sm text-red-600" role="alert" data-testid="pricing-error">
+        <p className="text-danger mt-2 text-sm" role="alert" data-testid="pricing-error">
           {t(`errors.${error}` as 'errors.unknown')}
         </p>
       ) : null}
@@ -175,10 +176,13 @@ function PriceRow({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="min-w-0 break-words">{price.name}</span>
         <span className="flex items-center gap-2">
-          <span className="tabular-nums">{price.price} ₸</span>
+          <span className="tabular-nums">{money(price.price)} ₸</span>
           {price.piecesPerPack ? (
             <span className="text-muted-foreground text-xs" data-testid="piece-sale-info">
-              {t('pieceSaleInfo', { pieces: price.piecesPerPack, price: price.piecePrice ?? '' })}
+              {t('pieceSaleInfo', {
+                pieces: price.piecesPerPack,
+                price: money(price.piecePrice ?? ''),
+              })}
             </span>
           ) : null}
           {price.isMarked ? null : (

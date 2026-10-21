@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Field } from '@/components/ui/field';
 import { Page, PageHeader } from '@/components/ui/page';
 import { PERMISSION_ACTIONS, PERMISSION_SECTIONS } from '@/lib/employees/permission-matrix';
+import { money } from '@/lib/format';
 
 type Role = { id: string; code: string; name: string; isTemplate: boolean };
 type Location = { id: string; address: string };
@@ -75,7 +76,7 @@ export function EmployeesScreen({
     return t(`roles.${code}` as 'roles.CASHIER');
   }
 
-  async function send(url: string, body: unknown, method = 'POST') {
+  async function send(url: string, body: unknown, method = 'POST', refresh = true) {
     setPending(true);
     setError(null);
     const response = await fetch(url, {
@@ -89,7 +90,7 @@ export function EmployeesScreen({
       setError(data.status ?? data.error ?? 'unknown');
       return false;
     }
-    router.refresh();
+    if (refresh) router.refresh();
     return true;
   }
 
@@ -145,10 +146,13 @@ export function EmployeesScreen({
 
   async function confirmTransfer() {
     if (!transfer) return;
-    const ok = await send('/api/company/owner', {
-      transferId: transfer.id,
-      code: transferCode,
-    });
+    // Без обновления: прежний Владелец теряет доступ к экрану, а итог должен остаться виден.
+    const ok = await send(
+      '/api/company/owner',
+      { transferId: transfer.id, code: transferCode },
+      'POST',
+      false,
+    );
     if (ok) {
       setTransfer(null);
       setTransferCode('');
@@ -205,7 +209,7 @@ export function EmployeesScreen({
         </div>
         <Field label={t('role')}>
           <select
-            className="border-border bg-card h-11 rounded-lg border px-3"
+            className="border-border bg-card h-11 rounded-[14px] border-[1.5px] px-3.5 font-medium"
             value={role}
             data-testid="invite-role"
             onChange={(event) => setRole(event.target.value)}
@@ -245,7 +249,7 @@ export function EmployeesScreen({
         </p>
       ) : null}
       {error ? (
-        <p className="mt-2 text-sm text-red-600" role="alert" data-testid="employees-error">
+        <p className="text-danger mt-2 text-sm" role="alert" data-testid="employees-error">
           {t(`errors.${error}` as 'errors.unknown')}
         </p>
       ) : null}
@@ -270,7 +274,7 @@ export function EmployeesScreen({
                   className="px-3 py-2 tabular-nums"
                   data-testid={`employee-limit-${employee.id}`}
                 >
-                  {employee.orderLimit || t('noLimit')}
+                  {employee.orderLimit ? `${money(employee.orderLimit)} ₸` : t('noLimit')}
                 </td>
                 <td className="px-3 py-2" data-testid={`employee-status-${employee.id}`}>
                   {t(`statuses.${employee.status}`)}
@@ -324,7 +328,7 @@ export function EmployeesScreen({
               <Field label={t('role')}>
                 <select
                   name="roleId"
-                  className="border-border bg-card h-11 rounded-lg border px-3"
+                  className="border-border bg-card h-11 rounded-[14px] border-[1.5px] px-3.5 font-medium"
                   defaultValue={employee.roleId ?? ''}
                   data-testid="access-role"
                 >
@@ -393,7 +397,7 @@ export function EmployeesScreen({
           <div className="mt-3 flex flex-wrap items-end gap-3">
             <Field label={t('employee')}>
               <select
-                className="border-border bg-card h-11 rounded-lg border px-3"
+                className="border-border bg-card h-11 rounded-[14px] border-[1.5px] px-3.5 font-medium"
                 value={transferTo}
                 data-testid="transfer-employee"
                 onChange={(event) => setTransferTo(event.target.value)}
@@ -453,7 +457,7 @@ export function EmployeesScreen({
       ) : null}
 
       {companies.length > 1 ? (
-        <section className="border-border mt-4 rounded-lg border border-dashed p-4">
+        <section className="border-border mt-4 rounded-2xl border-[1.5px] border-dashed p-4">
           <h2 className="text-muted-foreground text-sm font-medium">{t('companySwitchTitle')}</h2>
           <ul className="mt-2 space-y-1 text-sm" data-testid="my-companies">
             {companies.map((company) => (
@@ -546,7 +550,7 @@ export function EmployeesScreen({
       </form>
 
       {invitations.length > 0 ? (
-        <section className="border-border mt-4 rounded-lg border border-dashed p-4">
+        <section className="border-border mt-4 rounded-2xl border-[1.5px] border-dashed p-4">
           <h2 className="text-muted-foreground text-sm font-medium">{t('pending')}</h2>
           <ul className="mt-2 space-y-1 text-sm" data-testid="invitations">
             {invitations.map((invitation) => (

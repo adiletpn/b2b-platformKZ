@@ -21,20 +21,29 @@ export function ProductPhoto({
   src: string | null;
   name: string;
   className?: string;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg' | 'hero';
 }) {
-  const boxes = { sm: 'size-10', md: 'size-16', lg: 'aspect-[4/3] w-full' };
-  const shared = cn('border-border overflow-hidden rounded-lg border', boxes[size], className);
+  // Плитки макета: 40–54 px с рамкой в списках, «hero» — фото на свайп-карточке без рамки.
+  const boxes = {
+    sm: 'size-11 rounded-xl border',
+    md: 'size-[54px] rounded-[14px] border',
+    lg: 'aspect-[4/3] w-full rounded-[20px]',
+    hero: 'h-full w-full',
+  };
+  const shared = cn('border-border overflow-hidden', boxes[size], className);
 
   if (src) {
     return (
-      <div className={cn(shared, 'bg-muted relative')} data-testid="product-photo">
+      <div
+        className={cn(shared, 'bg-card relative', size === 'hero' && 'bg-transparent')}
+        data-testid="product-photo"
+      >
         <Image
           src={src}
           alt={name}
           fill
           sizes="(max-width: 640px) 100vw, 320px"
-          className="object-cover"
+          className={size === 'hero' ? 'object-contain p-[8%]' : 'object-contain p-[10%]'}
         />
       </div>
     );
@@ -51,7 +60,15 @@ export function ProductPhoto({
       aria-hidden
       data-testid="product-photo-placeholder"
     >
-      <span className={size === 'lg' ? 'text-4xl' : size === 'md' ? 'text-xl' : 'text-sm'}>
+      <span
+        className={
+          size === 'lg' || size === 'hero'
+            ? 'text-6xl font-black'
+            : size === 'md'
+              ? 'text-xl'
+              : 'text-sm'
+        }
+      >
         {name.trim().charAt(0).toUpperCase() || '?'}
       </span>
     </div>

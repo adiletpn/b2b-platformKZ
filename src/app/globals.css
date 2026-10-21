@@ -39,7 +39,7 @@
 /* Палитра Arbafind по макету дизайнера (handoff ArbaFood B2B): тёплый тёмно-коричневый
    текст, оранжевый акцент, мягкие бежевые поверхности. Меняется здесь одним блоком. */
 :root {
-  --background: #fbfaf8;
+  --background: #ffffff;
   --surface: #f6f2ec;
   --foreground: #3e342e;
   --muted: #f1efec;

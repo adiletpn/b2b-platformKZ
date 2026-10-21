@@ -5,6 +5,7 @@ import { getReceivables, markOverdueOrders } from '@/lib/settlements/receivables
 import { Badge } from '@/components/ui/badge';
 import { Card, CardHint, CardTitle } from '@/components/ui/card';
 import { EmptyState, Page, PageHeader } from '@/components/ui/page';
+import { money } from '@/lib/format';
 
 export default async function SettlementsPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -27,7 +28,7 @@ export default async function SettlementsPage({ params }: { params: Promise<{ lo
         <Card>
           <CardTitle className="text-sm">{t('total')}</CardTitle>
           <p className="mt-2 text-2xl font-semibold tabular-nums" data-testid="receivables-total">
-            {receivables.total} ₸
+            {money(receivables.total)} ₸
           </p>
         </Card>
         <Card>
@@ -36,7 +37,7 @@ export default async function SettlementsPage({ params }: { params: Promise<{ lo
             className="text-danger mt-2 text-2xl font-semibold tabular-nums"
             data-testid="receivables-overdue"
           >
-            {receivables.overdueTotal} ₸
+            {money(receivables.overdueTotal)} ₸
           </p>
           <CardHint>{t('overdueHint')}</CardHint>
         </Card>

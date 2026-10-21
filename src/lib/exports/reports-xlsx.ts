@@ -14,7 +14,10 @@ function num(value: string) {
 
 /** Дата и время по Казахстану: в выгрузке те же часы, что на экране. */
 function localTime(iso: string) {
-  return new Date(new Date(iso).getTime() + 5 * 3_600_000).toISOString().slice(0, 16).replace('T', ' ');
+  return new Date(new Date(iso).getTime() + 5 * 3_600_000)
+    .toISOString()
+    .slice(0, 16)
+    .replace('T', ' ');
 }
 
 /** Журнал движения по товару в Excel (раздел 4.4 ТЗ: «отчёты в Excel»). */

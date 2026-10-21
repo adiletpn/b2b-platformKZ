@@ -1,6 +1,7 @@
 import { expect, type Browser, type Page } from '@playwright/test';
 import { buildCatalogXlsx, validRow } from './catalog-fixture';
 import { testPoolBin } from '@/mocks/bin-registry';
+import { open } from './open';
 
 /**
  * Общие шаги e2e этапа 2: регистрация пары «поставщик — магазин» и проводка заявки
@@ -42,7 +43,7 @@ export async function registerPair(
   await supplierPage.getByTestId('submit-company').click();
   await supplierPage.waitForURL(/\/dashboard$/);
 
-  await supplierPage.goto('/ru/catalog');
+  await open(supplierPage, '/ru/catalog');
   await supplierPage.getByTestId('catalog-file').setInputFiles({
     name: 'catalog.xlsx',
     mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -69,7 +70,7 @@ export async function registerPair(
 /** Заявка от магазина, принятая поставщиком, с накладной и счётом. Возвращает путь карточки. */
 export async function orderWithDocuments(pair: Pair): Promise<string> {
   const { storePage, supplierPage, productName } = pair;
-  await storePage.goto('/ru/feed');
+  await open(storePage, '/ru/feed');
   await storePage.getByTestId('mode-list').click();
   await storePage.getByTestId('feed-search').fill(productName);
   await expect(storePage.getByTestId('list-table')).toContainText(productName);
@@ -83,11 +84,11 @@ export async function orderWithDocuments(pair: Pair): Promise<string> {
   await quantity.blur();
   await expect(quantity).toHaveValue('5.000');
 
-  await storePage.goto('/ru/cart');
+  await open(storePage, '/ru/cart');
   await storePage.getByTestId('send-orders').click();
   await storePage.waitForURL(/\/orders$/, { timeout: 30_000 });
 
-  await supplierPage.goto('/ru/orders');
+  await open(supplierPage, '/ru/orders');
   await supplierPage.getByRole('link', { name: 'Открыть' }).first().click();
   await supplierPage.waitForURL(/\/orders\/[^/]+$/);
   await supplierPage.getByTestId('accept-full').click();
@@ -99,13 +100,13 @@ export async function orderWithDocuments(pair: Pair): Promise<string> {
 /** Доставка, приёмка без расхождений и выставление к оплате. */
 export async function bringOrderToPayment(pair: Pair, orderPath: string) {
   const { storePage, supplierPage } = pair;
-  await supplierPage.goto(orderPath);
+  await open(supplierPage, orderPath);
   for (const status of ['Собирается', 'Отгружена', 'Доставлена']) {
     await supplierPage.getByTestId('next-status').click();
     await expect(supplierPage.getByTestId('order-status')).toHaveText(status);
   }
 
-  await storePage.goto(orderPath);
+  await open(storePage, orderPath);
   await storePage.getByTestId('submit-acceptance').click();
   await expect(storePage.getByTestId('acceptance-result')).toBeVisible();
   await storePage.reload();

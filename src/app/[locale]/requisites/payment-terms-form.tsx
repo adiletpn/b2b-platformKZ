@@ -48,7 +48,7 @@ export function PaymentTermsForm({
       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
         <Field label={t('terms')}>
           <select
-            className="border-border bg-card h-11 w-full rounded-lg border px-3"
+            className="border-border bg-card h-11 w-full rounded-[14px] border-[1.5px] px-3.5 font-medium"
             value={form.paymentTerms}
             data-testid="terms-select"
             onChange={(event) =>

@@ -141,7 +141,7 @@ export default async function StockPage({ params }: { params: Promise<{ locale: 
                     · {row.quantity} · {row.locationAddress}
                   </span>
                 </span>
-                <span className={row.daysLeft < 0 ? 'text-red-600' : 'text-muted-foreground'}>
+                <span className={row.daysLeft < 0 ? 'text-danger' : 'text-muted-foreground'}>
                   {row.expiresAt} ·{' '}
                   {row.daysLeft < 0 ? t('expired') : t('daysLeft', { days: row.daysLeft })}
                 </span>

@@ -78,41 +78,11 @@ function initials(value: string) {
   );
 }
 
-/**
- * Оболочка кабинета: разделы по типу компании, язык и выход. Гость видит только
- * верхнюю строку со входом. Содержимое страницы сдвигается под боковое меню.
- */
-export async function AppShell({ children }: { children: React.ReactNode }) {
+/** Разделы кабинета по типу компании: боковое меню и список разделов в «Кабинете» на телефоне. */
+export async function navGroups(type: 'STORE' | 'SUPPLIER' | 'BOTH'): Promise<NavGroup[]> {
   const t = await getTranslations('dashboard');
-  const tApp = await getTranslations('app');
-  const tType = await getTranslations('companyType');
-
-  // Компания уже приходит вместе с сессией: лишний запрос к базе на каждый рендер не нужен.
-  const session = await getSession();
-  const membership =
-    session?.user.memberships.find(
-      (item) => item.companyId === session.activeCompanyId && item.status === 'ACTIVE',
-    ) ?? session?.user.memberships.find((item) => item.status === 'ACTIVE');
-  const company = membership?.company ?? null;
-
-  if (!company) {
-    return (
-      <>
-        <header className="border-border bg-card/80 sticky top-0 z-30 border-b backdrop-blur">
-          <div className="mx-auto flex w-full max-w-6xl items-center gap-3 px-4 py-2.5 sm:px-6">
-            <Brand name={tApp('name')} href="/" />
-            <div className="ml-auto flex items-center gap-2">
-              <LanguageSwitcher />
-            </div>
-          </div>
-        </header>
-        {children}
-      </>
-    );
-  }
-
-  const store = company.type !== 'SUPPLIER';
-  const supplier = company.type !== 'STORE';
+  const store = type !== 'SUPPLIER';
+  const supplier = type !== 'STORE';
   const item = (href: NavItem['href'], key: string, icon: string): NavItem => ({
     href,
     label: t(key as 'feedLink'),
@@ -120,7 +90,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
     icon,
   });
 
-  const groups: NavGroup[] = [
+  return [
     {
       label: t('navGroups.main'),
       items: [
@@ -163,6 +133,43 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
       ],
     },
   ];
+}
+
+/**
+ * Оболочка кабинета: разделы по типу компании, язык и выход. Гость видит только
+ * верхнюю строку со входом. Содержимое страницы сдвигается под боковое меню.
+ */
+export async function AppShell({ children }: { children: React.ReactNode }) {
+  const t = await getTranslations('dashboard');
+  const tApp = await getTranslations('app');
+  const tType = await getTranslations('companyType');
+
+  // Компания уже приходит вместе с сессией: лишний запрос к базе на каждый рендер не нужен.
+  const session = await getSession();
+  const membership =
+    session?.user.memberships.find(
+      (item) => item.companyId === session.activeCompanyId && item.status === 'ACTIVE',
+    ) ?? session?.user.memberships.find((item) => item.status === 'ACTIVE');
+  const company = membership?.company ?? null;
+
+  if (!company) {
+    return (
+      <>
+        <header className="bg-background/90 sticky top-0 z-30 backdrop-blur">
+          <div className="mx-auto flex w-full max-w-6xl items-center gap-3 px-4 py-2.5 sm:px-6">
+            <Brand name={tApp('name')} href="/" />
+            <div className="ml-auto flex items-center gap-2">
+              <LanguageSwitcher />
+            </div>
+          </div>
+        </header>
+        {children}
+      </>
+    );
+  }
+
+  const store = company.type !== 'SUPPLIER';
+  const groups = await navGroups(company.type);
 
   const tRoles = await getTranslations('employees.roles');
   const userName = session?.user.name ?? null;
@@ -187,7 +194,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      <header className="border-border bg-card/90 lg:bg-sidebar lg:text-sidebar-foreground sticky top-0 z-30 flex flex-wrap items-center gap-x-3 border-b px-4 pt-2.5 backdrop-blur sm:px-6 lg:fixed lg:inset-y-0 lg:left-0 lg:w-[248px] lg:flex-col lg:flex-nowrap lg:items-stretch lg:border-r lg:border-b-0 lg:px-4 lg:pt-[22px] lg:backdrop-blur-none">
+      <header className="border-border bg-background/90 lg:bg-sidebar lg:text-sidebar-foreground sticky top-0 z-30 flex flex-wrap items-center gap-x-3 px-4 pt-2.5 backdrop-blur sm:px-6 lg:fixed lg:inset-y-0 lg:left-0 lg:w-[248px] lg:flex-col lg:flex-nowrap lg:items-stretch lg:border-r lg:px-4 lg:pt-[22px] lg:backdrop-blur-none">
         <div className="order-1 flex min-w-0 items-center lg:px-2 lg:pb-5">
           <Brand name={tApp('name')} href="/dashboard" compact />
         </div>
@@ -204,9 +211,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
           </span>
           <div className="min-w-0">
             <p className="truncate text-[13px] font-extrabold">{company.name}</p>
-            <p className="text-muted-foreground text-[11px] font-semibold">
-              {tType(company.type)}
-            </p>
+            <p className="text-muted-foreground text-[11px] font-semibold">{tType(company.type)}</p>
           </div>
         </div>
 

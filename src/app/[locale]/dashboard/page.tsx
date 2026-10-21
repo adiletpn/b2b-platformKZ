@@ -14,6 +14,7 @@ import { Link, redirect } from '@/i18n/navigation';
 import { getActiveCompany } from '@/lib/auth/active-company';
 import { prisma } from '@/lib/prisma';
 import { Badge } from '@/components/ui/badge';
+import { NotYetBadge } from '@/components/ui/not-yet';
 import { buttonVariants } from '@/components/ui/button';
 import { Card, CardTitle, StatCard } from '@/components/ui/card';
 import { EmptyState, Page, PageHeader } from '@/components/ui/page';
@@ -23,6 +24,9 @@ import { getDashboardSummary } from '@/lib/dashboard/summary';
 import { OnboardingWizard } from './onboarding-progress';
 import { activeBannersFor } from '@/lib/admin/banners';
 import { CabinetBanners } from '@/components/cabinet-banners';
+import { navGroups } from '@/components/app-header';
+import { NavLinks } from '@/components/nav-links';
+import { money } from '@/lib/format';
 
 export default async function DashboardPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -49,6 +53,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
   const tHome = await getTranslations('dashboard.home');
   const tType = await getTranslations('companyType');
   const tStatus = await getTranslations('verificationStatus');
+  const tSoon = await getTranslations('common.notYetItems');
   const tOnboarding = await getTranslations('onboarding');
   const cityName = (city: { nameRu: string; nameKk: string }) =>
     locale === 'kk' ? city.nameKk : city.nameRu;
@@ -107,7 +112,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
           icon={Wallet}
           tone={summary.overdueCount > 0 ? 'danger' : 'warning'}
           label={supplier && !store ? tHome('stats.receivables') : tHome('stats.toPay')}
-          value={`${summary.unpaidTotal} ₸`}
+          value={`${money(summary.unpaidTotal)} ₸`}
           hint={
             summary.overdueCount > 0
               ? tHome('stats.overdue', { count: summary.overdueCount })
@@ -119,7 +124,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
             icon={Calculator}
             tone="success"
             label={tHome('stats.salesToday')}
-            value={`${summary.salesToday} ₸`}
+            value={`${money(summary.salesToday)} ₸`}
             hint={tHome('stats.receipts', { count: summary.receiptsToday })}
           />
         ) : (
@@ -176,7 +181,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
                         {order.counterparty}
                       </span>
                       <span className="text-right text-sm font-medium tabular-nums sm:order-4 sm:w-28">
-                        {order.total} ₸
+                        {money(order.total)} ₸
                       </span>
                     </Link>
                   </li>
@@ -202,6 +207,10 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
               <Badge tone={verified ? 'success' : 'warning'} data-testid="company-status">
                 {tStatus(company.verificationStatus)}
               </Badge>
+              <span className="text-muted-foreground inline-flex items-center gap-1.5 text-xs font-semibold">
+                {tSoon('ecpVerified')}
+                <NotYetBadge />
+              </span>
             </div>
             <dl className="mt-4 space-y-2 text-sm">
               <div className="flex justify-between gap-3">
@@ -247,6 +256,10 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
             </Card>
           ) : null}
         </div>
+      </div>
+      {/* На телефоне разделы — списком внизу кабинета, как в макете M13. */}
+      <div className="mt-4">
+        <NavLinks groups={await navGroups(company.type)} variant="menu" />
       </div>
     </Page>
   );

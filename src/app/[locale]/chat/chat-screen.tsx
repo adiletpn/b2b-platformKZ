@@ -21,6 +21,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { EmptyState, Page, PageHeader } from '@/components/ui/page';
 import { cn } from '@/lib/utils';
+import { money } from '@/lib/format';
 
 type ChatSummary = {
   id: string;
@@ -537,7 +538,7 @@ export function ChatScreen({
                               <img
                                 src={`/api/files/${message.file.id}`}
                                 alt={message.text}
-                                className="mb-1 max-h-48 rounded-lg"
+                                className="mb-1 max-h-48 rounded-2xl"
                                 data-testid="chat-image"
                               />
                             </a>
@@ -576,7 +577,7 @@ export function ChatScreen({
                                 {locale === 'kk' ? message.offer.nameKk : message.offer.nameRu}
                               </span>
                               <span className="mt-0.5 block text-xs opacity-80">
-                                {message.offer.barcode} · {message.offer.price} ₸
+                                {message.offer.barcode} · {money(message.offer.price)} ₸
                               </span>
                             </span>
                           ) : message.document ? (
@@ -616,7 +617,7 @@ export function ChatScreen({
                 </div>
 
                 {complaint ? (
-                  <div className="border-border mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-dashed p-2">
+                  <div className="border-border mt-3 flex flex-wrap items-center gap-2 rounded-2xl border-[1.5px] border-dashed p-2">
                     <Input
                       className="h-9 min-w-0 flex-1"
                       placeholder={t('complaintReason')}
@@ -641,7 +642,7 @@ export function ChatScreen({
 
                 {closed ? (
                   <p
-                    className="bg-danger-soft text-danger mt-3 rounded-lg px-3 py-2 text-sm"
+                    className="bg-danger-soft text-danger mt-3 rounded-2xl px-3 py-2 text-sm"
                     data-testid="chat-blocked"
                   >
                     {block?.blockedByMe ? t('blockedByMe') : t('blockedMe')}
@@ -677,7 +678,7 @@ export function ChatScreen({
                     ) : null}
                     {share ? (
                       <div
-                        className="border-border mt-3 rounded-lg border p-3"
+                        className="border-border mt-3 rounded-2xl border p-3"
                         data-testid="chat-share-panel"
                       >
                         <Input

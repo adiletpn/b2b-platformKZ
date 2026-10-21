@@ -3,6 +3,7 @@ import { requirePermission } from '@/lib/auth/permissions';
 import { getLabels } from '@/lib/stock/pricing';
 import { barcodeSvg } from '@/lib/stock/barcode';
 import { renderPdf } from '@/lib/documents/pdf';
+import { money } from '@/lib/format';
 
 export async function GET(request: Request) {
   const guard = await requirePermission('STOCK', 'EXPORT');
@@ -23,7 +24,7 @@ export async function GET(request: Request) {
       (row) => `
         <div class="label">
           <div class="name">${locale === 'kk' ? row.nameKk : row.nameRu}</div>
-          <div class="price">${row.price} ₸</div>
+          <div class="price">${money(row.price)} ₸</div>
           ${barcodeSvg(row.barcode)}
         </div>`,
     )

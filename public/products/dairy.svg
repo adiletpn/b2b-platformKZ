@@ -1,8 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 360" width="480" height="360">
-  <rect width="480" height="360" fill="#e3edf7"/>
-  <circle cx="240" cy="150" r="74" fill="#3f6188" opacity="0.14"/>
-  <text x="240" y="166" text-anchor="middle" font-family="Helvetica, Arial, sans-serif"
-        font-size="34" font-weight="600" fill="#3f6188">Молочные</text>
-  <text x="240" y="214" text-anchor="middle" font-family="Helvetica, Arial, sans-serif"
-        font-size="17" fill="#3f6188" opacity="0.7">демо-изображение</text>
+  <!-- Демо-иллюстрация: пакет молочного продукта. Реальные фото присылает поставщик. -->
+  <ellipse cx="240" cy="318" rx="92" ry="12" fill="#3e342e" opacity="0.08"/>
+  <path d="M176 120 L208 70 H272 L304 120 V312 H176 Z" fill="#ffffff" stroke="#ece9e4" stroke-width="3"/>
+  <path d="M208 70 H272 L304 120 H176 Z" fill="#f1efec"/>
+  <rect x="176" y="168" width="128" height="86" fill="#3d74c9"/>
+  <path d="M176 254 Q 214 236 240 254 T 304 254 V312 H176 Z" fill="#e6eefa"/>
+  <circle cx="240" cy="210" r="22" fill="#ffffff" opacity="0.9"/>
 </svg>

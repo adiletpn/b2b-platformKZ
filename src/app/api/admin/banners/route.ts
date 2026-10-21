@@ -1,11 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/admin/session';
-import {
-  BANNER_EDITOR_ROLES,
-  createBanner,
-  deleteBanner,
-  listBanners,
-} from '@/lib/admin/banners';
+import { BANNER_EDITOR_ROLES, createBanner, deleteBanner, listBanners } from '@/lib/admin/banners';
 
 function denied(status: 401 | 403) {
   return NextResponse.json({ error: status === 401 ? 'unauthorized' : 'forbidden' }, { status });

@@ -1,6 +1,7 @@
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 import { buildCatalogXlsx, validRow } from '../helpers/catalog-fixture';
 import { testPoolBin } from '@/mocks/bin-registry';
+import { open } from '../helpers/open';
 
 /** Оценки по закрытой заявке — бизнес-логика, достаточно одного прогона. */
 test.describe.configure({ mode: 'serial' });
@@ -38,14 +39,14 @@ test.beforeAll(async ({ browser }, testInfo) => {
   await supplierPage.getByTestId('submit-company').click();
   await supplierPage.waitForURL(/\/dashboard$/);
 
-  await supplierPage.goto('/ru/requisites');
+  await open(supplierPage, '/ru/requisites');
   await supplierPage.getByTestId('iik-input').fill('KZ07HSBK123456789012');
   await supplierPage.getByTestId('bik-input').fill('HSBKKZKX');
   await supplierPage.getByTestId('bank-input').fill('Тестовый банк');
   await supplierPage.getByTestId('save-requisites').click();
   await expect(supplierPage.getByTestId('requisites-saved')).toBeVisible();
 
-  await supplierPage.goto('/ru/catalog');
+  await open(supplierPage, '/ru/catalog');
   await supplierPage.getByTestId('catalog-file').setInputFiles({
     name: 'catalog.xlsx',
     mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -75,7 +76,7 @@ test.afterAll(async () => {
 test('order_cannot_be_rated_before_it_is_closed', async ({}, testInfo) => {
   test.skip(testInfo.project.name !== ONLY_PROJECT, 'рейтинги');
 
-  await storePage.goto('/ru/feed');
+  await open(storePage, '/ru/feed');
   await storePage.getByTestId('mode-list').click();
   await storePage.getByTestId('feed-search').fill(productName);
   await expect(storePage.getByTestId('list-table')).toContainText(productName);
@@ -90,7 +91,7 @@ test('order_cannot_be_rated_before_it_is_closed', async ({}, testInfo) => {
   await quantity.blur();
   await expect(quantity).toHaveValue('5.000');
 
-  await storePage.goto('/ru/cart');
+  await open(storePage, '/ru/cart');
   await storePage.getByTestId('send-orders').click();
   await storePage.waitForURL(/\/orders$/, { timeout: 30_000 });
 
@@ -105,7 +106,7 @@ test('store_rates_supplier_after_order_is_closed', async ({}, testInfo) => {
   test.skip(testInfo.project.name !== ONLY_PROJECT, 'рейтинги');
 
   // Доводим заявку до закрытия обычным путём.
-  await supplierPage.goto('/ru/orders');
+  await open(supplierPage, '/ru/orders');
   await supplierPage.getByRole('link', { name: 'Открыть' }).first().click();
   await supplierPage.waitForURL(/\/orders\/[^/]+$/);
   await supplierPage.getByTestId('accept-full').click();
@@ -159,7 +160,7 @@ test('second_rating_for_the_same_order_is_refused', async ({}, testInfo) => {
 test('supplier_sees_rating_with_auto_metrics_and_can_reply', async ({}, testInfo) => {
   test.skip(testInfo.project.name !== ONLY_PROJECT, 'рейтинги');
 
-  await supplierPage.goto('/ru/ratings');
+  await open(supplierPage, '/ru/ratings');
 
   await expect(supplierPage.getByTestId('manual-score')).toHaveText('4.50');
   await expect(supplierPage.getByTestId('ratings-count')).toContainText('1');
@@ -176,6 +177,6 @@ test('supplier_sees_rating_with_auto_metrics_and_can_reply', async ({}, testInfo
 test('store_sees_payment_discipline_scale', async ({}, testInfo) => {
   test.skip(testInfo.project.name !== ONLY_PROJECT, 'рейтинги');
 
-  await storePage.goto('/ru/ratings');
+  await open(storePage, '/ru/ratings');
   await expect(storePage.getByTestId('payment-discipline')).toHaveText('Платит в срок');
 });

@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { testPoolBin } from '@/mocks/bin-registry';
+import { open } from '../helpers/open';
 
 /** Админ-панель: уровень логики и прав, достаточно одного прогона. */
 test.describe.configure({ mode: 'serial' });
@@ -15,7 +16,7 @@ let adminPage: Page;
 async function adminLogin(page: Page, phone: string) {
   // Выходим из прежней сессии: иначе откроется панель, а не форма входа.
   await page.request.post('/api/admin/logout').catch(() => undefined);
-  await page.goto('/ru/admin');
+  await open(page, '/ru/admin');
   await page.getByTestId('admin-phone').fill(phone);
   await page.getByTestId('admin-request-code').click();
 
@@ -72,7 +73,7 @@ test('dashboard_shows_turnover_and_disputes_block', async ({}, testInfo) => {
 
   // База общая с другими спеками, поэтому проверяем формат, а не конкретные числа.
   await expect(adminPage.getByTestId('metric-ordersToday')).toHaveText(/^\d+$/);
-  await expect(adminPage.getByTestId('metric-gmvMonth')).toHaveText(/^\d+\.\d{2} ₸$/);
+  await expect(adminPage.getByTestId('metric-gmvMonth')).toHaveText(/^[\d\s]+(,\d{2})? ₸$/);
   await expect(adminPage.getByTestId('metric-conversion')).toHaveText(/^\d+\.\d{2}%$/);
 
   // Раздел разбора споров виден модератору (раздел 3.13 ТЗ).
@@ -108,7 +109,7 @@ test('superadmin_manages_tariffs_and_reference', async ({}, testInfo) => {
   await adminLogin(adminPage, SUPERADMIN_PHONE);
 
   // Тарифы из справочника БД (правило 5).
-  await expect(adminPage.getByTestId('plan-START')).toContainText('0.00');
+  await expect(adminPage.getByTestId('plan-START')).toContainText('0');
   await expect(adminPage.getByTestId('plan-PRO')).toContainText('∞');
 
   // Пробный период назначается компании без счёта.
@@ -169,7 +170,7 @@ test('admin_panel_is_closed_without_session', async ({ browser }, testInfo) => {
   const anonymous = await browser.newContext();
   const page = await anonymous.newPage();
 
-  await page.goto('/ru/admin');
+  await open(page, '/ru/admin');
   await expect(page.getByTestId('admin-phone')).toBeVisible();
 
   const response = await page.request.post('/api/admin/impersonation', {

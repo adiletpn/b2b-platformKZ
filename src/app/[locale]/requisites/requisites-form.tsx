@@ -166,7 +166,7 @@ export function RequisitesForm({
             </div>
           </div>
           <select
-            className="border-border bg-card mt-4 h-11 w-full rounded-lg border px-3"
+            className="border-border bg-card mt-4 h-11 w-full rounded-[14px] border-[1.5px] px-3.5 font-medium"
             value={costMethod}
             data-testid="cost-method"
             onChange={(event) => void saveCostMethod(event.target.value as 'AVERAGE' | 'FIFO')}

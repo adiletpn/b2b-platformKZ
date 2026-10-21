@@ -54,7 +54,7 @@ export function ComplaintsPanel({ initial }: { initial: ComplaintRow[] }) {
                   date: row.createdAt,
                 })}
               </p>
-              <p className="bg-muted rounded-lg px-3 py-2 break-words">{row.messageText}</p>
+              <p className="bg-muted rounded-2xl px-3 py-2 break-words">{row.messageText}</p>
               <p className="break-words">
                 <span className="text-muted-foreground">{t('reason')}: </span>
                 {row.reason}

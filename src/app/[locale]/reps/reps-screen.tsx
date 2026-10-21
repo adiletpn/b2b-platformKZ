@@ -11,7 +11,7 @@ import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { EmptyState, Page, PageHeader } from '@/components/ui/page';
 import { OrderStatusBadge } from '@/components/order-status-badge';
-import { formatDate, formatDateTime } from '@/lib/format';
+import { formatDate, formatDateTime, money } from '@/lib/format';
 import type { AssignmentRow, RepRow, RepStoreView, StoreOption } from '@/lib/reps/reps';
 
 async function post(body: unknown) {
@@ -60,7 +60,8 @@ export function RepsScreen({
     return data.status === 'ok';
   }
 
-  const select = 'border-border bg-card h-11 w-full rounded-lg border px-3';
+  const select =
+    'border-border bg-card h-11 w-full rounded-[14px] border-[1.5px] px-3.5 font-medium';
   return (
     <Page width="lg">
       <PageHeader title={t('title')} description={manage ? t('subtitleOwner') : t('subtitleRep')} />
@@ -175,7 +176,7 @@ export function RepsScreen({
                     tone={store.overdue !== '0.00' ? 'danger' : 'neutral'}
                     data-testid="reps-debt"
                   >
-                    {t('debt', { debt: store.debt })}
+                    {t('debt', { debt: money(store.debt) })}
                   </Badge>
                 </div>
 
@@ -192,7 +193,7 @@ export function RepsScreen({
                             {formatDate(new Date(order.createdAt))}
                           </span>
                           <OrderStatusBadge status={order.status} />
-                          <span className="ml-auto tabular-nums">{order.total} ₸</span>
+                          <span className="ml-auto tabular-nums">{money(order.total)} ₸</span>
                         </li>
                       ))}
                     </ul>

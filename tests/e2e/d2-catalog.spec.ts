@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { buildCatalogXlsx, validRow } from '../helpers/catalog-fixture';
+import { open } from '../helpers/open';
 
 /**
  * Один поставщик на весь файл: БИН в базе уникален, повторная регистрация
@@ -53,7 +54,7 @@ async function uploadCatalog(rows: Parameters<typeof buildCatalogXlsx>[0]) {
 }
 
 test('supplier_uploads_200_products_from_excel', async () => {
-  await page.getByTestId('go-catalog').click();
+  await open(page, '/ru/catalog');
   await page.waitForURL(/\/catalog$/);
 
   await uploadCatalog(Array.from({ length: 200 }, (_, index) => validRow(index + 1)));
@@ -111,7 +112,7 @@ test('supplier_adds_product_by_hand_and_lookup_fills_card', async ({}, testInfo)
   const sum = digits.reduce((acc, digit, index) => acc + digit * (index % 2 === 0 ? 1 : 3), 0);
   const barcode = `${seed}${(10 - (sum % 10)) % 10}`;
 
-  await page.goto('/ru/catalog');
+  await open(page, '/ru/catalog');
   // Ручной ввод спрятан под раскрывающийся блок.
   await page.getByTestId('manual-toggle').click();
   await page.getByTestId('manual-barcode').fill(barcode);
@@ -135,7 +136,7 @@ test('supplier_adds_product_by_hand_and_lookup_fills_card', async ({}, testInfo)
 });
 
 test('manual_entry_rejects_wrong_barcode', async () => {
-  await page.goto('/ru/catalog');
+  await open(page, '/ru/catalog');
   await page.getByTestId('manual-toggle').click();
   await page.getByTestId('manual-barcode').fill('1234567890123');
   await page.getByTestId('manual-name-ru').fill('Неверный штрихкод');

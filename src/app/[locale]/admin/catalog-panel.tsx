@@ -159,13 +159,13 @@ export function ProductMergePanel() {
       </ul>
 
       <dl className="mt-3 grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
-        <div className="border-border rounded-lg border p-3">
+        <div className="border-border rounded-2xl border p-3">
           <dt className="text-muted-foreground text-xs">{t('main')}</dt>
           <dd className="break-words" data-testid="merge-main">
             {main ? `${name(main)} · ${main.barcode}` : '—'}
           </dd>
         </div>
-        <div className="border-border rounded-lg border p-3">
+        <div className="border-border rounded-2xl border p-3">
           <dt className="text-muted-foreground text-xs">{t('duplicate')}</dt>
           <dd className="break-words" data-testid="merge-duplicate">
             {duplicate ? `${name(duplicate)} · ${duplicate.barcode}` : '—'}
@@ -198,7 +198,7 @@ export function ProductMergePanel() {
       ) : null}
       {blocked ? (
         <div
-          className="bg-danger-soft text-danger mt-3 space-y-1 rounded-lg p-3 text-sm"
+          className="bg-danger-soft text-danger mt-3 space-y-1 rounded-2xl p-3 text-sm"
           role="alert"
           data-testid="merge-conflicts"
         >

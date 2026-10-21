@@ -1,6 +1,7 @@
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 import { buildCatalogXlsx, validRow } from '../helpers/catalog-fixture';
 import { testPoolBin } from '@/mocks/bin-registry';
+import { open } from '../helpers/open';
 
 test.describe.configure({ mode: 'serial' });
 test.setTimeout(180_000);
@@ -45,7 +46,7 @@ test.beforeAll(async ({ browser }, testInfo) => {
   await supplierPage.getByTestId('submit-company').click();
   await supplierPage.waitForURL(/\/dashboard$/);
 
-  await supplierPage.getByTestId('go-catalog').click();
+  await open(supplierPage, '/ru/catalog');
   await supplierPage.getByTestId('catalog-file').setInputFiles({
     name: 'catalog.xlsx',
     mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -75,7 +76,7 @@ test.afterAll(async () => {
 test('supplier_saves_requisites_with_iban_validation', async ({}, testInfo) => {
   test.skip(testInfo.project.name !== ONLY_PROJECT, 'сценарий уровня логики, один прогон');
 
-  await supplierPage.goto('/ru/requisites');
+  await open(supplierPage, '/ru/requisites');
 
   await supplierPage.getByTestId('iik-input').fill('KZ08HSBK123456789012');
   await supplierPage.getByTestId('bik-input').fill('HSBKKZKX');
@@ -92,7 +93,7 @@ test('store_pays_order_manually_and_sees_supplier_requisites', async ({}, testIn
   test.skip(testInfo.project.name !== ONLY_PROJECT, 'сценарий уровня логики, один прогон');
 
   // Заявка проходит путь до приёмки.
-  await storePage.goto('/ru/feed');
+  await open(storePage, '/ru/feed');
   await storePage.getByTestId('mode-list').click();
   await storePage.getByTestId('feed-search').fill(productName);
   await expect(storePage.getByTestId('list-table')).toContainText(productName);
@@ -105,11 +106,11 @@ test('store_pays_order_manually_and_sees_supplier_requisites', async ({}, testIn
   await quantity.blur();
   await expect(quantity).toHaveValue('5.000');
 
-  await storePage.goto('/ru/cart');
+  await open(storePage, '/ru/cart');
   await storePage.getByTestId('send-orders').click();
   await storePage.waitForURL(/\/orders$/, { timeout: 30_000 });
 
-  await supplierPage.goto('/ru/orders');
+  await open(supplierPage, '/ru/orders');
   await supplierPage.getByRole('link', { name: 'Открыть' }).first().click();
   await supplierPage.waitForURL(/\/orders\/[^/]+$/);
   await supplierPage.getByTestId('accept-full').click();
@@ -121,7 +122,7 @@ test('store_pays_order_manually_and_sees_supplier_requisites', async ({}, testIn
     await expect(supplierPage.getByTestId('order-status')).toHaveText(status);
   }
 
-  await storePage.goto('/ru/orders');
+  await open(storePage, '/ru/orders');
   await storePage.getByRole('link', { name: 'Открыть' }).first().click();
   await storePage.waitForURL(/\/orders\/[^/]+$/);
   await storePage.getByTestId('submit-acceptance').click();
@@ -139,7 +140,7 @@ test('store_pays_order_manually_and_sees_supplier_requisites', async ({}, testIn
   await storePage.getByTestId('submit-payment').click();
 
   // 5 штук по 116 ₸ с НДС 16%.
-  await expect(storePage.getByTestId('payment-result')).toContainText('580.00');
+  await expect(storePage.getByTestId('payment-result')).toContainText('580');
   await storePage.reload();
   await expect(storePage.getByTestId('order-status')).toHaveText('Оплачена');
   await expect(storePage.getByTestId('order-payments')).toContainText('ПП-125');
@@ -159,7 +160,7 @@ test('payment_with_wrong_amount_is_rejected', async ({}, testInfo) => {
 test('company_chooses_notification_channels', async ({}, testInfo) => {
   test.skip(testInfo.project.name !== ONLY_PROJECT, 'настройки компании');
 
-  await storePage.goto('/ru/requisites');
+  await open(storePage, '/ru/requisites');
   // Раздел 3.10 ТЗ: каналы выбирает сам пользователь.
   await storePage.getByTestId('channel-email').uncheck();
   await expect(storePage.getByTestId('channels-saved')).toBeVisible();

@@ -5,7 +5,10 @@ import { cn } from '@/lib/utils';
 function Card({ className, ...props }: React.ComponentProps<'section'>) {
   return (
     <section
-      className={cn('border-border bg-card shadow-card rounded-[20px] border p-4 sm:p-5', className)}
+      className={cn(
+        'border-border bg-card shadow-card rounded-[20px] border p-4 sm:p-5',
+        className,
+      )}
       {...props}
     />
   );
@@ -16,7 +19,9 @@ function CardTitle({ className, ...props }: React.ComponentProps<'h2'>) {
 }
 
 function CardHint({ className, ...props }: React.ComponentProps<'p'>) {
-  return <p className={cn('text-muted-foreground mt-1 text-xs font-semibold', className)} {...props} />;
+  return (
+    <p className={cn('text-muted-foreground mt-1 text-xs font-semibold', className)} {...props} />
+  );
 }
 
 const TONES = {
@@ -41,7 +46,11 @@ function IconBadge({
   return (
     <span
       aria-hidden
-      className={cn('grid size-11 shrink-0 place-items-center rounded-[14px]', TONES[tone], className)}
+      className={cn(
+        'grid size-11 shrink-0 place-items-center rounded-[14px]',
+        TONES[tone],
+        className,
+      )}
     >
       <Icon className="size-[20px]" />
     </span>

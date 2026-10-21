@@ -56,7 +56,7 @@ export function RatingDisputesPanel({ initial }: { initial: DisputedRatingRow[] 
                 })}
               </p>
               {row.comment ? (
-                <p className="bg-muted rounded-lg px-3 py-2 break-words">{row.comment}</p>
+                <p className="bg-muted rounded-2xl px-3 py-2 break-words">{row.comment}</p>
               ) : null}
               <p className="break-words">
                 <span className="text-muted-foreground">{t('reason')}: </span>

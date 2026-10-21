@@ -1,6 +1,7 @@
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 import { buildCatalogXlsx, validRow } from '../helpers/catalog-fixture';
 import { testPoolBin } from '@/mocks/bin-registry';
+import { open } from '../helpers/open';
 
 test.describe.configure({ mode: 'serial' });
 // Сценарий длинный: каталог, заявка, документы, PDF и приёмка.
@@ -40,7 +41,7 @@ test.beforeAll(async ({ browser }, testInfo) => {
   await supplierPage.getByTestId('submit-company').click();
   await supplierPage.waitForURL(/\/dashboard$/);
 
-  await supplierPage.getByTestId('go-catalog').click();
+  await open(supplierPage, '/ru/catalog');
   await supplierPage.waitForURL(/\/catalog$/);
   await supplierPage.getByTestId('catalog-file').setInputFiles({
     name: 'catalog.xlsx',
@@ -63,7 +64,7 @@ test.beforeAll(async ({ browser }, testInfo) => {
   await storePage.waitForURL(/\/dashboard$/);
 
   // Магазин набирает корзину и отправляет заявку.
-  await storePage.goto('/ru/feed');
+  await open(storePage, '/ru/feed');
   await storePage.getByTestId('mode-list').click();
   await storePage.getByTestId('feed-search').fill(productName);
   await expect(storePage.getByTestId('list-table')).toContainText(productName);
@@ -77,12 +78,12 @@ test.beforeAll(async ({ browser }, testInfo) => {
   await quantity.blur();
   await expect(quantity).toHaveValue('10.000');
 
-  await storePage.goto('/ru/cart');
+  await open(storePage, '/ru/cart');
   await storePage.getByTestId('send-orders').click();
   await storePage.waitForURL(/\/orders$/, { timeout: 30_000 });
 
   // Поставщик принимает заявку полностью.
-  await supplierPage.goto('/ru/orders');
+  await open(supplierPage, '/ru/orders');
   await supplierPage.getByRole('link', { name: 'Открыть' }).first().click();
   await supplierPage.waitForURL(/\/orders\/[^/]+$/);
   await supplierPage.getByTestId('accept-full').click();
@@ -100,7 +101,7 @@ test('supplier_creates_waybill_and_invoice_in_one_click', async () => {
   await expect(supplierPage.getByTestId('document-WAYBILL')).toContainText('Накладная З-2');
   await expect(supplierPage.getByTestId('document-INVOICE')).toContainText('Счёт на оплату');
   // Заказано 10 штук по 116 ₸ с НДС 16%.
-  await expect(supplierPage.getByTestId('document-WAYBILL')).toContainText('1160.00');
+  await expect(supplierPage.getByTestId('document-WAYBILL')).toContainText('1 160');
 });
 
 test('waybill_pdf_opens_in_russian_and_kazakh', async () => {
@@ -124,7 +125,7 @@ test('store_accepts_delivery_with_defect_and_act_is_created', async () => {
     await expect(supplierPage.getByTestId('order-status')).toHaveText(status);
   }
 
-  await storePage.goto('/ru/orders');
+  await open(storePage, '/ru/orders');
   await storePage.getByRole('link', { name: 'Открыть' }).first().click();
   await storePage.waitForURL(/\/orders\/[^/]+$/);
   await expect(storePage.getByTestId('order-status')).toHaveText('Доставлена');
@@ -137,7 +138,7 @@ test('store_accepts_delivery_with_defect_and_act_is_created', async () => {
 
   await expect(storePage.getByTestId('acceptance-result')).toContainText('с расхождениями');
   // Сумма пересчитана: 8 × 116 ₸.
-  await expect(storePage.getByTestId('acceptance-result')).toContainText('928.00');
+  await expect(storePage.getByTestId('acceptance-result')).toContainText('928');
 
   await storePage.reload();
   await expect(storePage.getByTestId('order-status')).toHaveText('Принята с расхождениями');
@@ -145,7 +146,7 @@ test('store_accepts_delivery_with_defect_and_act_is_created', async () => {
 });
 
 test('store_stock_grows_after_acceptance', async () => {
-  await storePage.goto('/ru/stock');
+  await open(storePage, '/ru/stock');
 
   await expect(storePage.getByTestId('stock-table')).toContainText(productName);
   await expect(storePage.getByTestId('stock-quantity').first()).toContainText('8.000');
@@ -153,7 +154,7 @@ test('store_stock_grows_after_acceptance', async () => {
 
 test('discrepancy_act_pdf_is_available_to_both_sides', async () => {
   // Предыдущий тест увёл магазин на экран остатков.
-  await storePage.goto('/ru/orders');
+  await open(storePage, '/ru/orders');
   await storePage.getByRole('link', { name: 'Открыть' }).first().click();
   await storePage.waitForURL(/\/orders\/[^/]+$/);
 

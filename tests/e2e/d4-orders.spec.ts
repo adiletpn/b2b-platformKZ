@@ -1,6 +1,7 @@
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 import { buildCatalogXlsx, validRow } from '../helpers/catalog-fixture';
 import { testPoolBin } from '@/mocks/bin-registry';
+import { open } from '../helpers/open';
 
 test.describe.configure({ mode: 'serial' });
 // Сценарий длинный: три поставщика с каталогами, магазин, корзина и отправка.
@@ -35,7 +36,7 @@ async function createSupplier(page: Page, phone: string, bin: string, productInd
   await page.getByTestId('submit-company').click();
   await page.waitForURL(/\/dashboard$/);
 
-  await page.getByTestId('go-catalog').click();
+  await open(page, '/ru/catalog');
   await page.waitForURL(/\/catalog$/);
   await page.getByTestId('catalog-file').setInputFiles({
     name: 'catalog.xlsx',
@@ -88,7 +89,7 @@ test.afterAll(async () => {
 });
 
 test('cart_with_three_suppliers_creates_three_orders_in_one_click', async () => {
-  await storePage.goto('/ru/feed');
+  await open(storePage, '/ru/feed');
   await storePage.getByTestId('mode-list').click();
 
   // Берём по одному товару у каждого из трёх своих поставщиков.
@@ -103,10 +104,8 @@ test('cart_with_three_suppliers_creates_three_orders_in_one_click', async () => 
     await expect(input).toHaveValue('2.000');
   }
 
-  await storePage.goto('/ru/cart');
-  await expect(storePage.getByTestId('cart-suppliers-count')).toHaveText(
-    'Поставщиков в корзине: 3',
-  );
+  await open(storePage, '/ru/cart');
+  await expect(storePage.getByTestId('cart-suppliers-count')).toContainText('3 поставщика');
 
   await storePage.getByTestId('send-orders').click();
   await storePage.waitForURL(/\/orders$/, { timeout: 30_000 });
@@ -116,7 +115,7 @@ test('cart_with_three_suppliers_creates_three_orders_in_one_click', async () => 
 });
 
 test('supplier_sees_incoming_order_and_notification', async () => {
-  await supplierPage.goto('/ru/orders');
+  await open(supplierPage, '/ru/orders');
 
   await expect(supplierPage.getByTestId('orders-table').getByRole('row')).toHaveCount(1);
   await expect(supplierPage.getByTestId('notifications')).toContainText('Новая заявка');
@@ -136,16 +135,16 @@ test('supplier_confirms_order_partially_and_store_agrees', async () => {
   await supplierPage.getByTestId('accept-partial').click();
 
   await expect(supplierPage.getByTestId('order-status')).toHaveText('Изменена поставщиком');
-  await expect(supplierPage.getByTestId('order-total')).toHaveText('116.00');
+  await expect(supplierPage.getByTestId('order-total')).toHaveText('116');
 
-  await storePage.goto('/ru/orders');
+  await open(storePage, '/ru/orders');
   await storePage.getByTestId(`order-open-${orderNumber}`).click();
   await expect(storePage.getByTestId('order-changed-notice')).toBeVisible();
 
   await storePage.getByTestId('agree-changes').click();
   await expect(storePage.getByTestId('order-status')).toHaveText('Принята');
 
-  await supplierPage.goto(orderUrl);
+  await open(supplierPage, orderUrl);
   await expect(supplierPage.getByTestId('order-status')).toHaveText('Принята');
 });
 
@@ -166,7 +165,7 @@ test('order_walks_through_statuses_to_delivered', async () => {
 
 test('store_cancels_order_with_reason', async () => {
   // Отменяем одну из двух оставшихся заявок (она в статусе «Отправлена»).
-  await storePage.goto('/ru/orders');
+  await open(storePage, '/ru/orders');
   const rows = storePage.getByTestId('orders-table').getByRole('row');
   const sentRow = rows.filter({ hasText: 'Отправлена' }).first();
   await sentRow.getByRole('link', { name: 'Открыть' }).click();

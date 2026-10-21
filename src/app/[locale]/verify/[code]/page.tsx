@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { EmptyState, Page, PageHeader } from '@/components/ui/page';
 import { verifyDocument } from '@/lib/documents/verification';
+import { money } from '@/lib/format';
 
 // Страница открыта без входа: в поисковики она попадать не должна.
 export const metadata: Metadata = { robots: { index: false, follow: false } };
@@ -42,7 +43,7 @@ export default async function VerifyPage({
     [t('date'), document.issuedAt],
     [t('issuer'), `${document.issuer.name} · ${document.issuer.bin}`],
     [t('recipient'), `${document.recipient.name} · ${document.recipient.bin}`],
-    [t('total'), `${document.totalWithVat} ₸`],
+    [t('total'), `${money(document.totalWithVat)} ₸`],
     [
       t('version'),
       t('versionValue', { version: document.currentVersion, date: document.currentVersionDate }),

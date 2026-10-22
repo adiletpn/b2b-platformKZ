@@ -657,7 +657,8 @@
     "changedTitle": "Жеткізуші өтінімді өзгертті",
     "outOfStockBadge": "Қоймада жоқ",
     "noChanges": "Өзгеріссіз · {quantity}",
-    "lineTotal": "Сома"
+    "lineTotal": "Сома",
+    "progressChanged": "Өзгертілді"
   },
   "documents": {
     "title": "Құжаттар",

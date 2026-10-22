@@ -88,7 +88,11 @@ export function OrderProgress({
                 active || done ? 'text-foreground' : 'text-muted-foreground',
               )}
             >
-              {active && off ? t(`status.${status}`) : t(`status.${label}`)}
+              {active && off
+                ? t(`status.${status}`)
+                : index === 1 && history.includes('CHANGED_BY_SUPPLIER')
+                  ? t('progressChanged')
+                  : t(`status.${label}`)}
             </span>
           </li>
         );

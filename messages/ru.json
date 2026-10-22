@@ -657,7 +657,8 @@
     "changedTitle": "Поставщик изменил заявку",
     "outOfStockBadge": "Нет в наличии",
     "noChanges": "Без изменений · {quantity}",
-    "lineTotal": "Сумма"
+    "lineTotal": "Сумма",
+    "progressChanged": "Изменена"
   },
   "documents": {
     "title": "Документы",

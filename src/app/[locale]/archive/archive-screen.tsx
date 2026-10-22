@@ -149,7 +149,7 @@ export function ArchiveScreen({
               <tbody className="divide-border divide-y" data-testid="archive-table">
                 {rows.map((row) => (
                   <tr key={row.id} className="hover:bg-muted/40">
-                    <td className="px-4 py-2.5 font-mono text-xs whitespace-nowrap">
+                    <td className="px-4 py-2.5 text-[13px] font-bold whitespace-nowrap tabular-nums">
                       {row.number}
                       {row.version > 1 ? (
                         <Badge tone="warning" className="ml-2" data-testid="archive-version">

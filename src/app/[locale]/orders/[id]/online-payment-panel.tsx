@@ -128,7 +128,7 @@ export function OnlinePaymentPanel({
               href={payment.payUrl}
               target="_blank"
               rel="noreferrer"
-              className="text-primary block font-mono text-xs break-all underline"
+              className="text-primary block text-[13px] font-bold break-all tabular-nums underline"
               data-testid="online-payment-link"
             >
               {payment.payUrl}

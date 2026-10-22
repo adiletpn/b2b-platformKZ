@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { AlertTriangle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useRouter, Link } from '@/i18n/navigation';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -368,12 +369,18 @@ export function OrderDetail({
       ) : null}
 
       {order.status === 'CHANGED_BY_SUPPLIER' && side === 'store' ? (
-        <p
-          className="bg-warning-soft text-primary-text mt-3 rounded-2xl px-4 py-3 text-sm font-bold"
+        <div
+          className="bg-primary-soft mt-4 flex gap-3 rounded-[20px] px-[18px] py-4"
           data-testid="order-changed-notice"
         >
-          {t('changedNotice')}
-        </p>
+          <AlertTriangle aria-hidden className="text-primary mt-0.5 size-5 shrink-0" />
+          <div>
+            <p className="text-[15px] font-extrabold">{t('changedTitle')}</p>
+            <p className="text-primary-text mt-0.5 text-[13px] font-semibold">
+              {t('changedNotice')}
+            </p>
+          </div>
+        </div>
       ) : null}
       {order.status === 'REJECTED' ? (
         <p className="text-danger mt-3 text-sm" data-testid="order-rejected-notice">

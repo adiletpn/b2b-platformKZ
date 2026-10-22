@@ -96,7 +96,7 @@ export default async function AnalyticsPage({
           </div>
 
           <Card>
-            <CardTitle className="text-sm">{t('byDay')}</CardTitle>
+            <CardTitle className="text-[15px]">{t('byDay')}</CardTitle>
             {store.byDay.length === 0 ? (
               <EmptyState>{t('noSales')}</EmptyState>
             ) : (
@@ -117,7 +117,7 @@ export default async function AnalyticsPage({
 
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <Card className="overflow-x-auto">
-              <CardTitle className="text-sm">{t('byCategory')}</CardTitle>
+              <CardTitle className="text-[15px]">{t('byCategory')}</CardTitle>
               <table className={table} data-testid="analytics-categories">
                 <thead>
                   <tr>
@@ -139,7 +139,7 @@ export default async function AnalyticsPage({
             </Card>
 
             <Card className="overflow-x-auto">
-              <CardTitle className="text-sm">{t('abc')}</CardTitle>
+              <CardTitle className="text-[15px]">{t('abc')}</CardTitle>
               <table className={table} data-testid="analytics-abc">
                 <thead>
                   <tr>
@@ -172,7 +172,7 @@ export default async function AnalyticsPage({
           </div>
 
           <Card className="overflow-x-auto">
-            <CardTitle className="text-sm">{t('turnover')}</CardTitle>
+            <CardTitle className="text-[15px]">{t('turnover')}</CardTitle>
             <p className="text-muted-foreground mt-1 text-xs">
               {t('staleHint', { days: store.staleDays })}
             </p>
@@ -206,7 +206,7 @@ export default async function AnalyticsPage({
           </Card>
 
           <Card>
-            <CardTitle className="text-sm">{t('recommendations')}</CardTitle>
+            <CardTitle className="text-[15px]">{t('recommendations')}</CardTitle>
             {store.recommendations.length === 0 ? (
               <p className="text-muted-foreground mt-2 text-sm">{t('noRecommendations')}</p>
             ) : (
@@ -255,7 +255,7 @@ export default async function AnalyticsPage({
           </div>
 
           <Card>
-            <CardTitle className="text-sm">{t('topStores')}</CardTitle>
+            <CardTitle className="text-[15px]">{t('topStores')}</CardTitle>
             {supplier.topStores.length === 0 ? (
               <EmptyState>{t('noOrders')}</EmptyState>
             ) : (
@@ -275,7 +275,7 @@ export default async function AnalyticsPage({
 
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <Card className="overflow-x-auto">
-              <CardTitle className="text-sm">{t('byStore')}</CardTitle>
+              <CardTitle className="text-[15px]">{t('byStore')}</CardTitle>
               <table className={table} data-testid="analytics-stores">
                 <thead>
                   <tr>
@@ -296,7 +296,7 @@ export default async function AnalyticsPage({
               </table>
             </Card>
             <Card className="overflow-x-auto">
-              <CardTitle className="text-sm">{t('byProduct')}</CardTitle>
+              <CardTitle className="text-[15px]">{t('byProduct')}</CardTitle>
               <table className={table} data-testid="analytics-products">
                 <thead>
                   <tr>

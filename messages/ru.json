@@ -852,7 +852,12 @@
     "minimum": "Минимум",
     "retailPrice": "Цена продажи",
     "markup": "Наценка",
-    "expiry": "Срок годности"
+    "expiry": "Срок годности",
+    "alertExpiring": "Скоро истекает срок: {count, plural, one {# партия} few {# партии} other {# партий}}",
+    "alertExpiringHint": "Продажа идёт по FEFO — ближайший срок первым",
+    "alertMinimum": "Ниже минимума: {count, plural, one {# товар} few {# товара} other {# товаров}}",
+    "alertMinimumHint": "Собран черновик заявки к прошлым поставщикам",
+    "openDraft": "Открыть черновик"
   },
   "payment": {
     "title": "Оплата",

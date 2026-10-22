@@ -852,7 +852,12 @@
     "minimum": "Минимум",
     "retailPrice": "Сату бағасы",
     "markup": "Үстеме",
-    "expiry": "Жарамдылық мерзімі"
+    "expiry": "Жарамдылық мерзімі",
+    "alertExpiring": "Мерзімі жақында бітеді: {count} партия",
+    "alertExpiringHint": "Сату FEFO бойынша — ең жақын мерзім бірінші",
+    "alertMinimum": "Минимумнан төмен: {count} тауар",
+    "alertMinimumHint": "Бұрынғы жеткізушілерге өтінім жобасы жиналды",
+    "openDraft": "Жобаны ашу"
   },
   "payment": {
     "title": "Төлем",

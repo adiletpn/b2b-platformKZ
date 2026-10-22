@@ -1,5 +1,7 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { redirect } from '@/i18n/navigation';
+import { Link, redirect } from '@/i18n/navigation';
+import { CalendarClock, ShoppingCart } from 'lucide-react';
+import { buttonVariants } from '@/components/ui/button';
 import { getStoreContext } from '@/lib/auth/store-context';
 import { prisma } from '@/lib/prisma';
 import { Page, PageHeader } from '@/components/ui/page';
@@ -96,6 +98,45 @@ export default async function StockPage({ params }: { params: Promise<{ locale: 
   return (
     <Page width="lg">
       <PageHeader title={t('title')} description={t('hint')} />
+
+      {/* Макет D09: две плашки-алерта над таблицей. */}
+      {expiring.length > 0 || replenishment.length > 0 ? (
+        <div className="mt-2 grid grid-cols-1 gap-3 lg:grid-cols-2">
+          {expiring.length > 0 ? (
+            <Card className="flex items-center gap-3.5" data-testid="alert-expiring">
+              <span className="bg-danger-soft text-danger grid size-11 shrink-0 place-items-center rounded-[14px]">
+                <CalendarClock aria-hidden className="size-5" />
+              </span>
+              <div className="min-w-0">
+                <p className="text-[15px] font-extrabold">
+                  {t('alertExpiring', { count: expiring.length })}
+                </p>
+                <p className="text-muted-foreground text-[13px] font-semibold">
+                  {t('alertExpiringHint')}
+                </p>
+              </div>
+            </Card>
+          ) : null}
+          {replenishment.length > 0 ? (
+            <Card className="flex items-center gap-3.5" data-testid="alert-minimum">
+              <span className="bg-primary-soft text-primary grid size-11 shrink-0 place-items-center rounded-[14px]">
+                <ShoppingCart aria-hidden className="size-5" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-[15px] font-extrabold">
+                  {t('alertMinimum', { count: replenishment.length })}
+                </p>
+                <p className="text-muted-foreground text-[13px] font-semibold">
+                  {t('alertMinimumHint')}
+                </p>
+              </div>
+              <Link href="/cart" className={buttonVariants({ size: 'sm' })}>
+                {t('openDraft')}
+              </Link>
+            </Card>
+          ) : null}
+        </div>
+      ) : null}
 
       {rows.length === 0 ? (
         <p className="text-muted-foreground mt-6 text-sm" data-testid="stock-empty">

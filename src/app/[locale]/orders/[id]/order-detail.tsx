@@ -748,7 +748,7 @@ export function OrderDetail({
       ) : null}
 
       {canAccept ? (
-        <section className="border-border bg-card shadow-card mt-5 rounded-xl border p-4 sm:p-5">
+        <section className="border-border bg-card mt-5 rounded-[20px] border p-[18px] sm:p-5">
           <h2 className="text-lg font-medium">{tAcceptance('title')}</h2>
           <p className="text-muted-foreground mt-1 text-xs">{tAcceptance('hint')}</p>
 
@@ -887,7 +887,7 @@ export function OrderDetail({
       ) : null}
 
       {canPay ? (
-        <section className="border-border bg-card shadow-card mt-5 rounded-xl border p-4 sm:p-5">
+        <section className="border-border bg-card mt-5 rounded-[20px] border p-[18px] sm:p-5">
           <h2 className="text-lg font-medium">{tPayment('title')}</h2>
 
           <dl className="mt-3 space-y-1 text-sm" data-testid="payment-requisites">
@@ -985,8 +985,8 @@ export function OrderDetail({
       ) : null}
 
       {order.payments.length > 0 ? (
-        <section className="border-border bg-card shadow-card mt-5 rounded-xl border p-4 sm:p-5">
-          <h2 className="text-muted-foreground text-sm font-medium">{tPayment('title')}</h2>
+        <section className="border-border bg-card mt-5 rounded-[20px] border p-[18px] sm:p-5">
+          <h2 className="text-[17px] font-extrabold">{tPayment('title')}</h2>
           <ul className="mt-2 space-y-1 text-sm" data-testid="order-payments">
             {order.payments.map((item) => (
               <li key={item.id} className="flex justify-between gap-3">
@@ -998,7 +998,7 @@ export function OrderDetail({
         </section>
       ) : null}
       {canRate ? (
-        <section className="border-border bg-card shadow-card mt-5 rounded-xl border p-4 sm:p-5">
+        <section className="border-border bg-card mt-5 rounded-[20px] border p-[18px] sm:p-5">
           <h2 className="text-lg font-medium">{tRatings('rateOrder')}</h2>
           <p className="text-muted-foreground mt-1 text-xs">{tRatings('rateHint')}</p>
 

@@ -806,7 +806,7 @@ export function PosScreen({
 
         <Card className="flex flex-col lg:sticky lg:top-4 lg:self-start">
           <div className="flex items-center justify-between gap-2">
-            <CardTitle className="text-sm">{t('sale')}</CardTitle>
+            <CardTitle className="text-[15px]">{t('sale')}</CardTitle>
             {cart.length > 0 ? (
               <Button variant="ghost" size="sm" data-testid="pos-clear" onClick={resetReceipt}>
                 <Trash2 aria-hidden />

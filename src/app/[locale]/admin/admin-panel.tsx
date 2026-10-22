@@ -202,7 +202,7 @@ export function AdminPanel({
                 data-testid={`dispute-${dispute.number}`}
               >
                 <div className="min-w-48 flex-1">
-                  <p className="font-mono text-xs">{dispute.number}</p>
+                  <p className="text-[13px] font-bold tabular-nums">{dispute.number}</p>
                   <p className="text-sm break-words">
                     {dispute.storeName} — {dispute.supplierName}
                   </p>
@@ -289,7 +289,7 @@ export function AdminPanel({
               >
                 <div className="min-w-48 flex-1">
                   <p className="font-medium break-words">{item.companyName}</p>
-                  <p className="text-muted-foreground font-mono text-xs">
+                  <p className="text-muted-foreground text-[13px] font-bold tabular-nums">
                     {t('bin')}: {item.bin}
                   </p>
                   <p className="text-muted-foreground text-xs break-words">{item.legalAddress}</p>

@@ -72,7 +72,9 @@ export default async function VerifyPage({
 
         <h2 className="mt-5 text-[15px] font-extrabold">{t('signatures')}</h2>
         {document.signatures.length === 0 ? (
-          <p className="text-muted-foreground mt-1 text-sm">{t('noSignatures')}</p>
+          <p className="text-muted-foreground mt-1 text-[13px] font-semibold">
+            {t('noSignatures')}
+          </p>
         ) : (
           <ul className="mt-1 space-y-1 text-sm" data-testid="verify-signatures">
             {document.signatures.map((signature) => (

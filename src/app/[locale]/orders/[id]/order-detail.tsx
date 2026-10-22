@@ -631,21 +631,24 @@ export function OrderDetail({
         ) : null}
 
         {canRespond ? (
-          <div className="flex flex-wrap gap-2">
-            <Button
-              disabled={pending}
-              data-testid="agree-changes"
-              onClick={() => void post(`/api/orders/${order.id}/respond`, { agree: true })}
-            >
-              {t('agree')}
-            </Button>
+          // Макет M08: две кнопки во всю ширину, на телефоне прилипают над нижней панелью.
+          <div className="bg-background/95 grid grid-cols-[1fr_1.4fr] gap-2.5 max-md:sticky max-md:bottom-[84px] max-md:z-10 max-md:-mx-5 max-md:px-5 max-md:py-2.5 md:max-w-md">
             <Button
               variant="outline"
+              size="lg"
               disabled={pending}
               data-testid="disagree-changes"
               onClick={() => void post(`/api/orders/${order.id}/respond`, { agree: false })}
             >
               {t('disagree')}
+            </Button>
+            <Button
+              size="lg"
+              disabled={pending}
+              data-testid="agree-changes"
+              onClick={() => void post(`/api/orders/${order.id}/respond`, { agree: true })}
+            >
+              {t('agree')}
             </Button>
           </div>
         ) : null}

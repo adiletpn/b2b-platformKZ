@@ -78,7 +78,7 @@ export function RatingReviews({ reviews }: { reviews: Review[] }) {
               data-testid={`review-${review.id}`}
             >
               <div className="flex flex-wrap justify-between gap-2">
-                <span className="font-mono text-xs">{review.orderNumber}</span>
+                <span className="text-[13px] font-bold tabular-nums">{review.orderNumber}</span>
                 <span className="font-medium tabular-nums">{review.score}</span>
               </div>
               {review.comment ? <p className="mt-1 break-words">{review.comment}</p> : null}

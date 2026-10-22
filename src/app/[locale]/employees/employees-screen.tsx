@@ -268,7 +268,7 @@ export function EmployeesScreen({
           <tbody className="divide-border divide-y" data-testid="employees-table">
             {employees.map((employee) => (
               <tr key={employee.id} data-testid={`employee-${employee.id}`}>
-                <td className="px-3 py-2 font-mono text-xs">{employee.phone}</td>
+                <td className="px-3 py-2 text-[13px] font-bold tabular-nums">{employee.phone}</td>
                 <td className="px-3 py-2">{roleLabel(employee.role)}</td>
                 <td
                   className="px-3 py-2 tabular-nums"
@@ -428,7 +428,7 @@ export function EmployeesScreen({
                 {transfer.code ? (
                   <>
                     {t('ownerTransferDemoCode')}:{' '}
-                    <span className="font-mono" data-testid="transfer-demo-code">
+                    <span className="tabular-nums" data-testid="transfer-demo-code">
                       {transfer.code}
                     </span>
                   </>
@@ -555,7 +555,7 @@ export function EmployeesScreen({
           <ul className="mt-2 space-y-1 text-sm" data-testid="invitations">
             {invitations.map((invitation) => (
               <li key={invitation.id} className="flex flex-wrap justify-between gap-2">
-                <span className="font-mono text-xs">{invitation.phone}</span>
+                <span className="text-[13px] font-bold tabular-nums">{invitation.phone}</span>
                 <span>{roleLabel(invitation.role)}</span>
                 <span className="text-muted-foreground text-xs">
                   {t('expires')}: {invitation.expiresAt}
@@ -585,7 +585,9 @@ export function EmployeesScreen({
             {visibleAudit.map((entry) => (
               <li key={entry.id} className="flex flex-wrap justify-between gap-2 py-2">
                 <span>{t(`actions.${entry.action}` as 'actions.employee_invited')}</span>
-                <span className="text-muted-foreground font-mono text-xs">{entry.actorPhone}</span>
+                <span className="text-muted-foreground text-[13px] font-bold tabular-nums">
+                  {entry.actorPhone}
+                </span>
                 <span className="text-muted-foreground text-xs">{entry.createdAt}</span>
               </li>
             ))}

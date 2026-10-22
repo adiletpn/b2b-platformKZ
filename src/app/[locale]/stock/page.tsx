@@ -222,7 +222,7 @@ export default async function StockPage({ params }: { params: Promise<{ locale: 
 
       {expiring.length > 0 ? (
         <Card className="mt-4" data-testid="expiring">
-          <CardTitle className="text-sm">{t('expiringTitle')}</CardTitle>
+          <CardTitle className="text-[15px]">{t('expiringTitle')}</CardTitle>
           <ul className="mt-2 space-y-1 text-sm" data-testid="expiring-list">
             {expiring.map((row) => (
               <li

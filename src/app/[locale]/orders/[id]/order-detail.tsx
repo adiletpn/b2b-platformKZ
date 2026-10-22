@@ -65,6 +65,7 @@ type Order = {
   number: string;
   status: Status;
   total: string;
+  originalTotal: string;
   counterparty: string;
   /** Дата создания коротко: «чт, 23 окт». */
   createdOn: string;
@@ -553,13 +554,19 @@ export function OrderDetail({
             ))}
           </tbody>
         </table>
-        <p className="border-border border-t px-3 py-2 text-right text-sm">
-          {t('total')}:{' '}
-          <span className="font-medium tabular-nums" data-testid="order-total">
-            {money(order.total)}
-          </span>{' '}
-          ₸
-        </p>
+        <div className="border-border flex items-baseline justify-between gap-3 border-t px-4 py-3.5">
+          {order.originalTotal !== order.total ? (
+            <span className="text-muted-foreground text-[15px] font-bold" data-testid="order-was">
+              {t('was')} <span className="line-through">{money(order.originalTotal)} ₸</span>
+            </span>
+          ) : (
+            <span className="text-muted-foreground text-[15px] font-bold">{t('total')}</span>
+          )}
+          <span className="text-[22px] font-black tracking-[-0.02em] tabular-nums">
+            {order.originalTotal !== order.total ? `${t('became')} ` : ''}
+            <span data-testid="order-total">{money(order.total)}</span> ₸
+          </span>
+        </div>
       </section>
 
       <section className="mt-5 space-y-3">

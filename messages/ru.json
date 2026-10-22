@@ -658,7 +658,9 @@
     "outOfStockBadge": "Нет в наличии",
     "noChanges": "Без изменений · {quantity}",
     "lineTotal": "Сумма",
-    "progressChanged": "Изменена"
+    "progressChanged": "Изменена",
+    "was": "Было",
+    "became": "Стало"
   },
   "documents": {
     "title": "Документы",

@@ -658,7 +658,9 @@
     "outOfStockBadge": "Қоймада жоқ",
     "noChanges": "Өзгеріссіз · {quantity}",
     "lineTotal": "Сома",
-    "progressChanged": "Өзгертілді"
+    "progressChanged": "Өзгертілді",
+    "was": "Болды",
+    "became": "Қазір"
   },
   "documents": {
     "title": "Құжаттар",

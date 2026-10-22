@@ -11,6 +11,7 @@ import type { DocumentPayload } from '@/lib/documents/payload';
 import { isLiveGateway } from '@/mocks/payment-gateway';
 import { sideOf } from '@/lib/orders/workflow';
 import { prisma } from '@/lib/prisma';
+import Decimal from 'decimal.js';
 import { OrderDetail } from './order-detail';
 
 /** Подписи прошлых версий остаются в базе, в карточке — только по текущей. */
@@ -104,6 +105,13 @@ export default async function OrderPage({
         number: order.number,
         status: order.status,
         total: order.totalWithVat.toFixed(2),
+        // «Было» в макете M08: сумма по заказанным количествам, до правок поставщика.
+        originalTotal: order.items
+          .reduce(
+            (sum, item) => sum.add(item.priceWithVat.mul(item.quantityOrdered)),
+            new Decimal(0),
+          )
+          .toFixed(2),
         counterparty: side === 'store' ? order.supplier.name : order.store.name,
         createdOn: formatShortDate(order.createdAt, locale),
         rejectionReason: order.rejectionReason,

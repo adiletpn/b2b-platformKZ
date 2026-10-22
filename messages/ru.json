@@ -654,7 +654,10 @@
       "inTransit": "В пути"
     },
     "orderTitle": "Заявка",
-    "changedTitle": "Поставщик изменил заявку"
+    "changedTitle": "Поставщик изменил заявку",
+    "outOfStockBadge": "Нет в наличии",
+    "noChanges": "Без изменений · {quantity}",
+    "lineTotal": "Сумма"
   },
   "documents": {
     "title": "Документы",

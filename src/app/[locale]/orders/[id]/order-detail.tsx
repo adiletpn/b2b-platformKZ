@@ -9,6 +9,8 @@ import { Input } from '@/components/ui/input';
 import { Field } from '@/components/ui/field';
 import { Page, PageHeader } from '@/components/ui/page';
 import { OrderStatusBadge } from '@/components/order-status-badge';
+import { ProductPhoto } from '@/components/product-photo';
+import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { OrderProgress } from '@/components/order-progress';
 import { DocumentSignatures, type SignatureMark } from '@/components/document-signatures';
@@ -18,7 +20,7 @@ import { OnlinePaymentPanel, type OnlinePayment } from './online-payment-panel';
 import { DocumentVersions, type VersionRow } from './document-versions';
 
 import type { DocumentType, OrderStatus as Status } from '@/generated/prisma/enums';
-import { money } from '@/lib/format';
+import { money, quantity } from '@/lib/format';
 
 type Item = {
   id: string;
@@ -85,6 +87,39 @@ const NEXT_BY_SIDE: Record<'store' | 'supplier', Partial<Record<Status, Status>>
   // Закрыть оплаченную заявку может любая сторона — после этого открываются оценки (раздел 5.2 ТЗ).
   store: { PAID: 'CLOSED' },
 };
+
+/**
+ * Что поставщик сделал с позицией (макет M08): «24 шт → 12 шт», «Нет в наличии»
+ * или «Без изменений». До ответа поставщика — просто заказанное количество.
+ */
+function ItemChange({ item, unit }: { item: Item; unit: string }) {
+  const t = useTranslations('orders');
+  const ordered = `${quantity(item.quantityOrdered)} ${unit}`;
+  if (item.quantityConfirmed === null) {
+    return <p className="text-muted-foreground text-[13px] font-semibold">{ordered}</p>;
+  }
+  if (Number(item.quantityConfirmed) === 0) {
+    return (
+      <Badge tone="danger" className="mt-1">
+        {t('outOfStockBadge')}
+      </Badge>
+    );
+  }
+  if (item.quantityConfirmed !== item.quantityOrdered) {
+    return (
+      <p className="text-[13px] font-bold">
+        <span className="text-muted-foreground line-through">{ordered}</span>
+        {' → '}
+        <span className="text-primary-text">
+          {quantity(item.quantityConfirmed)} {unit}
+        </span>
+      </p>
+    );
+  }
+  return (
+    <p className="text-success text-[13px] font-bold">{t('noChanges', { quantity: ordered })}</p>
+  );
+}
 
 export function OrderDetail({
   locale,
@@ -391,21 +426,33 @@ export function OrderDetail({
         </p>
       ) : null}
 
-      <section className="border-border bg-card shadow-card mt-5 overflow-x-auto rounded-xl border">
-        <table className="w-full min-w-[560px] text-sm">
-          <thead className="text-muted-foreground text-left">
+      <section className="border-border bg-card mt-4 overflow-x-auto rounded-[20px] border">
+        <table className="w-full text-sm md:min-w-[560px]">
+          <thead className="text-muted-foreground text-left max-md:hidden">
             <tr>
               <th className="px-3 py-2 font-medium">{t('items')}</th>
               <th className="px-3 py-2 text-right font-medium">{t('ordered')}</th>
               <th className="px-3 py-2 text-right font-medium">{t('confirmed')}</th>
-              <th className="px-3 py-2 text-right font-medium">{t('price')}</th>
+              <th className="px-3 py-2 text-right font-medium">{t('lineTotal')}</th>
             </tr>
           </thead>
           <tbody className="divide-border divide-y" data-testid="order-items">
             {order.items.map((item) => (
               <tr key={item.id}>
-                <td className="px-3 py-2 break-words">
-                  {locale === 'kk' ? item.nameKk : item.nameRu}
+                <td className="px-3 py-3 break-words">
+                  <div className="flex items-center gap-3">
+                    <ProductPhoto
+                      src={item.photoUrl}
+                      name={locale === 'kk' ? item.nameKk : item.nameRu}
+                      size="md"
+                    />
+                    <div className="min-w-0">
+                      <p className="text-[15px] font-bold">
+                        {locale === 'kk' ? item.nameKk : item.nameRu}
+                      </p>
+                      <ItemChange item={item} unit={locale === 'kk' ? item.unitKk : item.unitRu} />
+                    </div>
+                  </div>
                   {item.substituteForId ? (
                     <Badge tone="info" className="ml-2" data-testid={`substitute-${item.id}`}>
                       {t('substituteFor', { name: itemName(item.substituteForId) })}
@@ -465,8 +512,10 @@ export function OrderDetail({
                     </div>
                   ) : null}
                 </td>
-                <td className="px-3 py-2 text-right tabular-nums">{item.quantityOrdered}</td>
-                <td className="px-3 py-2 text-right">
+                <td className="px-3 py-2 text-right tabular-nums max-md:hidden">
+                  {quantity(item.quantityOrdered)}
+                </td>
+                <td className={cn('px-3 py-2 text-right', !canConfirm && 'max-md:hidden')}>
                   {canConfirm ? (
                     <Input
                       className="ml-auto h-9 w-24 text-right"
@@ -483,7 +532,15 @@ export function OrderDetail({
                     </span>
                   )}
                 </td>
-                <td className="px-3 py-2 text-right tabular-nums">{item.priceWithVat}</td>
+                <td className="px-3 py-3 text-right text-[15px] font-extrabold whitespace-nowrap tabular-nums">
+                  {item.quantityConfirmed !== null && Number(item.quantityConfirmed) === 0 ? (
+                    <span className="text-muted-foreground line-through">
+                      {money(item.orderedTotal)} ₸
+                    </span>
+                  ) : (
+                    <>{money(item.lineTotal)} ₸</>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>

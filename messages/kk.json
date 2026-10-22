@@ -654,7 +654,10 @@
       "inTransit": "Жолда"
     },
     "orderTitle": "Өтінім",
-    "changedTitle": "Жеткізуші өтінімді өзгертті"
+    "changedTitle": "Жеткізуші өтінімді өзгертті",
+    "outOfStockBadge": "Қоймада жоқ",
+    "noChanges": "Өзгеріссіз · {quantity}",
+    "lineTotal": "Сома"
   },
   "documents": {
     "title": "Құжаттар",

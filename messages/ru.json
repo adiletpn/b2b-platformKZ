@@ -1583,7 +1583,7 @@
     "7": "Вс"
   },
   "settlements": {
-    "title": "Взаиморасчёты",
+    "title": "Дебиторская задолженность",
     "subtitle": "Дебиторка по магазинам и сроки оплаты",
     "total": "Ожидается к оплате",
     "overdueTotal": "Из них просрочено",
@@ -1594,7 +1594,23 @@
     "dueDate": "Срок оплаты",
     "amount": "Сумма",
     "overdueDays": "Просрочка, дней",
-    "onTime": "В срок"
+    "onTime": "В срок",
+    "owedToYou": "Вам должны",
+    "storesCount": "{count, plural, one {# магазин} few {# магазина} other {# магазинов}}",
+    "overdue": "Просрочено",
+    "overdueMeta": "{stores} · до {days, plural, one {# дня} other {# дней}}",
+    "paidMonth": "Оплачено в этом месяце",
+    "ordersCount": "{count, plural, one {# заявка} few {# заявки} other {# заявок}}",
+    "discipline": "Дисциплина",
+    "debt": "Долг",
+    "days": "Дней",
+    "creditLimit": "Кредитный лимит",
+    "limitShare": "{percent}% из {limit} ₸",
+    "noLimit": "Лимит не задан",
+    "remind": "Напомнить",
+    "reminded": "Напомнили",
+    "remindedRecently": "Уже напоминали сегодня",
+    "byOrders": "Заявки к оплате"
   },
   "archive": {
     "title": "Архив документов",

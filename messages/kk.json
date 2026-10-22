@@ -1583,7 +1583,7 @@
     "7": "Жс"
   },
   "settlements": {
-    "title": "Өзара есеп айырысу",
+    "title": "Дебиторлық берешек",
     "subtitle": "Дүкендер бойынша дебиторлық берешек және төлем мерзімдері",
     "total": "Төлеуге күтілуде",
     "overdueTotal": "Оның ішінде мерзімі өткен",
@@ -1594,7 +1594,23 @@
     "dueDate": "Төлем мерзімі",
     "amount": "Сома",
     "overdueDays": "Кешігу, күн",
-    "onTime": "Мерзімінде"
+    "onTime": "Мерзімінде",
+    "owedToYou": "Сізге қарыз",
+    "storesCount": "{count} дүкен",
+    "overdue": "Мерзімі өткен",
+    "overdueMeta": "{stores} · {days} күнге дейін",
+    "paidMonth": "Осы айда төленді",
+    "ordersCount": "{count} өтінім",
+    "discipline": "Тәртіп",
+    "debt": "Қарыз",
+    "days": "Күн",
+    "creditLimit": "Кредиттік лимит",
+    "limitShare": "{limit} ₸ ішінен {percent}%",
+    "noLimit": "Лимит қойылмаған",
+    "remind": "Еске салу",
+    "reminded": "Еске салынды",
+    "remindedRecently": "Бүгін еске салынған",
+    "byOrders": "Төлеуге өтінімдер"
   },
   "archive": {
     "title": "Құжаттар мұрағаты",

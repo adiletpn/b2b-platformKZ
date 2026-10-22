@@ -172,7 +172,7 @@ export function AdminPanel({
 
       {metrics.byCity.length > 0 ? (
         <Card className="mt-4">
-          <CardTitle className="text-sm">{t('byCity')}</CardTitle>
+          <CardTitle className="text-[15px]">{t('byCity')}</CardTitle>
           <ul className="mt-2 space-y-1 text-sm" data-testid="admin-cities">
             {metrics.byCity.map((row) => (
               <li key={row.city} className="flex justify-between gap-3">
@@ -607,7 +607,7 @@ export function AdminPanel({
       </section>
 
       <section className="mt-6">
-        <h2 className="text-muted-foreground text-sm font-medium">{t('auditTitle')}</h2>
+        <h2 className="text-[15px] font-extrabold">{t('auditTitle')}</h2>
         <p className="text-muted-foreground mt-1 text-xs">{t('auditHint')}</p>
 
         {audit.length === 0 ? (

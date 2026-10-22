@@ -308,7 +308,9 @@ export function CatalogScreen({
                 {offers.map((offer) => (
                   <tr key={offer.id}>
                     <td className="py-2 pr-3">{locale === 'kk' ? offer.nameKk : offer.nameRu}</td>
-                    <td className="py-2 pr-3 font-mono text-xs">{offer.barcode}</td>
+                    <td className="py-2 pr-3 text-[13px] font-bold tabular-nums">
+                      {offer.barcode}
+                    </td>
                     <td className="py-2 pr-3 text-right tabular-nums">{offer.priceWithoutVat}</td>
                     <td className="py-2 pr-3 text-right tabular-nums">{offer.priceWithVat}</td>
                     <td className="py-2 pr-3 text-right tabular-nums">{offer.vatRate}</td>

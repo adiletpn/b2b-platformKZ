@@ -188,7 +188,7 @@ export function RepsScreen({
                     <ul className="mt-1 space-y-1 text-sm" data-testid="reps-orders">
                       {store.orders.map((order) => (
                         <li key={order.id} className="flex flex-wrap items-center gap-2">
-                          <span className="font-mono text-xs">{order.number}</span>
+                          <span className="text-[13px] font-bold tabular-nums">{order.number}</span>
                           <span className="text-muted-foreground text-xs">
                             {formatDate(new Date(order.createdAt))}
                           </span>

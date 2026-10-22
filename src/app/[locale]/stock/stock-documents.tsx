@@ -129,7 +129,7 @@ export function StockDocuments({
         onSubmit={submit}
       >
         <h2 className="text-lg font-medium">{t('documentsTitle')}</h2>
-        <p className="text-muted-foreground mt-1 text-sm">{t('documentsHint')}</p>
+        <p className="text-muted-foreground mt-1 text-[13px] font-semibold">{t('documentsHint')}</p>
 
         <div className="mt-3 flex flex-wrap items-end gap-3">
           <Field label={t('documentType')}>

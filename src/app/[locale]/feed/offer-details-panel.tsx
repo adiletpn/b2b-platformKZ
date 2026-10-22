@@ -49,7 +49,9 @@ export function OfferDetailsPanel({
           <h2 className="text-lg font-medium break-words" data-testid="details-name">
             {name}
           </h2>
-          <p className="text-muted-foreground font-mono text-xs">{details.barcode}</p>
+          <p className="text-muted-foreground text-[13px] font-bold tabular-nums">
+            {details.barcode}
+          </p>
         </div>
         <Button variant="ghost" size="sm" onClick={onClose} data-testid="details-close">
           {t('close')}

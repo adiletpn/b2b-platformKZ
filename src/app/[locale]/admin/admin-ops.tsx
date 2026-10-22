@@ -96,7 +96,7 @@ export function UsersPanel() {
         {(users ?? []).map((user) => (
           <li key={user.id} className="space-y-2 py-3">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="font-mono">{user.phone}</span>
+              <span className="tabular-nums">{user.phone}</span>
               {user.name ? <span>{user.name}</span> : null}
               {user.blocked ? <Badge tone="danger">{t('blocked')}</Badge> : null}
               <span className="text-muted-foreground text-xs">

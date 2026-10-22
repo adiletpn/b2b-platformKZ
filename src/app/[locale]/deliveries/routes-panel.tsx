@@ -120,7 +120,7 @@ export function RoutesPanel({
                 <span className="min-w-0 break-words">
                   <span className="font-medium">{stop.storeName}</span>
                   <span className="text-muted-foreground block">{stop.address}</span>
-                  <span className="text-muted-foreground block font-mono text-xs">
+                  <span className="text-muted-foreground block text-[13px] font-bold tabular-nums">
                     {stop.number}
                   </span>
                 </span>
@@ -263,7 +263,7 @@ export function RoutesPanel({
               {routes.map((route) => (
                 <li key={route.id} className="flex flex-wrap items-center gap-2 py-2">
                   <span className="min-w-0 flex-1 break-words">
-                    <span className="font-mono text-xs">{route.number}</span> ·{' '}
+                    <span className="text-[13px] font-bold tabular-nums">{route.number}</span> ·{' '}
                     {route.date.split('-').reverse().join('.')} · {route.driver ?? '—'}
                     <span className="text-muted-foreground block text-xs">
                       {route.stops.map((stop) => stop.storeName).join(' → ')}

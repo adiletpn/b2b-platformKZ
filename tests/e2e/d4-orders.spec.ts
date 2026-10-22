@@ -117,7 +117,13 @@ test('cart_with_three_suppliers_creates_three_orders_in_one_click', async () => 
 test('supplier_sees_incoming_order_and_notification', async () => {
   await open(supplierPage, '/ru/orders');
 
-  await expect(supplierPage.getByTestId('orders-table').getByRole('row')).toHaveCount(1);
+  // На компьютере у поставщика канбан (макет D03), на телефоне — список карточками.
+  const board = supplierPage.getByTestId('supplier-board');
+  if (await board.isVisible()) {
+    await expect(board.getByTestId('board-new').getByRole('listitem')).toHaveCount(1);
+  } else {
+    await expect(supplierPage.getByTestId('orders-table').getByRole('row')).toHaveCount(1);
+  }
   await expect(supplierPage.getByTestId('notifications')).toContainText('Новая заявка');
 });
 

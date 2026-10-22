@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { AlertTriangle, Check, ChevronLeft, MessageCircle } from 'lucide-react';
+import { AlertTriangle, Check, ChevronLeft, FileText, MessageCircle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useRouter, Link } from '@/i18n/navigation';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -693,21 +693,24 @@ export function OrderDetail({
       ) : null}
 
       {order.documents.length > 0 ? (
-        <section className="border-border bg-card shadow-card mt-5 rounded-xl border p-4 sm:p-5">
-          <h2 className="text-muted-foreground text-sm font-medium">{tDocuments('title')}</h2>
-          <ul className="mt-2 space-y-3 text-sm" data-testid="order-documents">
+        <section className="mt-6">
+          <h2 className="text-[17px] font-extrabold">{tDocuments('title')}</h2>
+          <ul className="mt-3 space-y-2.5 text-sm" data-testid="order-documents">
             {order.documents.map((document) => (
               <li
                 key={document.id}
-                className="space-y-1.5"
+                className="bg-muted space-y-1.5 rounded-2xl px-4 py-3"
                 data-testid={`document-${document.type}`}
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="min-w-0 break-words">
+                  <span className="flex min-w-0 items-center gap-2.5 font-bold break-words">
+                    <FileText aria-hidden className="text-muted-foreground size-[18px] shrink-0" />
                     {tDocuments(`types.${document.type}`)} № {document.number}
                   </span>
-                  <span className="flex items-center gap-3">
-                    <span className="tabular-nums">{money(document.totalWithVat)} ₸</span>
+                  <span className="flex items-center gap-2">
+                    <span className="font-extrabold tabular-nums">
+                      {money(document.totalWithVat)} ₸
+                    </span>
                     <a
                       href={`/api/documents/${document.id}/pdf?locale=${locale}`}
                       target="_blank"

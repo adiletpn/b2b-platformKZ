@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, ChevronLeft, MessageCircle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useRouter, Link } from '@/i18n/navigation';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -362,27 +362,35 @@ export function OrderDetail({
   return (
     <Page>
       <PageHeader
+        leading={
+          <Link
+            href="/orders"
+            aria-label={t('back')}
+            className="bg-muted hover:bg-border grid size-11 shrink-0 place-items-center rounded-full"
+          >
+            <ChevronLeft aria-hidden className="size-5" />
+          </Link>
+        }
         title={
-          <>
+          <span className="text-[20px] lg:text-2xl">
             {t('orderTitle')} <span data-testid="order-number">{order.number}</span>
-          </>
+          </span>
         }
         description={`${order.counterparty} · ${order.createdOn}`}
         actions={
           <>
             <OrderStatusBadge status={order.status} testId="order-status" />
             <Button
-              variant="outline"
-              size="sm"
+              variant="secondary"
+              size="icon"
               disabled={pending}
+              aria-label={tChat('openFromOrder')}
+              title={tChat('openFromOrder')}
               data-testid="open-order-chat"
               onClick={() => void openOrderChat()}
             >
-              {tChat('openFromOrder')}
+              <MessageCircle aria-hidden />
             </Button>
-            <Link href="/orders" className={buttonVariants({ variant: 'outline', size: 'sm' })}>
-              {t('back')}
-            </Link>
           </>
         }
       />

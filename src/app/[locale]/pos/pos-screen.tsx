@@ -566,7 +566,10 @@ export function PosScreen({
               {shift ? t('shiftOpen', { number: shift.number }) : t('shiftClosed')}
             </CardTitle>
             {report ? (
-              <p className="text-muted-foreground mt-1 text-sm" data-testid="pos-report">
+              <p
+                className="text-muted-foreground mt-1 text-[13px] font-semibold"
+                data-testid="pos-report"
+              >
                 {t('reportLine', {
                   receipts: report.receipts,
                   total: formatMoney(report.total),

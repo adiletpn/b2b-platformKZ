@@ -44,7 +44,7 @@ export default async function OrderPage({
     include: {
       store: { select: { name: true } },
       items: { include: { offer: { include: { product: { include: { unit: true } } } } } },
-      statusLogs: { orderBy: { createdAt: 'asc' } },
+      statusLogs: { orderBy: { createdAt: 'asc' }, include: { user: { select: { name: true } } } },
       documents: {
         orderBy: { issuedAt: 'asc' },
         include: { signatures: { orderBy: { signedAt: 'asc' } } },
@@ -136,7 +136,9 @@ export default async function OrderPage({
         })),
         statusLogs: order.statusLogs.map((log) => ({
           toStatus: log.toStatus,
-          createdAt: log.createdAt.toLocaleString('ru-RU'),
+          // Время по Казахстану, как и остальные даты (src/lib/format.ts).
+          createdAt: formatDateTime(log.createdAt),
+          author: log.user?.name ?? null,
           comment: log.comment,
         })),
         disputeReason: order.disputeReason,

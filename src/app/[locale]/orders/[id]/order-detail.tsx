@@ -72,7 +72,12 @@ type Order = {
   rejectionReason: string | null;
   creditHold: boolean;
   items: Item[];
-  statusLogs: { toStatus: Status; createdAt: string; comment: string | null }[];
+  statusLogs: {
+    toStatus: Status;
+    createdAt: string;
+    author: string | null;
+    comment: string | null;
+  }[];
   disputeReason: string | null;
   documents: DocumentRow[];
   payments: { id: string; amount: string; reference: string | null }[];

@@ -170,7 +170,7 @@ export function CartScreen({
                   <div className="flex items-center gap-2.5">
                     <Avatar name={group.supplierName} tone={index % 2 === 1 ? 'dark' : 'primary'} />
                     <div className="min-w-0 flex-1">
-                      <h2 className="truncate text-sm font-extrabold">{group.supplierName}</h2>
+                      <h2 className="truncate text-[15px] font-extrabold">{group.supplierName}</h2>
                       <p className="text-muted-foreground text-xs font-semibold">
                         {t('itemsCount', { count: group.items.length })}
                       </p>

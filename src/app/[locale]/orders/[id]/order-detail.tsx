@@ -32,6 +32,9 @@ type Item = {
   /** Позиция предложена поставщиком вместо другой (раздел 3.4 ТЗ). */
   substituteForId: string | null;
   barcode: string;
+  photoUrl: string | null;
+  lineTotal: string;
+  orderedTotal: string;
 };
 
 /** EAN-13 со сканера или DataMatrix маркировки («01» + GTIN-14 + серийный номер). */

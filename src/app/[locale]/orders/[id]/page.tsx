@@ -119,6 +119,12 @@ export default async function OrderPage({
           priceWithVat: item.priceWithVat.toFixed(2),
           substituteForId: item.substituteForId,
           barcode: item.offer.product.barcode,
+          photoUrl: item.offer.product.photoUrls[0] ?? null,
+          // Суммы строки считаются в Decimal (правило 1): по подтверждённому, иначе по заказанному.
+          lineTotal: item.priceWithVat
+            .mul(item.quantityConfirmed ?? item.quantityOrdered)
+            .toFixed(2),
+          orderedTotal: item.priceWithVat.mul(item.quantityOrdered).toFixed(2),
         })),
         statusLogs: order.statusLogs.map((log) => ({
           toStatus: log.toStatus,

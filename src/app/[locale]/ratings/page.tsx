@@ -31,7 +31,7 @@ export default async function RatingsPage({ params }: { params: Promise<{ locale
       <PageHeader title={t('title')} />
 
       <section className="border-border bg-card shadow-card mt-5 rounded-xl border p-4 sm:p-5">
-        <h2 className="text-sm font-medium">{t('myRating')}</h2>
+        <h2 className="text-[15px] font-extrabold">{t('myRating')}</h2>
         <p className="mt-2 text-3xl font-semibold tabular-nums" data-testid="manual-score">
           {rating.manualScore ?? t('noScore')}
         </p>
@@ -49,7 +49,7 @@ export default async function RatingsPage({ params }: { params: Promise<{ locale
       </section>
 
       <section className="border-border bg-card shadow-card mt-4 rounded-xl border p-4 sm:p-5">
-        <h2 className="text-sm font-medium">{t('autoTitle')}</h2>
+        <h2 className="text-[15px] font-extrabold">{t('autoTitle')}</h2>
         <p className="text-muted-foreground mt-1 text-xs">{t('autoHint')}</p>
 
         <dl className="mt-3 space-y-1 text-sm">

@@ -32,22 +32,28 @@ function PageHeader({
   title,
   description,
   actions,
+  leading,
 }: {
   title: React.ReactNode;
+  /** Слева от заголовка: круглая кнопка «назад» на экранах деталей (макет M08, M09). */
+  leading?: React.ReactNode;
   description?: React.ReactNode;
   actions?: React.ReactNode;
 }) {
   return (
     <header className="border-border mb-4 flex flex-wrap items-center justify-between gap-3 pt-1.5 lg:-mx-8 lg:mb-6 lg:min-h-20 lg:border-b lg:px-8 lg:py-3">
-      <div className="min-w-0">
-        <h1 className="text-[28px] leading-tight font-black tracking-[-0.025em] break-words lg:text-2xl lg:tracking-[-0.02em]">
-          {title}
-        </h1>
-        {description ? (
-          <p className="text-muted-foreground mt-0.5 text-[13px] font-semibold break-words">
-            {description}
-          </p>
-        ) : null}
+      <div className="flex min-w-0 flex-1 items-center gap-3">
+        {leading}
+        <div className="min-w-0">
+          <h1 className="text-[28px] leading-tight font-black tracking-[-0.025em] break-words lg:text-2xl lg:tracking-[-0.02em]">
+            {title}
+          </h1>
+          {description ? (
+            <p className="text-muted-foreground mt-0.5 text-[13px] font-semibold break-words">
+              {description}
+            </p>
+          ) : null}
+        </div>
       </div>
       {actions ? <div className="flex flex-wrap items-center gap-2.5">{actions}</div> : null}
     </header>

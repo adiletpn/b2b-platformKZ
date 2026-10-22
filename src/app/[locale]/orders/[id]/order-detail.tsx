@@ -542,7 +542,7 @@ export function OrderDetail({
                     />
                   ) : (
                     <span className="tabular-nums" data-testid={`confirmed-${item.id}`}>
-                      {item.quantityConfirmed ?? '—'}
+                      {item.quantityConfirmed === null ? '—' : quantity(item.quantityConfirmed)}
                     </span>
                   )}
                 </td>

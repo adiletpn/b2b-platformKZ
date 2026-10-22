@@ -125,7 +125,7 @@ export function OnboardingForm({ cities, demoBins }: { cities: City[]; demoBins:
 
       <form className="mt-6 space-y-8" onSubmit={submit}>
         <section className="space-y-3">
-          <h2 className="text-muted-foreground text-sm font-medium">{t('stepType')}</h2>
+          <h2 className="text-[15px] font-extrabold">{t('stepType')}</h2>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
             {TYPES.map((value) => (
               <Button
@@ -142,7 +142,7 @@ export function OnboardingForm({ cities, demoBins }: { cities: City[]; demoBins:
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-muted-foreground text-sm font-medium">{t('stepBin')}</h2>
+          <h2 className="text-[15px] font-extrabold">{t('stepBin')}</h2>
           {demoBins.length > 0 ? (
             <DemoHint title={t('demoBinTitle')}>
               {t('demoBinHint')}:
@@ -258,7 +258,7 @@ export function OnboardingForm({ cities, demoBins }: { cities: City[]; demoBins:
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-muted-foreground text-sm font-medium">{t('stepDetails')}</h2>
+          <h2 className="text-[15px] font-extrabold">{t('stepDetails')}</h2>
 
           {needsLocation ? (
             <div className="border-border space-y-3 rounded-2xl border p-3">

@@ -50,7 +50,7 @@ export function GeographyPanel({ locale }: { locale: 'ru' | 'kk' }) {
   return (
     <Card className="mt-4 w-full" data-testid="geography">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <CardTitle className="text-sm">{t('geography.title')}</CardTitle>
+        <CardTitle className="text-[15px]">{t('geography.title')}</CardTitle>
         <Button
           variant="ghost"
           size="sm"

@@ -233,7 +233,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
 
         {company.locations.length > 0 ? (
           <Card className="lg:col-start-3">
-            <CardTitle className="text-sm">{t('locations')}</CardTitle>
+            <CardTitle className="text-[15px]">{t('locations')}</CardTitle>
             <ul className="mt-2 space-y-1 text-sm" data-testid="company-locations">
               {company.locations.map((location) => (
                 <li key={location.id} className="break-words">
@@ -246,7 +246,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
 
         {company.deliveryZones.length > 0 ? (
           <Card className="lg:col-start-3">
-            <CardTitle className="text-sm">{t('deliveryCities')}</CardTitle>
+            <CardTitle className="text-[15px]">{t('deliveryCities')}</CardTitle>
             <ul className="mt-2 flex flex-wrap gap-1.5" data-testid="company-delivery-cities">
               {company.deliveryZones.map((zone) => (
                 <li key={zone.id}>

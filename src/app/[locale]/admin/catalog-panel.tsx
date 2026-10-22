@@ -134,7 +134,7 @@ export function ProductMergePanel() {
           >
             <span className="min-w-0 flex-1 break-words">
               {name(row)}
-              <span className="text-muted-foreground block font-mono text-xs">
+              <span className="text-muted-foreground block text-[13px] font-bold tabular-nums">
                 {row.barcode} · {t('offers', { count: row.offers })}
               </span>
             </span>

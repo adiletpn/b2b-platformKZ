@@ -63,7 +63,7 @@ export function RatingReviews({ reviews }: { reviews: Review[] }) {
 
   return (
     <section className="mt-6">
-      <h2 className="text-muted-foreground text-sm font-medium">{t('reviews')}</h2>
+      <h2 className="text-[15px] font-extrabold">{t('reviews')}</h2>
 
       {reviews.length === 0 ? (
         <p className="text-muted-foreground mt-2 text-sm" data-testid="no-reviews">

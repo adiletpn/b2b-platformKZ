@@ -63,7 +63,7 @@ export function PricingPanel({
   return (
     <Card className="mt-4" data-testid="pricing">
       <CardTitle className="text-[15px]">{t('pricingTitle')}</CardTitle>
-      <p className="text-muted-foreground mt-1 text-sm">{t('pricingHint')}</p>
+      <p className="text-muted-foreground mt-1 text-[13px] font-semibold">{t('pricingHint')}</p>
 
       <div className="mt-3 flex flex-wrap items-end gap-3">
         <Field label={t('markupCategory')}>

@@ -62,7 +62,7 @@ export function PricingPanel({
 
   return (
     <Card className="mt-4" data-testid="pricing">
-      <CardTitle className="text-sm">{t('pricingTitle')}</CardTitle>
+      <CardTitle className="text-[15px]">{t('pricingTitle')}</CardTitle>
       <p className="text-muted-foreground mt-1 text-sm">{t('pricingHint')}</p>
 
       <div className="mt-3 flex flex-wrap items-end gap-3">

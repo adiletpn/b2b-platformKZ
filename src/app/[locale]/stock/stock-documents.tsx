@@ -280,7 +280,7 @@ export function StockDocuments({
                 data-testid={`stock-document-${document.number}`}
               >
                 <span>
-                  <span className="font-mono text-xs">{document.number}</span>{' '}
+                  <span className="text-[13px] font-bold tabular-nums">{document.number}</span>{' '}
                   {t(`documentTypes.${document.type}`)}
                   {document.targetAddress ? ` → ${document.targetAddress}` : ''}
                   {document.reason
@@ -339,7 +339,7 @@ export function StockDocuments({
                   <span>
                     {t(`movementTypes.${entry.type}` as 'movementTypes.RECEIPT')}
                     {entry.documentNumber ? (
-                      <span className="text-muted-foreground font-mono text-xs">
+                      <span className="text-muted-foreground text-[13px] font-bold tabular-nums">
                         {' '}
                         {entry.documentNumber}
                       </span>

@@ -403,7 +403,7 @@ export function AdminPanel({
           data-testid="tariffs"
         >
           <h2 className="text-lg font-medium">{t('tariffsTitle')}</h2>
-          <p className="text-muted-foreground mt-1 text-sm">{t('tariffsHint')}</p>
+          <p className="text-muted-foreground mt-1 text-[13px] font-semibold">{t('tariffsHint')}</p>
 
           <div className="mt-3 overflow-x-auto">
             <table className="w-full min-w-[560px] text-sm">
@@ -513,7 +513,7 @@ export function AdminPanel({
         data-testid="reference"
       >
         <h2 className="text-lg font-medium">{t('referenceTitle')}</h2>
-        <p className="text-muted-foreground mt-1 text-sm">{t('referenceHint')}</p>
+        <p className="text-muted-foreground mt-1 text-[13px] font-semibold">{t('referenceHint')}</p>
 
         <dl className="mt-3 grid grid-cols-2 gap-3 text-sm lg:grid-cols-4">
           {(

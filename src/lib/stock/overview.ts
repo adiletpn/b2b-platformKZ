@@ -25,13 +25,19 @@ export type StockRow = {
   markup: number | null;
   /** Ближайший срок годности по партиям на точке, ГГГГ-ММ-ДД. */
   nearestExpiry: string | null;
+  /** Дней до ближайшего срока; null — сроков нет. */
+  expiryDays: number | null;
 };
 
 /**
  * Таблица остатков точки как в макете D09: остаток и минимум, себестоимость, цена продажи,
  * наценка и ближайший срок годности. Только своя точка (правило 4 — locationId из контекста).
  */
-export async function getStockOverview(companyId: string, locationId: string): Promise<StockRow[]> {
+export async function getStockOverview(
+  companyId: string,
+  locationId: string,
+  now = new Date(),
+): Promise<StockRow[]> {
   const [balances, prices, expiries] = await Promise.all([
     prisma.stockBalance.findMany({
       where: { locationId, location: { companyId } },
@@ -68,6 +74,11 @@ export async function getStockOverview(companyId: string, locationId: string): P
       retailPrice,
       markup: markupPercent(averageCost, retailPrice),
       nearestExpiry: expiryOf.get(balance.productId) ?? null,
+      expiryDays: expiryOf.get(balance.productId)
+        ? Math.floor(
+            (new Date(expiryOf.get(balance.productId)!).getTime() - now.getTime()) / 86_400_000,
+          )
+        : null,
     };
   });
 }

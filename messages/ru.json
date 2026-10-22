@@ -848,7 +848,11 @@
     "pieceSale": "Поштучно",
     "pieceSaleInfo": "{pieces} шт в упаковке, штука {price} ₸",
     "piecesPerPack": "Штук в упаковке",
-    "piecePrice": "Цена штуки"
+    "piecePrice": "Цена штуки",
+    "minimum": "Минимум",
+    "retailPrice": "Цена продажи",
+    "markup": "Наценка",
+    "expiry": "Срок годности"
   },
   "payment": {
     "title": "Оплата",

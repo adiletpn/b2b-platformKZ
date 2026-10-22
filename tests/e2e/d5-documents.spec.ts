@@ -149,7 +149,7 @@ test('store_stock_grows_after_acceptance', async () => {
   await open(storePage, '/ru/stock');
 
   await expect(storePage.getByTestId('stock-table')).toContainText(productName);
-  await expect(storePage.getByTestId('stock-quantity').first()).toContainText('8.000');
+  await expect(storePage.getByTestId('stock-quantity').first()).toContainText('8 шт');
 });
 
 test('discrepancy_act_pdf_is_available_to_both_sides', async () => {

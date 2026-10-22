@@ -289,7 +289,7 @@ test('criterion_7_and_8_acceptance_creates_act_and_grows_stock', async ({}, test
 
   await open(storePage, '/ru/stock');
   await expect(storePage.getByTestId('stock-table')).toContainText(suppliers[0]!.product);
-  await expect(storePage.getByTestId('stock-quantity').first()).toContainText('3.000');
+  await expect(storePage.getByTestId('stock-quantity').first()).toContainText('3 шт');
   await checkBothWidths(storePage);
 });
 

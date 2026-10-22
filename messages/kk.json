@@ -848,7 +848,11 @@
     "pieceSale": "Даналап",
     "pieceSaleInfo": "Қаптамада {pieces} дана, бір дана {price} ₸",
     "piecesPerPack": "Қаптамадағы дана саны",
-    "piecePrice": "Бір дана бағасы"
+    "piecePrice": "Бір дана бағасы",
+    "minimum": "Минимум",
+    "retailPrice": "Сату бағасы",
+    "markup": "Үстеме",
+    "expiry": "Жарамдылық мерзімі"
   },
   "payment": {
     "title": "Төлем",

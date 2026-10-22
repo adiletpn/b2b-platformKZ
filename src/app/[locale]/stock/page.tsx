@@ -12,6 +12,11 @@ import { getExpiring } from '@/lib/stock/batches';
 import { getLabels } from '@/lib/stock/pricing';
 import { PricingPanel } from './pricing-panel';
 import { Card, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { ProductPhoto } from '@/components/product-photo';
+import { getStockOverview } from '@/lib/stock/overview';
+import { formatDate, money, quantity } from '@/lib/format';
+import { cn } from '@/lib/utils';
 
 export default async function StockPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -86,43 +91,92 @@ export default async function StockPage({ params }: { params: Promise<{ locale: 
   }
 
   const t = await getTranslations('stock');
+  const rows = await getStockOverview(access!.companyId, store!.locationId);
 
   return (
-    <Page width="md">
+    <Page width="lg">
       <PageHeader title={t('title')} description={t('hint')} />
 
-      {balances.length === 0 ? (
+      {rows.length === 0 ? (
         <p className="text-muted-foreground mt-6 text-sm" data-testid="stock-empty">
           {t('empty')}
         </p>
       ) : (
-        <div className="border-border bg-card shadow-card mt-5 overflow-x-auto rounded-xl border">
-          <table className="w-full min-w-[480px] text-sm">
-            <thead className="text-muted-foreground text-left">
-              <tr>
-                <th className="px-3 py-2 font-medium">{t('product')}</th>
-                <th className="px-3 py-2 text-right font-medium">{t('quantity')}</th>
-                <th className="px-3 py-2 text-right font-medium">{t('averageCost')}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-border divide-y" data-testid="stock-table">
-              {balances.map((balance) => (
-                <tr key={balance.id} data-testid={`stock-row-${balance.productId}`}>
-                  <td className="px-3 py-2 break-words">
-                    {locale === 'kk' ? balance.product.nameKk : balance.product.nameRu}
-                  </td>
-                  <td className="px-3 py-2 text-right tabular-nums" data-testid="stock-quantity">
-                    {balance.quantity.toFixed(3)}{' '}
-                    {locale === 'kk' ? balance.product.unit.nameKk : balance.product.unit.nameRu}
-                  </td>
-                  <td className="px-3 py-2 text-right tabular-nums">
-                    {balance.averageCost.toFixed(2)}
-                  </td>
+        // Макет D09: товар с фото и штрихкодом, остаток (ниже минимума — оранжевым), минимум,
+        // себестоимость, цена продажи, наценка и срок годности плашкой.
+        <Card className="mt-4 overflow-hidden p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[860px] text-sm">
+              <thead className="text-left">
+                <tr>
+                  <th className="px-4 py-2.5">{t('product')}</th>
+                  <th className="px-4 py-2.5 text-right">{t('quantity')}</th>
+                  <th className="px-4 py-2.5 text-right">{t('minimum')}</th>
+                  <th className="px-4 py-2.5 text-right">{t('averageCost')}</th>
+                  <th className="px-4 py-2.5 text-right">{t('retailPrice')}</th>
+                  <th className="px-4 py-2.5 text-right">{t('markup')}</th>
+                  <th className="px-4 py-2.5 text-right">{t('expiry')}</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-border divide-y" data-testid="stock-table">
+                {rows.map((row) => {
+                  const unit = locale === 'kk' ? row.unitKk : row.unitRu;
+                  const name = locale === 'kk' ? row.nameKk : row.nameRu;
+                  const days = row.expiryDays;
+                  return (
+                    <tr key={row.productId} data-testid={`stock-row-${row.productId}`}>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          <ProductPhoto src={row.photoUrl} name={name} size="sm" />
+                          <div className="min-w-0">
+                            <p className="font-extrabold break-words">{name}</p>
+                            <p className="text-muted-foreground text-xs font-semibold tabular-nums">
+                              {row.barcode}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+                      <td
+                        className={cn(
+                          'px-4 py-3 text-right font-extrabold whitespace-nowrap tabular-nums',
+                          row.belowMinimum && 'text-primary-text',
+                        )}
+                        data-testid="stock-quantity"
+                      >
+                        {quantity(row.quantity)} {unit}
+                      </td>
+                      <td className="text-muted-foreground px-4 py-3 text-right tabular-nums">
+                        {row.minQuantity ? quantity(row.minQuantity) : '—'}
+                      </td>
+                      <td className="px-4 py-3 text-right whitespace-nowrap tabular-nums">
+                        {money(row.averageCost)} ₸
+                      </td>
+                      <td className="px-4 py-3 text-right font-extrabold whitespace-nowrap tabular-nums">
+                        {row.retailPrice ? `${money(row.retailPrice)} ₸` : '—'}
+                      </td>
+                      <td className="px-4 py-3 text-right tabular-nums">
+                        {row.markup === null ? '—' : `${row.markup}%`}
+                      </td>
+                      <td className="px-4 py-3 text-right whitespace-nowrap">
+                        {row.nearestExpiry === null || days === null ? (
+                          '—'
+                        ) : days <= 14 ? (
+                          <Badge tone={days <= 3 ? 'danger' : 'warning'}>
+                            {formatDate(new Date(row.nearestExpiry))}
+                          </Badge>
+                        ) : (
+                          <span className="tabular-nums">
+                            {formatDate(new Date(row.nearestExpiry)).slice(3)}
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </Card>
       )}
 
       {expiring.length > 0 ? (

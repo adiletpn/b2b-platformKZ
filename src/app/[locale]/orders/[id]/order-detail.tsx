@@ -468,9 +468,18 @@ export function OrderDetail({
                     </div>
                   </div>
                   {item.substituteForId ? (
-                    <Badge tone="info" className="ml-2" data-testid={`substitute-${item.id}`}>
-                      {t('substituteFor', { name: itemName(item.substituteForId) })}
-                    </Badge>
+                    // Макет M08: замена — серая плашка под позицией.
+                    <div
+                      className="bg-muted mt-2.5 rounded-[14px] px-3.5 py-2.5"
+                      data-testid={`substitute-${item.id}`}
+                    >
+                      <p className="text-muted-foreground text-xs font-bold">
+                        {t('substituteOffered')}
+                      </p>
+                      <p className="text-[13px] font-extrabold">
+                        {t('substituteFor', { name: itemName(item.substituteForId) })}
+                      </p>
+                    </div>
                   ) : null}
                   {canConfirm ? (
                     <div className="mt-1.5 flex flex-wrap items-center gap-1.5">

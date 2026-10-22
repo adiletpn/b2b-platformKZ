@@ -660,7 +660,8 @@
     "lineTotal": "Сома",
     "progressChanged": "Өзгертілді",
     "was": "Болды",
-    "became": "Қазір"
+    "became": "Қазір",
+    "substituteOffered": "Ауыстыру ұсынылды"
   },
   "documents": {
     "title": "Құжаттар",

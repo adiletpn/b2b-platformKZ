@@ -660,7 +660,8 @@
     "lineTotal": "Сумма",
     "progressChanged": "Изменена",
     "was": "Было",
-    "became": "Стало"
+    "became": "Стало",
+    "substituteOffered": "Предложена замена"
   },
   "documents": {
     "title": "Документы",

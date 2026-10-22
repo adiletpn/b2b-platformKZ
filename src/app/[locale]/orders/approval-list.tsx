@@ -48,7 +48,7 @@ export function ApprovalList({ approvals }: { approvals: Approval[] }) {
   return (
     <Card className="bg-primary-soft mb-4 border-0" data-testid="approvals">
       <CardTitle className="text-[15px]">{t('approvalsTitle')}</CardTitle>
-      <p className="text-muted-foreground mt-1 text-sm">{t('approvalsHint')}</p>
+      <p className="text-muted-foreground mt-1 text-[13px] font-semibold">{t('approvalsHint')}</p>
 
       <ul className="mt-3 space-y-3">
         {approvals.map((approval) => (

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { AlertTriangle, ChevronLeft, MessageCircle } from 'lucide-react';
+import { AlertTriangle, Check, ChevronLeft, MessageCircle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useRouter, Link } from '@/i18n/navigation';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -1068,25 +1068,43 @@ export function OrderDetail({
       />
 
       <section className="mt-6">
-        <h2 className="text-muted-foreground text-sm font-medium">{t('history')}</h2>
-        <ol
-          className="border-border mt-3 ml-1.5 space-y-3 border-l pl-4 text-sm"
-          data-testid="status-history"
-        >
-          {order.statusLogs.map((log, index) => (
-            <li
-              key={`${log.toStatus}-${index}`}
-              className="before:bg-primary before:ring-background relative flex flex-wrap items-baseline justify-between gap-2 before:absolute before:top-1.5 before:-left-[21px] before:size-2.5 before:rounded-full before:ring-4"
-            >
-              <span>
-                {t(`status.${log.toStatus}`)}
-                {log.comment ? (
-                  <span className="text-muted-foreground"> — {log.comment}</span>
-                ) : null}
-              </span>
-              <span className="text-muted-foreground text-xs">{log.createdAt}</span>
-            </li>
-          ))}
+        <h2 className="text-[17px] font-extrabold">{t('history')}</h2>
+        {/* Макет D02: вертикальная линия, пройденные шаги — оранжевые кружки, последний — кольцо. */}
+        <ol className="mt-3.5" data-testid="status-history">
+          {order.statusLogs.map((log, index) => {
+            const last = index === order.statusLogs.length - 1;
+            return (
+              <li key={`${log.toStatus}-${index}`} className="relative flex gap-3 pb-4 last:pb-0">
+                {last ? null : (
+                  <span
+                    aria-hidden
+                    className="bg-primary absolute top-6 bottom-0 left-[10px] w-[3px]"
+                  />
+                )}
+                <span
+                  aria-hidden
+                  className={cn(
+                    'relative grid size-[23px] shrink-0 place-items-center rounded-full border-[3px]',
+                    last ? 'border-primary bg-card' : 'border-primary bg-primary',
+                  )}
+                >
+                  {last ? null : <Check className="size-3 text-white" strokeWidth={3.5} />}
+                </span>
+                <div className="min-w-0">
+                  <p className="text-[15px] font-extrabold">
+                    {t(`status.${log.toStatus}`)}
+                    {log.comment ? (
+                      <span className="text-muted-foreground font-semibold"> — {log.comment}</span>
+                    ) : null}
+                  </p>
+                  <p className="text-muted-foreground text-[13px] font-semibold">
+                    {log.createdAt}
+                    {log.author ? ` · ${log.author}` : ''}
+                  </p>
+                </div>
+              </li>
+            );
+          })}
         </ol>
       </section>
     </Page>

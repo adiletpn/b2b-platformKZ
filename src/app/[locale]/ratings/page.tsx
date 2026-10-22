@@ -35,7 +35,10 @@ export default async function RatingsPage({ params }: { params: Promise<{ locale
         <p className="mt-2 text-3xl font-semibold tabular-nums" data-testid="manual-score">
           {rating.manualScore ?? t('noScore')}
         </p>
-        <p className="text-muted-foreground mt-1 text-sm" data-testid="ratings-count">
+        <p
+          className="text-muted-foreground mt-1 text-[13px] font-semibold"
+          data-testid="ratings-count"
+        >
           {t('ratingsCount', { count: rating.ratingsCount })}
         </p>
         {rating.fewRatings ? (

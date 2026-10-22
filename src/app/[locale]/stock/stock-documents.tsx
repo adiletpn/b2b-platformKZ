@@ -271,7 +271,7 @@ export function StockDocuments({
 
       {documents.length > 0 ? (
         <Card className="mt-4">
-          <CardTitle className="text-sm">{t('documentsListTitle')}</CardTitle>
+          <CardTitle className="text-[15px]">{t('documentsListTitle')}</CardTitle>
           <ul className="mt-2 space-y-1 text-sm" data-testid="stock-documents">
             {documents.map((document) => (
               <li
@@ -329,7 +329,7 @@ export function StockDocuments({
 
       {ledger ? (
         <Card className="mt-4" data-testid="ledger">
-          <CardTitle className="text-sm">{t('ledgerTitle')}</CardTitle>
+          <CardTitle className="text-[15px]">{t('ledgerTitle')}</CardTitle>
           {ledger.length === 0 ? (
             <p className="text-muted-foreground mt-2 text-sm">{t('ledgerEmpty')}</p>
           ) : (

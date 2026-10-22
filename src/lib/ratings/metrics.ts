@@ -194,3 +194,8 @@ export async function getCompanyRating(
     store: company.type === 'SUPPLIER' ? null : await storeMetrics(companyId, since),
   };
 }
+
+/** Платёжная дисциплина магазина за 12 месяцев — метка на карточке заявки у поставщика (D03). */
+export async function storeDiscipline(storeId: string, now = new Date()) {
+  return (await storeMetrics(storeId, windowStart(now))).discipline;
+}

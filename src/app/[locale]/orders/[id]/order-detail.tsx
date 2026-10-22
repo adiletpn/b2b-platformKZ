@@ -763,7 +763,7 @@ export function OrderDetail({
 
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <Input
-              className="h-10 max-w-xs font-mono"
+              className="h-10 max-w-xs tabular-nums"
               placeholder={tAcceptance('scanPlaceholder')}
               aria-label={tAcceptance('scanPlaceholder')}
               value={scan}
@@ -905,13 +905,13 @@ export function OrderDetail({
               <>
                 <div className="flex justify-between gap-3">
                   <dt className="text-muted-foreground">{tPayment('iik')}</dt>
-                  <dd className="font-mono" data-testid="payment-iik">
+                  <dd className="tabular-nums" data-testid="payment-iik">
                     {order.supplierRequisites.iik}
                   </dd>
                 </div>
                 <div className="flex justify-between gap-3">
                   <dt className="text-muted-foreground">{tPayment('bik')}</dt>
-                  <dd className="font-mono" data-testid="payment-bik">
+                  <dd className="tabular-nums" data-testid="payment-bik">
                     {order.supplierRequisites.bik}
                   </dd>
                 </div>

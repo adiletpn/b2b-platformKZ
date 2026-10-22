@@ -151,7 +151,7 @@ export function OnboardingForm({ cities, demoBins }: { cities: City[]; demoBins:
                   <li key={entry.bin}>
                     <button
                       type="button"
-                      className="font-mono underline-offset-2 hover:underline"
+                      className="tabular-nums underline-offset-2 hover:underline"
                       data-testid={`demo-bin-${entry.bin}`}
                       onClick={() => changeBin(entry.bin)}
                     >

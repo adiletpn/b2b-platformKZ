@@ -49,7 +49,7 @@ export function OrderProgress({
 
   return (
     <ol
-      className="border-border bg-card shadow-card mt-5 flex scrollbar-none gap-0 overflow-x-auto rounded-xl border p-3"
+      className="-mx-1 mt-4 flex scrollbar-none gap-0 overflow-x-auto px-1 pb-1"
       data-testid="order-progress"
     >
       {LABELS.map((label, index) => {
@@ -60,34 +60,32 @@ export function OrderProgress({
             <div className="flex w-full items-center">
               <span
                 className={cn(
-                  'h-0.5 flex-1',
-                  index === 0 ? 'opacity-0' : done || active ? 'bg-primary' : 'bg-border',
+                  'h-[3px] flex-1',
+                  index === 0 ? 'opacity-0' : done || active ? 'bg-primary' : 'bg-track',
                 )}
               />
               <span
                 className={cn(
-                  'grid size-6 shrink-0 place-items-center rounded-full border text-[11px] font-semibold',
-                  done && 'bg-primary border-primary text-primary-foreground',
-                  active &&
-                    !off &&
-                    'border-primary bg-primary-soft text-primary ring-primary/15 ring-4',
+                  'grid size-7 shrink-0 place-items-center rounded-full border-[3px] text-[11px] font-black',
+                  done && 'bg-primary border-primary text-white',
+                  active && !off && 'border-primary bg-card text-transparent',
                   active && off && 'border-danger bg-danger-soft text-danger',
-                  !done && !active && 'border-border bg-card text-muted-foreground',
+                  !done && !active && 'border-track bg-card text-transparent',
                 )}
               >
-                {done ? <Check aria-hidden className="size-3.5" /> : index + 1}
+                {done ? <Check aria-hidden className="size-3.5" strokeWidth={3} /> : null}
               </span>
               <span
                 className={cn(
                   'h-0.5 flex-1',
-                  index === LABELS.length - 1 ? 'opacity-0' : done ? 'bg-primary' : 'bg-border',
+                  index === LABELS.length - 1 ? 'opacity-0' : done ? 'bg-primary' : 'bg-track',
                 )}
               />
             </div>
             <span
               className={cn(
-                'px-1 text-center text-[11px] leading-tight',
-                active ? 'text-foreground font-medium' : 'text-muted-foreground',
+                'px-1 text-center text-[11px] leading-tight font-bold',
+                active || done ? 'text-foreground' : 'text-muted-foreground',
               )}
             >
               {active && off ? t(`status.${status}`) : t(`status.${label}`)}

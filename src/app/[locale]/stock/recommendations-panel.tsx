@@ -42,7 +42,7 @@ export function RecommendationsPanel({ rows }: { rows: Row[] }) {
 
   return (
     <Card className="mt-4" data-testid="recommendations">
-      <CardTitle className="text-sm">{t('title')}</CardTitle>
+      <CardTitle className="text-[15px]">{t('title')}</CardTitle>
       <p className="text-muted-foreground mt-1 text-sm">{t('hint')}</p>
       {rows.length === 0 ? (
         <p className="text-muted-foreground mt-3 text-sm" data-testid="recommendations-empty">

@@ -13,7 +13,7 @@ import { RemindButton } from './remind-button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { EmptyState, Page, PageHeader } from '@/components/ui/page';
-import { money } from '@/lib/format';
+import { formatDate, money } from '@/lib/format';
 import { prisma } from '@/lib/prisma';
 
 /** Цвет метки платёжной дисциплины (раздел 3.8 ТЗ). */
@@ -199,7 +199,7 @@ export default async function SettlementsPage({ params }: { params: Promise<{ lo
                   <tr key={row.orderId}>
                     <td className="px-4 py-2.5 text-[13px] font-extrabold">{row.orderNumber}</td>
                     <td className="px-4 py-2.5 break-words">{row.storeName}</td>
-                    <td className="px-4 py-2.5 whitespace-nowrap">{row.dueDate ?? '—'}</td>
+                    <td className="px-4 py-2.5 whitespace-nowrap">{row.dueDate ? formatDate(new Date(row.dueDate)) : '—'}</td>
                     <td className="px-4 py-2.5 text-right font-bold whitespace-nowrap tabular-nums">
                       {money(row.amount)} ₸
                     </td>

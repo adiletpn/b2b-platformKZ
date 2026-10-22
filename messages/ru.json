@@ -666,6 +666,14 @@
       "action": "Требуют действия · {count}",
       "transit": "В пути · {count}",
       "payment": "Ожидают оплаты · {count}"
+    },
+    "board": {
+      "new": "Новые",
+      "waitingStore": "Ждут магазин",
+      "picking": "Собирается",
+      "shipped": "Отгружены",
+      "waitingPayment": "Ждут оплату",
+      "yesterday": "вчера"
     }
   },
   "documents": {

@@ -666,6 +666,14 @@
       "action": "Әрекет керек · {count}",
       "transit": "Жолда · {count}",
       "payment": "Төлемді күтуде · {count}"
+    },
+    "board": {
+      "new": "Жаңа",
+      "waitingStore": "Дүкенді күтуде",
+      "picking": "Жиналуда",
+      "shipped": "Жөнелтілді",
+      "waitingPayment": "Төлемді күтуде",
+      "yesterday": "кеше"
     }
   },
   "documents": {

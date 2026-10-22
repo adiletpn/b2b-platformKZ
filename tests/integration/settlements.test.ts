@@ -9,7 +9,13 @@ import { changeStatus, confirmOrder } from '@/lib/orders/workflow';
 import { createWaybillAndInvoice } from '@/lib/documents/create';
 import { acceptDelivery } from '@/lib/acceptance/accept';
 import { recordPayment } from '@/lib/payments/record';
-import { getReceivables, getSettlement, markOverdueOrders } from '@/lib/settlements/receivables';
+import {
+  getReceivables,
+  getSettlement,
+  getStoreDebts,
+  markOverdueOrders,
+  paidThisMonth,
+} from '@/lib/settlements/receivables';
 import { testPoolBin } from '@/mocks/bin-registry';
 
 const prisma = createTestPrisma();
@@ -202,6 +208,44 @@ describe('дебиторка поставщика', () => {
 
     expect(orderIds).toContain(first.orderId);
     expect(orderIds).not.toContain(second.orderId);
+  });
+  it('store_debts_group_by_store_with_limit_share', async () => {
+    const context = await awaitingPayment(7, 5);
+    const order = await prisma.order.findUniqueOrThrow({ where: { id: context.orderId } });
+    // Лимит вдвое больше долга — занято 50 %.
+    await prisma.company.update({
+      where: { id: context.supplier.id },
+      data: { creditLimit: order.totalWithVat.times(2) },
+    });
+    const past = new Date();
+    past.setDate(past.getDate() - 3);
+    await prisma.order.update({ where: { id: context.orderId }, data: { paymentDueDate: past } });
+
+    const [row] = await getStoreDebts(context.supplier.id);
+
+    expect(row!.storeId).toBe(context.store.id);
+    expect(row!.debt).toBe(order.totalWithVat.toFixed(2));
+    expect(row!.overdue).toBe(row!.debt);
+    expect(row!.maxDaysOverdue).toBe(3);
+    expect(row!.limitUsedPercent).toBe(50);
+    expect(row!.city).toBe('Тараз');
+  });
+
+  it('paid_this_month_counts_supplier_payments', async () => {
+    const context = await awaitingPayment(8);
+    const order = await prisma.order.findUniqueOrThrow({ where: { id: context.orderId } });
+    await recordPayment({
+      orderId: context.orderId,
+      storeId: context.store.id,
+      userId: context.store.userId,
+      amount: order.totalWithVat.toFixed(2),
+      method: 'ON_DELIVERY',
+      paidAt: new Date().toISOString().slice(0, 10),
+    });
+
+    const paid = await paidThisMonth(context.supplier.id);
+    expect(paid.total).toBe(order.totalWithVat.toFixed(2));
+    expect(paid.orders).toBe(1);
   });
 });
 

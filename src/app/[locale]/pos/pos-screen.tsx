@@ -842,7 +842,7 @@ export function PosScreen({
                     <div className="space-y-1" data-testid="pos-marking">
                       <div className="flex gap-2">
                         <Input
-                          className="h-8 px-2 font-mono text-xs"
+                          className="h-8 px-2 text-[13px] font-bold tabular-nums"
                           placeholder={t('markingPlaceholder')}
                           aria-label={t('markingPlaceholder')}
                           value={codeDrafts[item.productId] ?? ''}
@@ -867,7 +867,7 @@ export function PosScreen({
                         {item.markingCodes.map((code) => (
                           <li
                             key={code}
-                            className="bg-muted flex items-center gap-1 rounded px-1.5 font-mono text-[10px]"
+                            className="bg-muted flex items-center gap-1 rounded px-1.5 text-[10px] tabular-nums"
                           >
                             …{code.slice(-8)}
                             <button

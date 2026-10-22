@@ -70,7 +70,7 @@ export default async function VerifyPage({
           ))}
         </dl>
 
-        <h2 className="mt-5 text-sm font-medium">{t('signatures')}</h2>
+        <h2 className="mt-5 text-[15px] font-extrabold">{t('signatures')}</h2>
         {document.signatures.length === 0 ? (
           <p className="text-muted-foreground mt-1 text-sm">{t('noSignatures')}</p>
         ) : (

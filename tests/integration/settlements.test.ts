@@ -15,6 +15,7 @@ import {
   getStoreDebts,
   markOverdueOrders,
   paidThisMonth,
+  remindStore,
 } from '@/lib/settlements/receivables';
 import { testPoolBin } from '@/mocks/bin-registry';
 
@@ -229,6 +230,38 @@ describe('дебиторка поставщика', () => {
     expect(row!.maxDaysOverdue).toBe(3);
     expect(row!.limitUsedPercent).toBe(50);
     expect(row!.city).toBe('Тараз');
+  });
+
+  it('reminder_goes_to_overdue_store_once_a_day', async () => {
+    const context = await awaitingPayment(9, 5);
+    expect(await remindStore(context.supplier.id, context.store.id)).toEqual({
+      status: 'nothing_due',
+    });
+
+    const past = new Date();
+    past.setDate(past.getDate() - 2);
+    await prisma.order.update({ where: { id: context.orderId }, data: { paymentDueDate: past } });
+
+    expect(await remindStore(context.supplier.id, context.store.id)).toEqual({ status: 'sent' });
+    expect(await remindStore(context.supplier.id, context.store.id)).toEqual({
+      status: 'too_soon',
+    });
+    const reminders = await prisma.notification.count({
+      where: { companyId: context.store.id, event: 'payment_reminder' },
+    });
+    expect(reminders).toBe(1);
+  });
+
+  it('reminder_cannot_target_store_of_another_supplier', async () => {
+    const first = await awaitingPayment(10, 5);
+    const second = await awaitingPayment(11, 5);
+    const past = new Date();
+    past.setDate(past.getDate() - 2);
+    await prisma.order.update({ where: { id: second.orderId }, data: { paymentDueDate: past } });
+
+    expect(await remindStore(first.supplier.id, second.store.id)).toEqual({
+      status: 'nothing_due',
+    });
   });
 
   it('paid_this_month_counts_supplier_payments', async () => {

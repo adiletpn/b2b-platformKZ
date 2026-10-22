@@ -617,7 +617,8 @@
       "document_corrected": "{number} құжаты түзетілді, {version}-нұсқа",
       "support_reply": "Қолдау қызметі «{subject}» өтінішіне жауап берді",
       "platform_broadcast": "Платформа хабарламасы: {text}",
-      "rating_dispute_resolved": "Модератор пікірді даулауды қарады"
+      "rating_dispute_resolved": "Модератор пікірді даулауды қарады",
+      "payment_reminder": "{supplier} төлем туралы еске салады: мерзімі өткен {total} ₸"
     },
     "cancel": "Өтінімді болдырмау",
     "cancelReason": "Болдырмау себебі",

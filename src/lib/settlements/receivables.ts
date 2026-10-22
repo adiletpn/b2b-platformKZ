@@ -1,5 +1,6 @@
 import Decimal from 'decimal.js';
 import { prisma } from '@/lib/prisma';
+import { notify } from '@/mocks/notifications';
 
 /** Заявка считается просроченной, если срок оплаты прошёл, а оплаты нет. */
 export function isOverdue(dueDate: Date | null, now = new Date()) {
@@ -219,4 +220,43 @@ export async function getSettlement(supplierId: string, storeId: string, from: D
     // Положительный остаток — магазин должен поставщику.
     balance: debit.minus(credit).toFixed(2),
   };
+}
+
+export type ReminderResult = { status: 'sent' } | { status: 'nothing_due' | 'too_soon' };
+
+/** Напоминать об оплате одному магазину не чаще раза в сутки. */
+const REMINDER_INTERVAL_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * «Напомнить» в дебиторке (макет D06, раздел 3.6 ТЗ): уведомление магазину о просроченном
+ * долге перед этим поставщиком. Чужой магазин без долга напоминания не получит (правило 4).
+ */
+export async function remindStore(
+  supplierId: string,
+  storeId: string,
+  now = new Date(),
+): Promise<ReminderResult> {
+  const debt = (await getStoreDebts(supplierId, now)).find((row) => row.storeId === storeId);
+  if (!debt || debt.maxDaysOverdue === 0) return { status: 'nothing_due' };
+
+  const recent = await prisma.notification.findFirst({
+    where: {
+      companyId: storeId,
+      event: 'payment_reminder',
+      createdAt: { gte: new Date(now.getTime() - REMINDER_INTERVAL_MS) },
+      payload: { path: ['supplierId'], equals: supplierId },
+    },
+  });
+  if (recent) return { status: 'too_soon' };
+
+  const supplier = await prisma.company.findUniqueOrThrow({
+    where: { id: supplierId },
+    select: { name: true },
+  });
+  await notify(storeId, 'payment_reminder', {
+    supplierId,
+    supplier: supplier.name,
+    total: debt.overdue,
+  });
+  return { status: 'sent' };
 }

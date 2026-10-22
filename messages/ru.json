@@ -617,7 +617,8 @@
       "document_corrected": "Документ {number} исправлен, версия {version}",
       "support_reply": "Поддержка ответила на обращение «{subject}»",
       "platform_broadcast": "Сообщение платформы: {text}",
-      "rating_dispute_resolved": "Модератор разобрал оспаривание отзыва"
+      "rating_dispute_resolved": "Модератор разобрал оспаривание отзыва",
+      "payment_reminder": "{supplier} напоминает об оплате: просрочено {total} ₸"
     },
     "cancel": "Отменить заявку",
     "cancelReason": "Причина отмены",

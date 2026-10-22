@@ -22,7 +22,8 @@ export type NotificationEvent =
   | 'owner_transferred'
   | 'document_corrected'
   | 'support_reply'
-  | 'platform_broadcast';
+  | 'platform_broadcast'
+  | 'payment_reminder';
 
 export async function notify(
   companyId: string,

@@ -73,7 +73,7 @@ export function DeliveriesScreen({
                 <div className="flex flex-wrap items-start gap-3">
                   <IconBadge icon={Truck} />
                   <div className="min-w-0 flex-1">
-                    <p className="font-mono text-xs">{row.number}</p>
+                    <p className="text-[13px] font-bold tabular-nums">{row.number}</p>
                     <p className="font-semibold break-words">{row.storeName}</p>
                   </div>
                   <OrderStatusBadge status={row.status} testId="delivery-status" />

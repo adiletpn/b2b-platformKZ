@@ -652,7 +652,8 @@
       "accept": "Тауарды қабылдаңыз",
       "confirmOrder": "Өтінімді растаңыз",
       "inTransit": "Жолда"
-    }
+    },
+    "orderTitle": "Өтінім"
   },
   "documents": {
     "title": "Құжаттар",

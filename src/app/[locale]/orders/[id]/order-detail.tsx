@@ -60,6 +60,8 @@ type Order = {
   status: Status;
   total: string;
   counterparty: string;
+  /** Дата создания коротко: «чт, 23 окт». */
+  createdOn: string;
   rejectionReason: string | null;
   creditHold: boolean;
   items: Item[];
@@ -322,11 +324,11 @@ export function OrderDetail({
     <Page>
       <PageHeader
         title={
-          <span className="font-mono" data-testid="order-number">
-            {order.number}
-          </span>
+          <>
+            {t('orderTitle')} <span data-testid="order-number">{order.number}</span>
+          </>
         }
-        description={order.counterparty}
+        description={`${order.counterparty} · ${order.createdOn}`}
         actions={
           <>
             <OrderStatusBadge status={order.status} testId="order-status" />

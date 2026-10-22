@@ -3,7 +3,7 @@ import { setRequestLocale } from 'next-intl/server';
 import { redirect } from '@/i18n/navigation';
 import { getActiveCompany } from '@/lib/auth/active-company';
 import { getAccess, hasPermission, permissionFlags } from '@/lib/auth/permissions';
-import { formatDateTime } from '@/lib/format';
+import { formatDateTime, formatShortDate } from '@/lib/format';
 import { getOnlinePayment } from '@/lib/payments/online';
 import { listDocumentVersions } from '@/lib/documents/versions';
 import { listAttachments } from '@/lib/files/attachments';
@@ -105,6 +105,7 @@ export default async function OrderPage({
         status: order.status,
         total: order.totalWithVat.toFixed(2),
         counterparty: side === 'store' ? order.supplier.name : order.store.name,
+        createdOn: formatShortDate(order.createdAt, locale),
         rejectionReason: order.rejectionReason,
         creditHold: order.creditHold && order.status === 'DRAFT',
         items: order.items.map((item) => ({

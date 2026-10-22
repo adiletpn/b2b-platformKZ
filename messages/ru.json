@@ -652,7 +652,8 @@
       "accept": "Примите товар",
       "confirmOrder": "Подтвердите заявку",
       "inTransit": "В пути"
-    }
+    },
+    "orderTitle": "Заявка"
   },
   "documents": {
     "title": "Документы",

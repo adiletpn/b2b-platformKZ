@@ -46,20 +46,20 @@ export function ApprovalList({ approvals }: { approvals: Approval[] }) {
   }
 
   return (
-    <Card className="mt-4" data-testid="approvals">
-      <CardTitle className="text-sm">{t('approvalsTitle')}</CardTitle>
+    <Card className="bg-primary-soft mb-4 border-0" data-testid="approvals">
+      <CardTitle className="text-[15px]">{t('approvalsTitle')}</CardTitle>
       <p className="text-muted-foreground mt-1 text-sm">{t('approvalsHint')}</p>
 
       <ul className="mt-3 space-y-3">
         {approvals.map((approval) => (
           <li
             key={approval.orderId}
-            className="border-border flex flex-wrap items-end gap-3 border-b pb-3 last:border-0"
+            className="border-primary/20 flex flex-wrap items-end gap-3 border-b pb-3 last:border-0"
             data-testid={`approval-${approval.number}`}
           >
             <div className="min-w-48 flex-1">
-              <p className="font-mono text-xs">{approval.number}</p>
-              <p className="text-sm break-words">{approval.supplierName}</p>
+              <p className="text-[13px] font-extrabold">{approval.number}</p>
+              <p className="text-sm font-semibold break-words">{approval.supplierName}</p>
               <p className="text-muted-foreground text-xs">
                 {t('approvalAuthor')}: {approval.authorPhone} · {money(approval.total)} ₸
               </p>

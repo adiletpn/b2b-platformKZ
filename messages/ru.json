@@ -642,7 +642,6 @@
     "substituteQuantity": "Количество замены",
     "substituteFor": "замена для «{name}»",
     "licenseRequired": "В корзине лицензируемые товары, а действующей лицензии нет — уберите их или укажите лицензию в реквизитах",
-    "tabActive": "Активные · {count}",
     "tabArchive": "Архив",
     "itemsCount": "{count, plural, one {# позиция} few {# позиции} other {# позиций}}",
     "action": {
@@ -661,7 +660,13 @@
     "progressChanged": "Изменена",
     "was": "Было",
     "became": "Стало",
-    "substituteOffered": "Предложена замена"
+    "substituteOffered": "Предложена замена",
+    "tabs": {
+      "active": "Активные · {count}",
+      "action": "Требуют действия · {count}",
+      "transit": "В пути · {count}",
+      "payment": "Ожидают оплаты · {count}"
+    }
   },
   "documents": {
     "title": "Документы",

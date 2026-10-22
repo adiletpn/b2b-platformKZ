@@ -642,7 +642,6 @@
     "substituteQuantity": "Ауыстыру саны",
     "substituteFor": "«{name}» орнына",
     "licenseRequired": "Себетте лицензияланатын тауарлар бар, ал жарамды лицензия жоқ — оларды алып тастаңыз немесе деректемелерде лицензияны көрсетіңіз",
-    "tabActive": "Белсенді · {count}",
     "tabArchive": "Мұрағат",
     "itemsCount": "{count} позиция",
     "action": {
@@ -661,7 +660,13 @@
     "progressChanged": "Өзгертілді",
     "was": "Болды",
     "became": "Қазір",
-    "substituteOffered": "Ауыстыру ұсынылды"
+    "substituteOffered": "Ауыстыру ұсынылды",
+    "tabs": {
+      "active": "Белсенді · {count}",
+      "action": "Әрекет керек · {count}",
+      "transit": "Жолда · {count}",
+      "payment": "Төлемді күтуде · {count}"
+    }
   },
   "documents": {
     "title": "Құжаттар",

@@ -4,7 +4,7 @@ import { getActiveCompany } from '@/lib/auth/active-company';
 import { getAccess, hasPermission } from '@/lib/auth/permissions';
 import { listPendingApprovals } from '@/lib/orders/approval';
 import { prisma } from '@/lib/prisma';
-import type { OrderStatus } from '@/generated/prisma/client';
+import { ORDER_TABS, orderTabWhere, parseOrderTab } from '@/lib/orders/list-tabs';
 import { ChevronRight } from 'lucide-react';
 import { formatShortDate, money } from '@/lib/format';
 import { cn } from '@/lib/utils';
@@ -16,9 +16,6 @@ import { OrderStatusBadge } from '@/components/order-status-badge';
 import { NotificationList } from './notification-list';
 import { ApprovalList } from './approval-list';
 
-/** Завершённые заявки — во вкладке «Архив» (макет M07). */
-const ARCHIVE: OrderStatus[] = ['CLOSED', 'CANCELLED', 'REJECTED'];
-
 export default async function OrdersPage({
   params,
   searchParams,
@@ -27,7 +24,7 @@ export default async function OrdersPage({
   searchParams: Promise<{ tab?: string }>;
 }) {
   const { locale } = await params;
-  const archive = (await searchParams).tab === 'archive';
+  const tab = parseOrderTab((await searchParams).tab);
   setRequestLocale(locale);
 
   const active = await getActiveCompany();
@@ -39,13 +36,9 @@ export default async function OrdersPage({
   }
 
   const companyId = active!.companyId;
-  // Черновик (согласование, пауза по кредитному лимиту) поставщику ещё не отправлен.
-  const mine = {
-    OR: [{ storeId: companyId }, { supplierId: companyId, status: { not: 'DRAFT' as const } }],
-  };
-  const [orders, notifications, activeCount] = await Promise.all([
+  const [orders, notifications, counts] = await Promise.all([
     prisma.order.findMany({
-      where: { AND: [mine, { status: archive ? { in: ARCHIVE } : { notIn: ARCHIVE } }] },
+      where: orderTabWhere(tab, companyId),
       include: {
         store: { select: { name: true } },
         supplier: { select: { name: true } },
@@ -59,7 +52,10 @@ export default async function OrdersPage({
       orderBy: { createdAt: 'desc' },
       take: 10,
     }),
-    prisma.order.count({ where: { AND: [mine, { status: { notIn: ARCHIVE } }] } }),
+    // Счётчики во вкладках (макет D02: «Все · 12», «Требуют действия · 2»).
+    Promise.all(
+      ORDER_TABS.map((id) => prisma.order.count({ where: orderTabWhere(id, companyId) })),
+    ),
   ]);
 
   // Раздел 3.12 ТЗ: список на согласовании виден только тем, кто может менять заявки.
@@ -92,42 +88,31 @@ export default async function OrdersPage({
     <Page width="lg">
       <PageHeader title={t('title')} />
 
-      <ApprovalList approvals={approvals} />
-
-      {/* Макет M07: сегмент «Активные / Архив». */}
+      {/* Вкладки: на телефоне сегмент «Активные / Архив» (M07), на компьютере — все пять (D02). */}
       <nav
-        className="bg-muted mb-3.5 flex rounded-full p-[3px] lg:max-w-sm"
+        className="bg-muted lg:border-border mb-3.5 flex rounded-full p-[3px] lg:-mx-8 lg:-mt-6 lg:mb-6 lg:gap-7 lg:rounded-none lg:border-b lg:bg-transparent lg:p-0 lg:px-8"
         data-testid="orders-tabs"
       >
-        {[
-          {
-            href: '/orders' as const,
-            label: t('tabActive', { count: activeCount }),
-            on: !archive,
-            id: 'active',
-          },
-          {
-            href: '/orders?tab=archive' as const,
-            label: t('tabArchive'),
-            on: archive,
-            id: 'archive',
-          },
-        ].map((tab) => (
+        {ORDER_TABS.map((id, index) => (
           <Link
-            key={tab.id}
-            href={tab.href}
-            data-testid={`orders-tab-${tab.id}`}
+            key={id}
+            href={id === 'active' ? '/orders' : `/orders?tab=${id}`}
+            data-testid={`orders-tab-${id}`}
             className={cn(
-              'flex h-[38px] flex-1 items-center justify-center rounded-full text-[13px] font-bold',
-              tab.on
-                ? 'bg-card shadow-[0_1px_4px_rgb(0_0_0/0.08)]'
-                : 'text-muted-foreground hover:text-foreground',
+              'items-center justify-center rounded-full text-[13px] font-bold lg:h-12 lg:flex-none lg:rounded-none lg:border-b-[3px] lg:text-[15px]',
+              // На телефоне только первая и последняя вкладка.
+              index === 0 || id === 'archive' ? 'flex h-[38px] flex-1' : 'hidden lg:flex',
+              tab === id
+                ? 'bg-card lg:border-primary shadow-[0_1px_4px_rgb(0_0_0/0.08)] lg:bg-transparent lg:shadow-none'
+                : 'text-muted-foreground hover:text-foreground lg:border-transparent',
             )}
           >
-            {tab.label}
+            {id === 'archive' ? t('tabArchive') : t(`tabs.${id}`, { count: counts[index] ?? 0 })}
           </Link>
         ))}
       </nav>
+
+      <ApprovalList approvals={approvals} />
 
       {orders.length === 0 ? (
         <EmptyState>

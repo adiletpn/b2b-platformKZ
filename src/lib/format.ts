@@ -79,3 +79,24 @@ const shortDateFormats = {
 export function formatShortDate(date: Date, locale: string): string {
   return shortDateFormats[locale === 'kk' ? 'kk' : 'ru'].format(date).replace('.', '');
 }
+
+const timeFormat = new Intl.DateTimeFormat('ru-RU', {
+  timeZone: KZ_TIME_ZONE,
+  hour: '2-digit',
+  minute: '2-digit',
+});
+const dayMonthFormats = {
+  ru: new Intl.DateTimeFormat('ru-RU', { timeZone: KZ_TIME_ZONE, day: 'numeric', month: 'short' }),
+  kk: new Intl.DateTimeFormat('kk-KZ', { timeZone: KZ_TIME_ZONE, day: 'numeric', month: 'short' }),
+};
+
+/**
+ * Когда пришла заявка, как на карточке канбана D03: сегодня — «10:14», вчера — `yesterday`,
+ * раньше — «19 окт». Дни считаются по Казахстану.
+ */
+export function formatWhen(date: Date, locale: string, yesterday: string, now = new Date()) {
+  const day = kzDayKey(date);
+  if (day === kzDayKey(now)) return timeFormat.format(date);
+  if (day === kzDayKey(new Date(now.getTime() - 24 * 60 * 60 * 1000))) return yesterday;
+  return dayMonthFormats[locale === 'kk' ? 'kk' : 'ru'].format(date).replace('.', '');
+}

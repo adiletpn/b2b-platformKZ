@@ -458,7 +458,7 @@ export function EmployeesScreen({
 
       {companies.length > 1 ? (
         <section className="border-border mt-4 rounded-2xl border-[1.5px] border-dashed p-4">
-          <h2 className="text-muted-foreground text-sm font-medium">{t('companySwitchTitle')}</h2>
+          <h2 className="text-[15px] font-extrabold">{t('companySwitchTitle')}</h2>
           <ul className="mt-2 space-y-1 text-sm" data-testid="my-companies">
             {companies.map((company) => (
               <li key={company.id} className="flex flex-wrap items-center justify-between gap-2">
@@ -551,7 +551,7 @@ export function EmployeesScreen({
 
       {invitations.length > 0 ? (
         <section className="border-border mt-4 rounded-2xl border-[1.5px] border-dashed p-4">
-          <h2 className="text-muted-foreground text-sm font-medium">{t('pending')}</h2>
+          <h2 className="text-[15px] font-extrabold">{t('pending')}</h2>
           <ul className="mt-2 space-y-1 text-sm" data-testid="invitations">
             {invitations.map((invitation) => (
               <li key={invitation.id} className="flex flex-wrap justify-between gap-2">

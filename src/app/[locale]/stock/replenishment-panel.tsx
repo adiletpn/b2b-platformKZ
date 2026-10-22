@@ -71,7 +71,7 @@ export function ReplenishmentPanel({
   return (
     <Card className="mt-4" data-testid="replenishment">
       <CardTitle className="text-[15px]">{t('minimumTitle')}</CardTitle>
-      <p className="text-muted-foreground mt-1 text-sm">{t('minimumHint')}</p>
+      <p className="text-muted-foreground mt-1 text-[13px] font-semibold">{t('minimumHint')}</p>
 
       <ul className="mt-3 space-y-2 text-sm" data-testid="minimum-list">
         {minimums.map((item) => (

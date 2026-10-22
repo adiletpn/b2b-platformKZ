@@ -320,7 +320,7 @@ export function EmployeesScreen({
             }}
           >
             <h2 className="text-lg font-medium">{t('accessTitle')}</h2>
-            <p className="text-muted-foreground mt-1 text-sm">
+            <p className="text-muted-foreground mt-1 text-[13px] font-semibold">
               {t('employee')}: {employee.phone} · {t('accessHint')}
             </p>
 
@@ -392,7 +392,9 @@ export function EmployeesScreen({
           data-testid="owner-transfer"
         >
           <h2 className="text-lg font-medium">{t('ownerTransferTitle')}</h2>
-          <p className="text-muted-foreground mt-1 text-sm">{t('ownerTransferHint')}</p>
+          <p className="text-muted-foreground mt-1 text-[13px] font-semibold">
+            {t('ownerTransferHint')}
+          </p>
 
           <div className="mt-3 flex flex-wrap items-end gap-3">
             <Field label={t('employee')}>
@@ -486,7 +488,9 @@ export function EmployeesScreen({
         onSubmit={createRole}
       >
         <h2 className="text-lg font-medium">{t('customRoleTitle')}</h2>
-        <p className="text-muted-foreground mt-1 text-sm">{t('customRoleHint')}</p>
+        <p className="text-muted-foreground mt-1 text-[13px] font-semibold">
+          {t('customRoleHint')}
+        </p>
 
         <div className="mt-3 flex flex-wrap items-end gap-3">
           <div className="min-w-44 flex-1">

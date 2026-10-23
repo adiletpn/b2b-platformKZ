@@ -85,7 +85,7 @@ export function RecommendationsPanel({ rows }: { rows: Row[] }) {
         </p>
       ) : null}
       {error ? (
-        <p className="text-danger mt-2 text-sm" role="alert">
+        <p className="text-danger mt-2 text-sm font-semibold" role="alert">
           {t('error')}
         </p>
       ) : null}

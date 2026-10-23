@@ -264,7 +264,7 @@ export function ManualOfferForm({
           </p>
         ) : null}
         {error ? (
-          <p className="text-danger text-sm" role="alert" data-testid="manual-error">
+          <p className="text-danger text-sm font-semibold" role="alert" data-testid="manual-error">
             {t(`manualErrors.${error}` as 'manualErrors.unknown')}
           </p>
         ) : null}

@@ -160,13 +160,13 @@ export function ProductMergePanel() {
 
       <dl className="mt-3 grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
         <div className="border-border rounded-2xl border p-3">
-          <dt className="text-muted-foreground text-xs">{t('main')}</dt>
+          <dt className="text-muted-foreground text-xs font-semibold">{t('main')}</dt>
           <dd className="break-words" data-testid="merge-main">
             {main ? `${name(main)} · ${main.barcode}` : '—'}
           </dd>
         </div>
         <div className="border-border rounded-2xl border p-3">
-          <dt className="text-muted-foreground text-xs">{t('duplicate')}</dt>
+          <dt className="text-muted-foreground text-xs font-semibold">{t('duplicate')}</dt>
           <dd className="break-words" data-testid="merge-duplicate">
             {duplicate ? `${name(duplicate)} · ${duplicate.barcode}` : '—'}
           </dd>

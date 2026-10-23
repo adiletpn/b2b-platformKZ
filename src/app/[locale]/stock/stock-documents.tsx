@@ -287,7 +287,9 @@ export function StockDocuments({
                     ? ` · ${t(`reasons.${document.reason}` as 'reasons.OTHER')}`
                     : ''}
                 </span>
-                <span className="text-muted-foreground text-xs">{document.createdAt}</span>
+                <span className="text-muted-foreground text-xs font-semibold">
+                  {document.createdAt}
+                </span>
               </li>
             ))}
           </ul>

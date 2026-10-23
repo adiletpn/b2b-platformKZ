@@ -392,7 +392,11 @@ export function AdminPanel({
       ) : null}
 
       {error ? (
-        <p className="text-danger mt-3 text-sm" role="alert" data-testid="admin-panel-error">
+        <p
+          className="text-danger mt-3 text-sm font-semibold"
+          role="alert"
+          data-testid="admin-panel-error"
+        >
           {t(`errors.${error}` as 'errors.unknown')}
         </p>
       ) : null}

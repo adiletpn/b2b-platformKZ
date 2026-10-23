@@ -759,7 +759,7 @@ export function OrderDetail({
       {canAccept ? (
         <section className="border-border bg-card mt-5 rounded-[20px] border p-[18px] sm:p-5">
           <h2 className="text-lg font-medium">{tAcceptance('title')}</h2>
-          <p className="text-muted-foreground mt-1 text-xs">{tAcceptance('hint')}</p>
+          <p className="text-muted-foreground mt-1 text-xs font-semibold">{tAcceptance('hint')}</p>
 
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <Input
@@ -1013,7 +1013,7 @@ export function OrderDetail({
       {canRate ? (
         <section className="border-border bg-card mt-5 rounded-[20px] border p-[18px] sm:p-5">
           <h2 className="text-lg font-medium">{tRatings('rateOrder')}</h2>
-          <p className="text-muted-foreground mt-1 text-xs">{tRatings('rateHint')}</p>
+          <p className="text-muted-foreground mt-1 text-xs font-semibold">{tRatings('rateHint')}</p>
 
           <div className="mt-3 space-y-2">
             {ratingCriteria.map((criterion) => (

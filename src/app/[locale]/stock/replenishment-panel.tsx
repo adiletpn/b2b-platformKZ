@@ -143,7 +143,11 @@ export function ReplenishmentPanel({
         </p>
       ) : null}
       {error ? (
-        <p className="text-danger mt-2 text-sm" role="alert" data-testid="replenishment-error">
+        <p
+          className="text-danger mt-2 text-sm font-semibold"
+          role="alert"
+          data-testid="replenishment-error"
+        >
           {t(`errors.${error}` as 'errors.unknown')}
         </p>
       ) : null}

@@ -132,7 +132,7 @@ export function ManualOfferForm({
       data-testid="manual-offer-form"
       onSubmit={save}
     >
-      <p className="text-muted-foreground text-sm">{t('manualHint')}</p>
+      <p className="text-muted-foreground text-sm font-medium">{t('manualHint')}</p>
 
       <div className="mt-3 flex flex-wrap items-end gap-3">
         <Field label={t('barcode')}>
@@ -148,7 +148,10 @@ export function ManualOfferForm({
           {t('manualLookup')}
         </Button>
         {lookupNotice ? (
-          <p className="text-muted-foreground text-sm" data-testid="manual-lookup-notice">
+          <p
+            className="text-muted-foreground text-sm font-medium"
+            data-testid="manual-lookup-notice"
+          >
             {t(`manualLookup${lookupNotice === 'found' ? 'Found' : 'New'}`)}
           </p>
         ) : null}
@@ -259,7 +262,7 @@ export function ManualOfferForm({
           {pending ? t('manualSaving') : t('manualSave')}
         </Button>
         {saved ? (
-          <p className="text-muted-foreground text-sm" data-testid="manual-saved">
+          <p className="text-muted-foreground text-sm font-medium" data-testid="manual-saved">
             {t('manualSaved')}
           </p>
         ) : null}

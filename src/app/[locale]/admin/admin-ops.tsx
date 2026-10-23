@@ -430,7 +430,7 @@ export function PlatformFlagsPanel({ initial }: { initial: Record<string, boolea
         ))}
       </ul>
       {failed ? (
-        <p className="text-danger mt-2 text-sm" role="alert">
+        <p className="text-danger mt-2 text-sm font-semibold" role="alert">
           {t('failed')}
         </p>
       ) : null}

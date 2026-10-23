@@ -77,7 +77,7 @@ export function DocumentSignatures({
         </Button>
       ) : null}
       {error ? (
-        <span className="text-danger text-xs" role="alert" data-testid="sign-error">
+        <span className="text-danger text-xs font-semibold" role="alert" data-testid="sign-error">
           {t(`errors.${error}` as 'errors.unknown')}
         </span>
       ) : null}

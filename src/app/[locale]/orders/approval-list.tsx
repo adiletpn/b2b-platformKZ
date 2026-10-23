@@ -102,7 +102,11 @@ export function ApprovalList({ approvals }: { approvals: Approval[] }) {
       </ul>
 
       {error ? (
-        <p className="text-danger mt-2 text-sm" role="alert" data-testid="approval-error">
+        <p
+          className="text-danger mt-2 text-sm font-semibold"
+          role="alert"
+          data-testid="approval-error"
+        >
           {t(`errors.${error}` as 'errors.reason_required')}
         </p>
       ) : null}

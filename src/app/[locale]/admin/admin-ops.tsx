@@ -99,11 +99,11 @@ export function UsersPanel() {
               <span className="tabular-nums">{user.phone}</span>
               {user.name ? <span>{user.name}</span> : null}
               {user.blocked ? <Badge tone="danger">{t('blocked')}</Badge> : null}
-              <span className="text-muted-foreground text-xs">
+              <span className="text-muted-foreground text-xs font-semibold">
                 {t('sessions', { count: user.sessions })}
               </span>
             </div>
-            <ul className="text-muted-foreground text-xs">
+            <ul className="text-muted-foreground text-xs font-semibold">
               {user.companies.map((company) => (
                 <li key={`${company.name}-${company.role}`}>
                   {company.name} · {company.role} · {company.status}
@@ -194,7 +194,9 @@ export function TicketsPanel({ initial }: { initial: TicketRow[] }) {
               onClick={() => void show(ticket.id)}
             >
               <span className="min-w-0 flex-1 truncate font-medium">{ticket.subject}</span>
-              <span className="text-muted-foreground text-xs">{ticket.companyName}</span>
+              <span className="text-muted-foreground text-xs font-semibold">
+                {ticket.companyName}
+              </span>
               <Badge tone={TICKET_TONES[ticket.status]}>{tStatus(ticket.status)}</Badge>
             </button>
           </li>
@@ -206,13 +208,15 @@ export function TicketsPanel({ initial }: { initial: TicketRow[] }) {
           data-testid="admin-ticket-thread"
         >
           <p className="font-medium">{open.subject}</p>
-          <p className="text-muted-foreground text-xs">
+          <p className="text-muted-foreground text-xs font-semibold">
             {open.companyName} · {open.assignee ?? t('unassigned')}
           </p>
           <ul className="space-y-1.5 text-sm">
             {open.messages.map((message) => (
               <li key={message.id} className={message.fromAdmin ? 'text-primary' : ''}>
-                <span className="text-muted-foreground text-xs">{message.createdAt} · </span>
+                <span className="text-muted-foreground text-xs font-semibold">
+                  {message.createdAt} ·{' '}
+                </span>
                 {message.text}
               </li>
             ))}
@@ -448,7 +452,7 @@ export function IntegrationsPanel({
           <li key={row.key} className="flex flex-wrap items-center justify-between gap-2 py-2">
             <span>{t(`items.${row.key}` as 'items.sms')}</span>
             <span className="flex items-center gap-2">
-              <code className="text-muted-foreground text-xs">{row.env}</code>
+              <code className="text-muted-foreground text-xs font-semibold">{row.env}</code>
               <Badge tone={row.live ? 'success' : 'neutral'}>
                 {row.live ? t('live') : t('mock')}
               </Badge>

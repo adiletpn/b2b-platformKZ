@@ -1288,7 +1288,11 @@ export function PosScreen({
             </p>
           ) : null}
           {error ? (
-            <p className="text-danger mt-2 text-sm" role="alert" data-testid="pos-error">
+            <p
+              className="text-danger mt-2 text-sm font-semibold"
+              role="alert"
+              data-testid="pos-error"
+            >
               {t(`errors.${error.key}` as 'errors.unknown', { value: error.value ?? '' })}
             </p>
           ) : null}

@@ -976,7 +976,7 @@ export function PosScreen({
             className="border-border mt-3 rounded-2xl border-[1.5px] border-dashed p-3"
             data-testid="pos-loyalty"
           >
-            <p className="text-muted-foreground text-xs">{t('loyalty.title')}</p>
+            <p className="text-muted-foreground text-xs font-semibold">{t('loyalty.title')}</p>
             <div className="mt-1.5 flex gap-2">
               <Input
                 className="h-9 min-w-0 flex-1"
@@ -1144,7 +1144,7 @@ export function PosScreen({
 
           {held.length > 0 ? (
             <div className="mt-3">
-              <p className="text-muted-foreground text-xs">{t('heldTitle')}</p>
+              <p className="text-muted-foreground text-xs font-semibold">{t('heldTitle')}</p>
               <ul className="mt-1 flex flex-wrap gap-1.5" data-testid="pos-held">
                 {held.map((receipt) => (
                   <li key={receipt.id}>

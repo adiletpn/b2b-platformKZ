@@ -92,7 +92,11 @@ export function PaymentTermsForm({
           </span>
         ) : null}
         {state.error ? (
-          <span className="text-danger text-sm" role="alert" data-testid="terms-error">
+          <span
+            className="text-danger text-sm font-semibold"
+            role="alert"
+            data-testid="terms-error"
+          >
             {t(`errors.${state.error}` as 'errors.unknown')}
           </span>
         ) : null}

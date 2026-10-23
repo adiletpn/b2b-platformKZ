@@ -475,7 +475,7 @@ export function ChatScreen({
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="text-sm font-medium break-words">{active.counterpartyName}</p>
-                    <p className="text-muted-foreground text-xs">
+                    <p className="text-muted-foreground text-xs font-semibold">
                       {active.orderNumber
                         ? t('byOrder', { number: active.orderNumber })
                         : t('general')}

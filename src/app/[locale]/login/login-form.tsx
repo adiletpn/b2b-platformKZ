@@ -249,7 +249,7 @@ export function LoginForm({ passwordLogin }: { passwordLogin: boolean }) {
           </form>
         ) : (
           <form className="mt-6 space-y-4" onSubmit={verify}>
-            <p className="text-muted-foreground text-sm">
+            <p className="text-muted-foreground text-sm font-medium">
               {t('codeSentTo', { phone: formatPhone(step.phone) })}
             </p>
             {step.demoCode ? (

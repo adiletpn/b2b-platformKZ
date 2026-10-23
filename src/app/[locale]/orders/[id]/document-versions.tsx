@@ -123,7 +123,11 @@ export function DocumentVersions({
             </Button>
           </div>
           {error ? (
-            <p className="text-danger text-xs" role="alert" data-testid="correction-error">
+            <p
+              className="text-danger text-xs font-semibold"
+              role="alert"
+              data-testid="correction-error"
+            >
               {t(`errors.${error}` as 'errors.unknown')}
             </p>
           ) : null}

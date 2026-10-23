@@ -679,7 +679,7 @@ export function OrderDetail({
         ) : null}
 
         {error ? (
-          <p className="text-danger text-sm" role="alert" data-testid="order-error">
+          <p className="text-danger text-sm font-semibold" role="alert" data-testid="order-error">
             {t(`errors.${error}` as 'errors.unknown')}
           </p>
         ) : null}
@@ -777,7 +777,11 @@ export function OrderDetail({
             />
             <CameraScanButton onCode={acceptScan} />
             {scanMiss !== null ? (
-              <span className="text-danger text-sm" role="alert" data-testid="acceptance-scan-miss">
+              <span
+                className="text-danger text-sm font-semibold"
+                role="alert"
+                data-testid="acceptance-scan-miss"
+              >
                 {tAcceptance('scanMiss', { code: scanMiss })}
               </span>
             ) : null}
@@ -921,7 +925,7 @@ export function OrderDetail({
                 </div>
               </>
             ) : (
-              <p className="text-danger text-sm">{tPayment('noRequisites')}</p>
+              <p className="text-danger text-sm font-semibold">{tPayment('noRequisites')}</p>
             )}
           </dl>
 

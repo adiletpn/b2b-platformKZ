@@ -173,7 +173,7 @@ export default async function AnalyticsPage({
 
           <Card className="overflow-x-auto">
             <CardTitle className="text-[15px]">{t('turnover')}</CardTitle>
-            <p className="text-muted-foreground mt-1 text-xs">
+            <p className="text-muted-foreground mt-1 text-xs font-semibold">
               {t('staleHint', { days: store.staleDays })}
             </p>
             <table className={table} data-testid="analytics-turnover">

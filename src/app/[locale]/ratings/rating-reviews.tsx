@@ -84,7 +84,7 @@ export function RatingReviews({ reviews }: { reviews: Review[] }) {
               {review.comment ? <p className="mt-1 break-words">{review.comment}</p> : null}
               {review.dispute !== 'none' ? (
                 <p
-                  className="text-muted-foreground mt-1 text-xs"
+                  className="text-muted-foreground mt-1 text-xs font-semibold"
                   data-testid="review-dispute-state"
                 >
                   {t(review.dispute === 'pending' ? 'disputed' : review.dispute)}

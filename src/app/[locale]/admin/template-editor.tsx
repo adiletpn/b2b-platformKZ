@@ -238,7 +238,7 @@ export function TemplateEditor({ initial }: { initial: TemplateEditorData }) {
             {data.history.map((row) => (
               <li key={row.version} className="flex flex-wrap items-center gap-2 py-1.5">
                 <span className="font-mono">v{row.version}</span>
-                <span className="text-muted-foreground text-xs">
+                <span className="text-muted-foreground text-xs font-semibold">
                   {new Date(row.createdAt).toLocaleString('ru-RU', { timeZone: 'Asia/Almaty' })} ·{' '}
                   {row.adminName}
                 </span>

@@ -67,7 +67,11 @@ export function LicenseForm({ initial }: { initial: { number: string; validUntil
           </span>
         ) : null}
         {state.error ? (
-          <span className="text-danger text-sm" role="alert" data-testid="license-error">
+          <span
+            className="text-danger text-sm font-semibold"
+            role="alert"
+            data-testid="license-error"
+          >
             {t(`errors.${state.error}` as 'errors.unknown')}
           </span>
         ) : null}

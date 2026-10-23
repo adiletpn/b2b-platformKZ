@@ -276,7 +276,7 @@ export function CatalogScreen({
       <section className="border-border bg-card shadow-card mt-6 rounded-xl border p-4 sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-lg font-medium">{t('listTitle')}</h2>
-          <p className="text-muted-foreground text-sm" data-testid="offers-total">
+          <p className="text-muted-foreground text-sm font-medium" data-testid="offers-total">
             {t('total', { count: total })}
           </p>
         </div>

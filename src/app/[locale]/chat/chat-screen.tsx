@@ -824,7 +824,11 @@ export function ChatScreen({
                   </p>
                 ) : null}
                 {error ? (
-                  <p className="text-danger mt-2 text-sm" role="alert" data-testid="chat-error">
+                  <p
+                    className="text-danger mt-2 text-sm font-semibold"
+                    role="alert"
+                    data-testid="chat-error"
+                  >
                     {t(`errors.${error}` as 'errors.unknown')}
                   </p>
                 ) : null}

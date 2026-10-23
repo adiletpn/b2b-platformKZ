@@ -1270,7 +1270,7 @@ export function PosScreen({
               </div>
             ) : null}
             {queued > 0 ? (
-              <span className="text-muted-foreground text-sm" data-testid="pos-queued">
+              <span className="text-muted-foreground text-sm font-medium" data-testid="pos-queued">
                 {t('queued', { count: queued })}
               </span>
             ) : null}

@@ -430,7 +430,11 @@ export function CatalogScreen({
           </p>
         ) : null}
         {zonesError ? (
-          <p className="text-danger mt-2 text-sm" role="alert" data-testid="zones-error">
+          <p
+            className="text-danger mt-2 text-sm font-semibold"
+            role="alert"
+            data-testid="zones-error"
+          >
             {zonesError}
           </p>
         ) : null}

@@ -344,7 +344,11 @@ export function OnboardingForm({ cities, demoBins }: { cities: City[]; demoBins:
         </Button>
 
         {error ? (
-          <p className="text-danger text-sm" role="alert" data-testid="onboarding-error">
+          <p
+            className="text-danger text-sm font-semibold"
+            role="alert"
+            data-testid="onboarding-error"
+          >
             {t(`errors.${error}` as 'errors.unknown')}
           </p>
         ) : null}

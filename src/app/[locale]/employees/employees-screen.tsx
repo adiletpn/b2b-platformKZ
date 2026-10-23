@@ -362,7 +362,9 @@ export function EmployeesScreen({
 
             {locations.length > 0 ? (
               <fieldset className="mt-3">
-                <legend className="text-muted-foreground text-sm">{t('allowedLocations')}</legend>
+                <legend className="text-muted-foreground text-sm font-medium">
+                  {t('allowedLocations')}
+                </legend>
                 <p className="text-muted-foreground text-xs font-semibold">{t('allLocations')}</p>
                 <div className="mt-2 space-y-1">
                   {locations.map((location) => (
@@ -426,7 +428,7 @@ export function EmployeesScreen({
 
           {transfer ? (
             <div className="mt-3 flex flex-wrap items-end gap-3">
-              <p className="text-muted-foreground text-sm">
+              <p className="text-muted-foreground text-sm font-medium">
                 {transfer.code ? (
                   <>
                     {t('ownerTransferDemoCode')}:{' '}

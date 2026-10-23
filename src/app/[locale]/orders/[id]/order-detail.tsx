@@ -900,7 +900,7 @@ export function OrderDetail({
           <h2 className="text-lg font-medium">{tPayment('title')}</h2>
 
           <dl className="mt-3 space-y-1 text-sm" data-testid="payment-requisites">
-            <p className="text-muted-foreground text-xs">{tPayment('payTo')}</p>
+            <p className="text-muted-foreground text-xs font-semibold">{tPayment('payTo')}</p>
             {order.supplierRequisites.iik ? (
               <>
                 <div className="flex justify-between gap-3">

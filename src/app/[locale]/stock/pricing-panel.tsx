@@ -178,7 +178,10 @@ function PriceRow({
         <span className="flex items-center gap-2">
           <span className="tabular-nums">{money(price.price)} ₸</span>
           {price.piecesPerPack ? (
-            <span className="text-muted-foreground text-xs" data-testid="piece-sale-info">
+            <span
+              className="text-muted-foreground text-xs font-semibold"
+              data-testid="piece-sale-info"
+            >
               {t('pieceSaleInfo', {
                 pieces: price.piecesPerPack,
                 price: money(price.piecePrice ?? ''),

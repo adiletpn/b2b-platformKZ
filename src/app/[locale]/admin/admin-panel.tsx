@@ -162,7 +162,7 @@ export function AdminPanel({
           ] as const
         ).map(([key, value]) => (
           <Card key={key} className="p-3 sm:p-4">
-            <p className="text-muted-foreground text-xs">{t(key)}</p>
+            <p className="text-muted-foreground text-xs font-semibold">{t(key)}</p>
             <p className="mt-1 text-lg font-semibold tabular-nums" data-testid={`metric-${key}`}>
               {value}
             </p>
@@ -497,7 +497,7 @@ export function AdminPanel({
               .map((row) => (
                 <li key={row.companyId} className="flex flex-wrap justify-between gap-2">
                   <span className="break-words">{row.companyName}</span>
-                  <span className="text-muted-foreground text-xs">
+                  <span className="text-muted-foreground text-xs font-semibold">
                     {row.planCode} ·{' '}
                     {t(`subscriptionStatus.${row.status}` as 'subscriptionStatus.TRIAL')} ·{' '}
                     {money(row.amount ?? '0')} ₸
@@ -525,7 +525,9 @@ export function AdminPanel({
             ] as const
           ).map(([key, rows]) => (
             <div key={key}>
-              <dt className="text-muted-foreground text-xs">{t(`reference.${key}`)}</dt>
+              <dt className="text-muted-foreground text-xs font-semibold">
+                {t(`reference.${key}`)}
+              </dt>
               <dd className="tabular-nums" data-testid={`reference-count-${key}`}>
                 {rows.length}
               </dd>
@@ -620,7 +622,7 @@ export function AdminPanel({
                   {t(`actions.${entry.action}` as 'actions.admin_signed_in')}
                   {entry.reason ? ` — ${entry.reason}` : ''}
                 </span>
-                <span className="text-muted-foreground text-xs">
+                <span className="text-muted-foreground text-xs font-semibold">
                   {entry.admin}, {entry.createdAt}
                 </span>
               </li>

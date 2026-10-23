@@ -123,7 +123,7 @@ export function OnlinePaymentPanel({
             <p data-testid="online-payment-amount">
               {t('amount', { amount: money(payment.amount) })}
             </p>
-            <p className="text-muted-foreground text-xs">{t('qr')}</p>
+            <p className="text-muted-foreground text-xs font-semibold">{t('qr')}</p>
             <a
               href={payment.payUrl}
               target="_blank"
@@ -134,10 +134,10 @@ export function OnlinePaymentPanel({
               {payment.payUrl}
             </a>
             <NotYetButton className="sm:w-auto">{tSoon('bankApp')}</NotYetButton>
-            <p className="text-muted-foreground text-xs">{t('waiting')}</p>
+            <p className="text-muted-foreground text-xs font-semibold">{t('waiting')}</p>
             {mockGateway ? (
               <div className="border-border rounded-2xl border-[1.5px] border-dashed p-3">
-                <p className="text-muted-foreground text-xs">{t('mockHint')}</p>
+                <p className="text-muted-foreground text-xs font-semibold">{t('mockHint')}</p>
                 <Button
                   className="mt-2"
                   size="sm"

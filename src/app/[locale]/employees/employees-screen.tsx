@@ -363,7 +363,7 @@ export function EmployeesScreen({
             {locations.length > 0 ? (
               <fieldset className="mt-3">
                 <legend className="text-muted-foreground text-sm">{t('allowedLocations')}</legend>
-                <p className="text-muted-foreground text-xs">{t('allLocations')}</p>
+                <p className="text-muted-foreground text-xs font-semibold">{t('allLocations')}</p>
                 <div className="mt-2 space-y-1">
                   {locations.map((location) => (
                     <label key={location.id} className="flex items-center gap-2 text-sm">
@@ -466,7 +466,9 @@ export function EmployeesScreen({
               <li key={company.id} className="flex flex-wrap items-center justify-between gap-2">
                 <span className="break-words">{company.name}</span>
                 {company.active ? (
-                  <span className="text-muted-foreground text-xs">{t('companyActive')}</span>
+                  <span className="text-muted-foreground text-xs font-semibold">
+                    {t('companyActive')}
+                  </span>
                 ) : (
                   <Button
                     variant="ghost"
@@ -561,7 +563,7 @@ export function EmployeesScreen({
               <li key={invitation.id} className="flex flex-wrap justify-between gap-2">
                 <span className="text-[13px] font-bold tabular-nums">{invitation.phone}</span>
                 <span>{roleLabel(invitation.role)}</span>
-                <span className="text-muted-foreground text-xs">
+                <span className="text-muted-foreground text-xs font-semibold">
                   {t('expires')}: {invitation.expiresAt}
                 </span>
               </li>
@@ -592,7 +594,9 @@ export function EmployeesScreen({
                 <span className="text-muted-foreground text-[13px] font-bold tabular-nums">
                   {entry.actorPhone}
                 </span>
-                <span className="text-muted-foreground text-xs">{entry.createdAt}</span>
+                <span className="text-muted-foreground text-xs font-semibold">
+                  {entry.createdAt}
+                </span>
               </li>
             ))}
           </ul>

@@ -52,7 +52,7 @@ export function AdminLogin() {
 
   return (
     <div className="mt-4 space-y-4">
-      <p className="text-muted-foreground text-sm">{t('loginHint')}</p>
+      <p className="text-muted-foreground text-sm font-medium">{t('loginHint')}</p>
 
       {demoCode === null ? (
         <form className="space-y-3" onSubmit={requestCode}>
@@ -80,7 +80,7 @@ export function AdminLogin() {
               </span>
             </DemoHint>
           ) : (
-            <p className="text-muted-foreground text-sm">{t('codeSentBySms')}</p>
+            <p className="text-muted-foreground text-sm font-medium">{t('codeSentBySms')}</p>
           )}
           <Field label={t('code')}>
             <Input

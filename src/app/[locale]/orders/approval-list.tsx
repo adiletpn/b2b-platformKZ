@@ -60,7 +60,7 @@ export function ApprovalList({ approvals }: { approvals: Approval[] }) {
             <div className="min-w-48 flex-1">
               <p className="text-[13px] font-extrabold">{approval.number}</p>
               <p className="text-sm font-semibold break-words">{approval.supplierName}</p>
-              <p className="text-muted-foreground text-xs">
+              <p className="text-muted-foreground text-xs font-semibold">
                 {t('approvalAuthor')}: {approval.authorPhone} · {money(approval.total)} ₸
               </p>
             </div>

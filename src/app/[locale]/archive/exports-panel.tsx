@@ -99,7 +99,11 @@ export function ExportsPanel({
               {pending ? t('bundlePending') : t('bundle')}
             </Button>
             {error ? (
-              <span className="text-danger text-sm" role="alert" data-testid="export-error">
+              <span
+                className="text-danger text-sm font-semibold"
+                role="alert"
+                data-testid="export-error"
+              >
                 {t(`errors.${error}` as 'errors.unknown')}
               </span>
             ) : null}

@@ -220,7 +220,7 @@ export function CatalogScreen({
           </p>
         ) : null}
 
-        <p className="text-muted-foreground text-xs">{t('templateHint')}</p>
+        <p className="text-muted-foreground text-xs font-semibold">{t('templateHint')}</p>
 
         {result ? (
           <div className="space-y-2 text-sm" data-testid="import-result">
@@ -373,7 +373,9 @@ export function CatalogScreen({
                     </label>
                   </div>
                   <div>
-                    <p className="text-muted-foreground text-xs">{t('zoneDeliveryDays')}</p>
+                    <p className="text-muted-foreground text-xs font-semibold">
+                      {t('zoneDeliveryDays')}
+                    </p>
                     <div className="mt-1 flex flex-wrap gap-1.5">
                       {WEEKDAYS.map((day) => (
                         <Button

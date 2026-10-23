@@ -181,7 +181,7 @@ export function RepsScreen({
                 </div>
 
                 <div>
-                  <p className="text-muted-foreground text-xs">{t('orders')}</p>
+                  <p className="text-muted-foreground text-xs font-semibold">{t('orders')}</p>
                   {store.orders.length === 0 ? (
                     <p className="text-sm">—</p>
                   ) : (
@@ -189,7 +189,7 @@ export function RepsScreen({
                       {store.orders.map((order) => (
                         <li key={order.id} className="flex flex-wrap items-center gap-2">
                           <span className="text-[13px] font-bold tabular-nums">{order.number}</span>
-                          <span className="text-muted-foreground text-xs">
+                          <span className="text-muted-foreground text-xs font-semibold">
                             {formatDate(new Date(order.createdAt))}
                           </span>
                           <OrderStatusBadge status={order.status} />
@@ -201,7 +201,7 @@ export function RepsScreen({
                 </div>
 
                 <div>
-                  <p className="text-muted-foreground text-xs">{t('visits')}</p>
+                  <p className="text-muted-foreground text-xs font-semibold">{t('visits')}</p>
                   <ul className="mt-1 space-y-1 text-sm" data-testid="reps-visits">
                     {store.visits.map((visit) => (
                       <li key={visit.id} className="flex items-start gap-2">
@@ -210,7 +210,7 @@ export function RepsScreen({
                           className="text-muted-foreground mt-0.5 size-3.5 shrink-0"
                         />
                         <span className="min-w-0 break-words">
-                          <span className="text-muted-foreground text-xs">
+                          <span className="text-muted-foreground text-xs font-semibold">
                             {formatDateTime(new Date(visit.visitedAt))}
                           </span>{' '}
                           {visit.comment}

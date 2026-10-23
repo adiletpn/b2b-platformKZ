@@ -60,7 +60,7 @@ export function GeographyPanel({ locale }: { locale: 'ru' | 'kk' }) {
           {t('close')}
         </Button>
       </div>
-      <p className="text-muted-foreground mt-1 text-xs">{t('geography.hint')}</p>
+      <p className="text-muted-foreground mt-1 text-xs font-semibold">{t('geography.hint')}</p>
       <NotYetCard
         className="mt-3"
         icon={<MapPinned aria-hidden className="size-5" />}

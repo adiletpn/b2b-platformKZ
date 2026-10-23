@@ -74,7 +74,7 @@ export function OfferDetailsPanel({
             ] as const
           ).map(([key, value]) => (
             <div key={key}>
-              <dt className="text-muted-foreground text-xs">{t(`details.${key}`)}</dt>
+              <dt className="text-muted-foreground text-xs font-semibold">{t(`details.${key}`)}</dt>
               <dd className="break-words" data-testid={`details-${key}`}>
                 {value ?? '—'}
               </dd>
@@ -127,7 +127,9 @@ export function OfferDetailsPanel({
                       {t('take')}
                     </Button>
                   ) : (
-                    <span className="text-muted-foreground text-xs">{t('outOfStock')}</span>
+                    <span className="text-muted-foreground text-xs font-semibold">
+                      {t('outOfStock')}
+                    </span>
                   )}
                 </td>
               </tr>

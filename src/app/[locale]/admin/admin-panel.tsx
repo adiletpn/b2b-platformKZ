@@ -614,7 +614,7 @@ export function AdminPanel({
 
       <section className="mt-6">
         <h2 className="text-[15px] font-extrabold">{t('auditTitle')}</h2>
-        <p className="text-muted-foreground mt-1 text-xs">{t('auditHint')}</p>
+        <p className="text-muted-foreground mt-1 text-xs font-semibold">{t('auditHint')}</p>
 
         {audit.length === 0 ? (
           <p className="text-muted-foreground mt-2 text-sm">{t('auditEmpty')}</p>

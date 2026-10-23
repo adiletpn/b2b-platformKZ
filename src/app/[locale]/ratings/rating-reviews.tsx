@@ -150,12 +150,20 @@ export function RatingReviews({ reviews }: { reviews: Review[] }) {
       )}
 
       {disputeError ? (
-        <p className="text-danger mt-2 text-sm" role="alert" data-testid="dispute-error">
+        <p
+          className="text-danger mt-2 text-sm font-semibold"
+          role="alert"
+          data-testid="dispute-error"
+        >
           {t(`disputeErrors.${disputeError}` as 'disputeErrors.unknown')}
         </p>
       ) : null}
       {error ? (
-        <p className="text-danger mt-2 text-sm" role="alert" data-testid="reviews-error">
+        <p
+          className="text-danger mt-2 text-sm font-semibold"
+          role="alert"
+          data-testid="reviews-error"
+        >
           {t(`errors.${error}` as 'errors.unknown')}
         </p>
       ) : null}

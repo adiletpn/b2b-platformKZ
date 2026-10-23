@@ -215,7 +215,7 @@ export function CatalogScreen({
         </form>
 
         {uploadError ? (
-          <p className="text-danger text-sm" role="alert" data-testid="upload-error">
+          <p className="text-danger text-sm font-semibold" role="alert" data-testid="upload-error">
             {t(`errors.${uploadError}` as 'errors.unknown')}
           </p>
         ) : null}

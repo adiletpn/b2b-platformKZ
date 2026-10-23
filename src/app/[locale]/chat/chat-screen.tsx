@@ -509,7 +509,7 @@ export function ChatScreen({
 
                 <div className="mt-4 flex-1 space-y-2 overflow-y-auto" data-testid="chat-messages">
                   {messages.length === 0 ? (
-                    <p className="text-muted-foreground text-sm">{t('noMessages')}</p>
+                    <p className="text-muted-foreground text-sm font-medium">{t('noMessages')}</p>
                   ) : (
                     messages.map((message) => (
                       <div
@@ -830,7 +830,7 @@ export function ChatScreen({
                 ) : null}
               </>
             ) : (
-              <p className="text-muted-foreground text-sm">{t('selectChat')}</p>
+              <p className="text-muted-foreground text-sm font-medium">{t('selectChat')}</p>
             )}
           </Card>
         </div>

@@ -304,8 +304,10 @@ export function OnboardingForm({ cities, demoBins }: { cities: City[]; demoBins:
           {needsDelivery ? (
             <div className="border-border space-y-2 rounded-2xl border p-3">
               <h3 className="text-sm font-medium">{t('supplierSection')}</h3>
-              <p className="text-muted-foreground text-xs">{t('supplierHint')}</p>
-              <p className="text-muted-foreground text-xs">{t('supplierZonesLater')}</p>
+              <p className="text-muted-foreground text-xs font-semibold">{t('supplierHint')}</p>
+              <p className="text-muted-foreground text-xs font-semibold">
+                {t('supplierZonesLater')}
+              </p>
               <ul className="grid max-h-56 grid-cols-1 gap-1 overflow-y-auto sm:grid-cols-2">
                 {cities.map((city) => (
                   <li key={city.id}>

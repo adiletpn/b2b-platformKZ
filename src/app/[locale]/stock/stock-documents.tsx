@@ -253,7 +253,11 @@ export function StockDocuments({
         </div>
 
         {scanError ? (
-          <p className="text-danger mt-2 text-sm" role="alert" data-testid="scan-error">
+          <p
+            className="text-danger mt-2 text-sm font-semibold"
+            role="alert"
+            data-testid="scan-error"
+          >
             {t('scanNotFound')}
           </p>
         ) : null}
@@ -263,7 +267,11 @@ export function StockDocuments({
           </p>
         ) : null}
         {error ? (
-          <p className="text-danger mt-2 text-sm" role="alert" data-testid="document-error">
+          <p
+            className="text-danger mt-2 text-sm font-semibold"
+            role="alert"
+            data-testid="document-error"
+          >
             {t(`errors.${error}` as 'errors.unknown')}
           </p>
         ) : null}

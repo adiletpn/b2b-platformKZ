@@ -198,7 +198,7 @@ export function ProductMergePanel() {
       ) : null}
       {blocked ? (
         <div
-          className="bg-danger-soft text-danger mt-3 space-y-1 rounded-2xl p-3 text-sm"
+          className="bg-danger-soft text-danger mt-3 space-y-1 rounded-2xl p-3 text-sm font-semibold"
           role="alert"
           data-testid="merge-conflicts"
         >

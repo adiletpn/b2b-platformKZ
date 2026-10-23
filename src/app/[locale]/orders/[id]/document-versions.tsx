@@ -94,7 +94,7 @@ export function DocumentVersions({
 
       {open ? (
         <div className="border-border space-y-3 rounded-2xl border-[1.5px] border-dashed p-3">
-          <p className="text-muted-foreground text-xs">{t('hint')}</p>
+          <p className="text-muted-foreground text-xs font-semibold">{t('hint')}</p>
           <Field label={t('reason')}>
             <Input
               value={reason}

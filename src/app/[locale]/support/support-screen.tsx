@@ -181,7 +181,7 @@ export function SupportScreen({ initial }: { initial: TicketRow[] }) {
               </div>
             </>
           ) : (
-            <p className="text-muted-foreground text-sm">{t('select')}</p>
+            <p className="text-muted-foreground text-sm font-medium">{t('select')}</p>
           )}
           {error ? (
             <p className="text-danger mt-2 text-sm" role="alert">

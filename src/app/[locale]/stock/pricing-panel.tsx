@@ -135,7 +135,11 @@ export function PricingPanel({
         </p>
       ) : null}
       {error ? (
-        <p className="text-danger mt-2 text-sm" role="alert" data-testid="pricing-error">
+        <p
+          className="text-danger mt-2 text-sm font-semibold"
+          role="alert"
+          data-testid="pricing-error"
+        >
           {t(`errors.${error}` as 'errors.unknown')}
         </p>
       ) : null}

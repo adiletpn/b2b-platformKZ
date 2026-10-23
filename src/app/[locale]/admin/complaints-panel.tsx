@@ -47,7 +47,7 @@ export function ComplaintsPanel({ initial }: { initial: ComplaintRow[] }) {
         <ul className="divide-border mt-3 divide-y text-sm">
           {rows.map((row) => (
             <li key={row.id} className="space-y-2 py-3" data-testid="complaint-row">
-              <p className="text-muted-foreground text-xs">
+              <p className="text-muted-foreground text-xs font-semibold">
                 {t('meta', {
                   from: row.complainantName,
                   about: row.authorName,

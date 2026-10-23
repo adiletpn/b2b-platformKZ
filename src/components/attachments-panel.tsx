@@ -149,7 +149,7 @@ export function AttachmentsPanel({
               >
                 {file.fileName}
               </a>
-              <span className="text-muted-foreground text-xs">
+              <span className="text-muted-foreground text-xs font-semibold">
                 {t('meta', {
                   size: Math.max(1, Math.round(file.size / 1024)),
                   date: file.createdAt,

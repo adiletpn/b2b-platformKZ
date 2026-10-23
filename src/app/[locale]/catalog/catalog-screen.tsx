@@ -327,7 +327,7 @@ export function CatalogScreen({
 
       <section className="border-border bg-card shadow-card mt-6 rounded-xl border p-4 sm:p-5">
         <h2 className="text-lg font-medium">{t('zonesTitle')}</h2>
-        <p className="text-muted-foreground mt-1 text-xs">{t('zonesHint')}</p>
+        <p className="text-muted-foreground mt-1 text-xs font-semibold">{t('zonesHint')}</p>
 
         {selectedCities.length === 0 ? (
           <Notice tone="warning" className="mt-3">
@@ -391,7 +391,7 @@ export function CatalogScreen({
                         </Button>
                       ))}
                     </div>
-                    <p className="text-muted-foreground mt-1 text-xs">
+                    <p className="text-muted-foreground mt-1 text-xs font-semibold">
                       {zone.deliveryDays.length === 0 ? t('zoneEveryDay') : t('zoneDaysHint')}
                     </p>
                   </div>

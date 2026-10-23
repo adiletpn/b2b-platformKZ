@@ -126,7 +126,9 @@ export function SupportScreen({ initial }: { initial: TicketRow[] }) {
                         <span className="truncate text-sm font-medium">{ticket.subject}</span>
                         <Badge tone={TONES[ticket.status]}>{t(`status.${ticket.status}`)}</Badge>
                       </span>
-                      <span className="text-muted-foreground text-xs">{ticket.updatedAt}</span>
+                      <span className="text-muted-foreground text-xs font-semibold">
+                        {ticket.updatedAt}
+                      </span>
                     </button>
                   </li>
                 ))}

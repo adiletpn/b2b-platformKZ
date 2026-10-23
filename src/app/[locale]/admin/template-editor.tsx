@@ -201,7 +201,11 @@ export function TemplateEditor({ initial }: { initial: TemplateEditorData }) {
       </div>
 
       {message?.error ? (
-        <p className="text-danger mt-3 text-sm" role="alert" data-testid="template-error">
+        <p
+          className="text-danger mt-3 text-sm font-semibold"
+          role="alert"
+          data-testid="template-error"
+        >
           {t(`errors.${message.error}` as 'errors.unknown', { key: message.key ?? '' })}
         </p>
       ) : null}

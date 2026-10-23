@@ -80,7 +80,7 @@ export function ComplaintsPanel({ initial }: { initial: ComplaintRow[] }) {
         </ul>
       )}
       {error ? (
-        <p className="text-danger mt-2 text-sm" role="alert">
+        <p className="text-danger mt-2 text-sm font-semibold" role="alert">
           {t(`errors.${error}` as 'errors.unknown')}
         </p>
       ) : null}

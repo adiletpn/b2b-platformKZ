@@ -295,7 +295,11 @@ export function LoginForm({ passwordLogin }: { passwordLogin: boolean }) {
         )}
 
         {error ? (
-          <p className="text-danger mt-4 text-sm" role="alert" data-testid="auth-error">
+          <p
+            className="text-danger mt-4 text-sm font-semibold"
+            role="alert"
+            data-testid="auth-error"
+          >
             {t(`errors.${error}` as 'errors.unknown')}
           </p>
         ) : null}

@@ -148,7 +148,11 @@ export function RequisitesForm({
               </span>
             ) : null}
             {error ? (
-              <span className="text-danger text-sm" role="alert" data-testid="requisites-error">
+              <span
+                className="text-danger text-sm font-semibold"
+                role="alert"
+                data-testid="requisites-error"
+              >
                 {t(`errors.${error}` as 'errors.unknown')}
               </span>
             ) : null}

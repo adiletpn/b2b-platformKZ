@@ -5,26 +5,25 @@ import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { OrderStatus } from '@/generated/prisma/enums';
 
-/** Основной путь заявки (раздел 5.2 ТЗ): шаги, которые видят обе стороны. */
-const PATH: OrderStatus[][] = [
-  ['SENT'],
-  ['ACCEPTED', 'CHANGED_BY_SUPPLIER'],
-  ['PICKING'],
-  ['SHIPPED'],
-  ['DELIVERED'],
-  ['ACCEPTED_BY_STORE', 'ACCEPTED_WITH_DISCREPANCY'],
-  ['AWAITING_PAYMENT', 'OVERDUE'],
-  ['PAID'],
-  ['CLOSED'],
+/**
+ * Основной путь заявки (раздел 5.2 ТЗ) шестью шагами, как в макете M08:
+ * доставка и приёмка — «Приемка», ожидание оплаты, оплата и закрытие — «Оплата».
+ */
+const STEPS: { key: string; statuses: OrderStatus[] }[] = [
+  { key: 'sent', statuses: ['SENT'] },
+  { key: 'accepted', statuses: ['ACCEPTED', 'CHANGED_BY_SUPPLIER'] },
+  { key: 'picking', statuses: ['PICKING'] },
+  { key: 'shipped', statuses: ['SHIPPED'] },
+  {
+    key: 'acceptance',
+    statuses: ['DELIVERED', 'ACCEPTED_BY_STORE', 'ACCEPTED_WITH_DISCREPANCY'],
+  },
+  { key: 'payment', statuses: ['AWAITING_PAYMENT', 'OVERDUE', 'PAID', 'CLOSED'] },
 ];
-const LABELS: OrderStatus[] = [
-  'SENT',
-  'ACCEPTED',
-  'PICKING',
-  'SHIPPED',
-  'DELIVERED',
+/** На этих статусах текущий шаг уже пройден, а не в работе. */
+const COMPLETES: OrderStatus[] = [
   'ACCEPTED_BY_STORE',
-  'AWAITING_PAYMENT',
+  'ACCEPTED_WITH_DISCREPANCY',
   'PAID',
   'CLOSED',
 ];
@@ -44,19 +43,16 @@ export function OrderProgress({
   const off = status === 'REJECTED' || status === 'CANCELLED' || status === 'DISPUTE';
   const reached = (statuses: OrderStatus[]) => statuses.some((item) => history.includes(item));
   const current = off
-    ? PATH.reduce((last, step, index) => (reached(step) ? index : last), -1)
-    : PATH.findIndex((step) => step.includes(status));
+    ? STEPS.reduce((last, step, index) => (reached(step.statuses) ? index : last), -1)
+    : STEPS.findIndex((step) => step.statuses.includes(status));
 
   return (
-    <ol
-      className="-mx-1 mt-4 flex scrollbar-none gap-0 overflow-x-auto px-1 pb-1"
-      data-testid="order-progress"
-    >
-      {LABELS.map((label, index) => {
-        const done = index < current || (index === current && status === 'CLOSED');
+    <ol className="mt-4 flex pb-1" data-testid="order-progress">
+      {STEPS.map((step, index) => {
+        const done = index < current || (index === current && COMPLETES.includes(status));
         const active = index === current && !done;
         return (
-          <li key={label} className="flex min-w-[5.5rem] flex-1 flex-col items-center gap-1.5">
+          <li key={step.key} className="flex min-w-0 flex-1 flex-col items-center gap-1.5">
             <div className="flex w-full items-center">
               <span
                 className={cn(
@@ -66,25 +62,25 @@ export function OrderProgress({
               />
               <span
                 className={cn(
-                  'grid size-7 shrink-0 place-items-center rounded-full border-[3px] text-[11px] font-black',
+                  'grid size-[22px] shrink-0 place-items-center rounded-full border-[3px] text-[11px] font-black',
                   done && 'bg-primary border-primary text-white',
                   active && !off && 'border-primary bg-card text-transparent',
                   active && off && 'border-danger bg-danger-soft text-danger',
                   !done && !active && 'border-track bg-card text-transparent',
                 )}
               >
-                {done ? <Check aria-hidden className="size-3.5" strokeWidth={3} /> : null}
+                {done ? <Check aria-hidden className="size-3" strokeWidth={3.4} /> : null}
               </span>
               <span
                 className={cn(
                   'h-0.5 flex-1',
-                  index === LABELS.length - 1 ? 'opacity-0' : done ? 'bg-primary' : 'bg-track',
+                  index === STEPS.length - 1 ? 'opacity-0' : done ? 'bg-primary' : 'bg-track',
                 )}
               />
             </div>
             <span
               className={cn(
-                'px-1 text-center text-[11px] leading-tight font-bold',
+                'text-center text-[10px] leading-tight font-bold',
                 active || done ? 'text-foreground' : 'text-muted-foreground',
               )}
             >
@@ -92,7 +88,7 @@ export function OrderProgress({
                 ? t(`status.${status}`)
                 : index === 1 && history.includes('CHANGED_BY_SUPPLIER')
                   ? t('progressChanged')
-                  : t(`status.${label}`)}
+                  : t(`progress.${step.key}` as 'progress.sent')}
             </span>
           </li>
         );

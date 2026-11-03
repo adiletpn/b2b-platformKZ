@@ -680,6 +680,14 @@
       "history": "Тарих",
       "documents": "Құжаттар",
       "confirm": "Өзгерістерді растау"
+    },
+    "progress": {
+      "sent": "Жіберілді",
+      "accepted": "Қабылданды",
+      "picking": "Жинау",
+      "shipped": "Жөнелтілді",
+      "acceptance": "Қабылдау",
+      "payment": "Төлем"
     }
   },
   "documents": {

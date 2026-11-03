@@ -680,6 +680,14 @@
       "history": "История",
       "documents": "Документы",
       "confirm": "Подтвердить изменения"
+    },
+    "progress": {
+      "sent": "Отправлена",
+      "accepted": "Принята",
+      "picking": "Сборка",
+      "shipped": "Отгружена",
+      "acceptance": "Приемка",
+      "payment": "Оплата"
     }
   },
   "documents": {

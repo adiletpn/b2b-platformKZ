@@ -1,4 +1,4 @@
-import { expect, type Browser, type Page } from '@playwright/test';
+import { expect, type Browser, type Locator, type Page } from '@playwright/test';
 import { buildCatalogXlsx, validRow } from './catalog-fixture';
 import { testPoolBin } from '@/mocks/bin-registry';
 import { open } from './open';
@@ -71,7 +71,7 @@ export async function registerPair(
 export async function orderWithDocuments(pair: Pair): Promise<string> {
   const { storePage, supplierPage, productName } = pair;
   await open(storePage, '/ru/feed');
-  await storePage.getByTestId('mode-list').click();
+  await toList(storePage);
   await storePage.getByTestId('feed-search').fill(productName);
   await expect(storePage.getByTestId('list-table')).toContainText(productName);
   // Строка ищется по названию: до срабатывания поиска в таблице видны и чужие товары.
@@ -80,9 +80,7 @@ export async function orderWithDocuments(pair: Pair): Promise<string> {
     .getByRole('row')
     .filter({ hasText: productName })
     .getByRole('textbox');
-  await quantity.fill('5');
-  await quantity.blur();
-  await expect(quantity).toHaveValue('5.000');
+  await setListQuantity(quantity, '5');
 
   await open(storePage, '/ru/cart');
   await storePage.getByTestId('send-orders').click();
@@ -121,4 +119,30 @@ export async function bringOrderToPayment(pair: Pair, orderPath: string) {
 export async function toSwipe(page: Page) {
   const toggle = page.getByTestId('mode-swipe');
   if (await toggle.isVisible()) await toggle.click();
+}
+
+/** «Список» в ленте: на телефоне у свайпа переключателя нет (M03), туда ведёт кнопка фильтров. */
+export async function toList(page: Page) {
+  const toggle = page.getByTestId('mode-list');
+  if (await toggle.isVisible()) await toggle.click();
+  else await page.getByTestId('swipe-filters').click();
+  await expect(page.getByTestId('feed-search')).toBeVisible();
+}
+
+/**
+ * Количество в «Списке»: ждём, пока корзина сохранит его на сервере. Поле показывает «5»
+ * и до ответа, поэтому без ожидания следующий шаг обгонит запись.
+ */
+export async function setListQuantity(input: Locator, value: string, expected = value) {
+  await input.fill(value);
+  await Promise.all([
+    input
+      .page()
+      .waitForResponse(
+        (response) =>
+          response.url().includes('/api/cart/item') && response.request().method() !== 'GET',
+      ),
+    input.blur(),
+  ]);
+  await expect(input).toHaveValue(expected);
 }

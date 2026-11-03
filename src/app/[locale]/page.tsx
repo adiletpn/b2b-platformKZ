@@ -14,7 +14,8 @@ import {
   Truck,
   WifiOff,
 } from 'lucide-react';
-import { Link } from '@/i18n/navigation';
+import { Link, redirect } from '@/i18n/navigation';
+import { getSession } from '@/lib/auth/session';
 import { buttonVariants } from '@/components/ui/button';
 import { IconBadge } from '@/components/ui/card';
 
@@ -41,6 +42,15 @@ const TRUST = [
 export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   setRequestLocale(locale);
+
+  // Вошедший пользователь сразу попадает в работу: сессия живёт в cookie 30 дней, и при
+  // повторном открытии сайта лендинг ему не нужен. Без компании — к регистрации компании.
+  const session = await getSession();
+  if (session) {
+    const hasCompany = session.user.memberships.some((item) => item.status === 'ACTIVE');
+    redirect({ href: hasCompany ? '/dashboard' : '/onboarding', locale });
+  }
+
   const t = await getTranslations('home');
 
   return (

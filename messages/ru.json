@@ -500,7 +500,12 @@
     "reachedMin": "Минимальный заказ {min} ₸ набран",
     "missingMin": "До минимальной суммы не хватает {missing} ₸",
     "total": "Итого",
-    "positions": "позиций: {count}"
+    "positions": "позиций: {count}",
+    "swipeChips": {
+      "promo": "Акции",
+      "new": "Новинки",
+      "tomorrow": "Доставка завтра"
+    }
   },
   "cart": {
     "title": "Корзина",

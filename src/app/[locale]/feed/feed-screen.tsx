@@ -3,7 +3,7 @@
 import { useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import Decimal from 'decimal.js';
-import { ChevronRight, MapPin, Repeat2, Search, Star } from 'lucide-react';
+import { ChevronRight, ListFilter, MapPin, Repeat2, Search, Star } from 'lucide-react';
 import { buttonVariants } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ProductPhoto } from '@/components/product-photo';
@@ -77,6 +77,8 @@ export function FeedScreen({
     onlyFavorites: false,
   });
   const [details, setDetails] = useState<OfferDetails | null>(null);
+  /** Чипы над колодой (макет M03): «Все», акции, новинки, доставка завтра или категория. */
+  const [swipeChip, setSwipeChip] = useState<string>('all');
 
   const searchTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const [cartGroups, setCartGroups] = useState<CartSupplierGroup[]>(initialCartGroups);
@@ -117,8 +119,13 @@ export function FeedScreen({
   }
 
   /** Раздел 3.3 ТЗ: «отменить» возвращает именно последнюю карточку, поэтому она идёт первой. */
-  async function reloadSwipe(bringToFrontId?: string) {
-    const response = await fetch('/api/feed?mode=swipe');
+  async function reloadSwipe(bringToFrontId?: string, chip = swipeChip) {
+    const params = new URLSearchParams({ mode: 'swipe' });
+    if (chip === 'promo') params.set('onlyPromo', 'true');
+    if (chip === 'new') params.set('onlyNew', 'true');
+    if (chip === 'tomorrow') params.set('onlyTomorrow', 'true');
+    if (chip.startsWith('cat:')) params.set('categoryId', chip.slice(4));
+    const response = await fetch(`/api/feed?${params.toString()}`);
     if (!response.ok) return;
     const data = (await response.json()) as { offers: FeedOffer[] };
 
@@ -267,6 +274,9 @@ export function FeedScreen({
     .reduce((sum, group) => sum.plus(group.total), new Decimal(0))
     .toFixed(2);
   const swipeActive = mode === 'swipe' ? 'swipe' : mode === 'list' ? 'list' : null;
+  const activeFilters =
+    Object.values(flags).filter(Boolean).length +
+    [categoryId, supplierId, brand, priceMax].filter(Boolean).length;
 
   return (
     <Page width="lg">
@@ -289,6 +299,34 @@ export function FeedScreen({
           </div>
         </div>
         <div className="flex-1 lg:order-1" />
+        {/* M03: поиск и фильтры у свайпа ведут в «Список», где они живут. */}
+        {mode !== 'list' ? (
+          <div className="flex items-center gap-2.5 md:hidden">
+            <button
+              type="button"
+              aria-label={t('searchPlaceholder')}
+              data-testid="swipe-search"
+              onClick={() => setMode('list')}
+              className="bg-muted grid size-10 place-items-center rounded-full"
+            >
+              <Search aria-hidden className="size-[19px]" />
+            </button>
+            <button
+              type="button"
+              aria-label={t('filters.title')}
+              data-testid="swipe-filters"
+              onClick={() => setMode('list')}
+              className="bg-muted relative grid size-10 place-items-center rounded-full"
+            >
+              <ListFilter aria-hidden className="size-[19px]" />
+              {activeFilters > 0 ? (
+                <span className="bg-primary border-background absolute -top-[3px] -right-[3px] flex h-[18px] min-w-[18px] items-center justify-center rounded-full border-2 px-[5px] text-[10px] font-extrabold text-white">
+                  {activeFilters}
+                </span>
+              ) : null}
+            </button>
+          </div>
+        ) : null}
         {/* На телефоне переключатель есть только в списке (M05), у свайпа его нет (M03). */}
         <Segmented
           className={cn('w-full lg:order-3 lg:w-auto', mode !== 'list' && 'max-md:hidden')}
@@ -341,6 +379,33 @@ export function FeedScreen({
       ) : null}
 
       <section className={suppliers.length === 0 ? 'hidden' : swipeClass} data-testid="swipe-mode">
+        <div
+          className="-mx-4 mb-3.5 flex scrollbar-none gap-2 overflow-x-auto px-4 sm:-mx-6 sm:px-6"
+          data-testid="swipe-chips"
+        >
+          {[
+            { value: 'all', label: t('chipAll') },
+            { value: 'promo', label: t('swipeChips.promo') },
+            { value: 'new', label: t('swipeChips.new') },
+            { value: 'tomorrow', label: t('swipeChips.tomorrow') },
+            ...categories.map((category) => ({
+              value: `cat:${category.id}`,
+              label: category.name,
+            })),
+          ].map((chip) => (
+            <Chip
+              key={chip.value}
+              active={swipeChip === chip.value}
+              data-testid={`swipe-chip-${chip.value}`}
+              onClick={() => {
+                setSwipeChip(chip.value);
+                void reloadSwipe(undefined, chip.value);
+              }}
+            >
+              {chip.label}
+            </Chip>
+          ))}
+        </div>
         {/* Свайп — мобильный сценарий: на широком экране колода остаётся карточкой. */}
         <div className="mx-auto w-full max-w-[350px]">
           <SwipeDeck

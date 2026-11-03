@@ -500,7 +500,12 @@
     "reachedMin": "Ең аз тапсырыс {min} ₸ жиналды",
     "missingMin": "Ең аз сомаға {missing} ₸ жетпейді",
     "total": "Барлығы",
-    "positions": "позиция: {count}"
+    "positions": "позиция: {count}",
+    "swipeChips": {
+      "promo": "Акциялар",
+      "new": "Жаңалықтар",
+      "tomorrow": "Ертең жеткізу"
+    }
   },
   "cart": {
     "title": "Себет",

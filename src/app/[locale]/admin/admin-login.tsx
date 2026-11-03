@@ -6,6 +6,7 @@ import { useRouter } from '@/i18n/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DemoHint, Field } from '@/components/ui/field';
+import { usePhoneCode } from '@/lib/sms/use-phone-code';
 
 export function AdminLogin() {
   const t = useTranslations('admin');
@@ -15,6 +16,7 @@ export function AdminLogin() {
   const [demoCode, setDemoCode] = useState<string | null>(null);
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const phoneCode = usePhoneCode();
 
   async function requestCode(event: React.FormEvent) {
     event.preventDefault();
@@ -25,9 +27,20 @@ export function AdminLogin() {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ phone }),
     });
-    const data = (await response.json()) as { code?: string; error?: string };
-    if (!response.ok) {
+    const data = (await response.json()) as {
+      phone?: string;
+      code?: string;
+      via?: 'firebase' | 'mock';
+      error?: string;
+    };
+    if (!response.ok || !data.phone) {
       setError(data.error ?? 'unknown');
+      return;
+    }
+    // С Firebase код администратору отправляет браузер.
+    const sent = await phoneCode.send({ phone: data.phone, via: data.via });
+    if (!sent.ok) {
+      setError(sent.error);
       return;
     }
     setDemoCode(data.code ?? '');
@@ -37,10 +50,15 @@ export function AdminLogin() {
     event.preventDefault();
     setError(null);
 
+    const proved = await phoneCode.prove(code);
+    if (!proved.ok) {
+      setError(proved.error);
+      return;
+    }
     const response = await fetch('/api/admin/verify', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ phone, code }),
+      body: JSON.stringify({ phone, ...proved.proof }),
     });
     const data = (await response.json()) as { error?: string };
     if (!response.ok) {

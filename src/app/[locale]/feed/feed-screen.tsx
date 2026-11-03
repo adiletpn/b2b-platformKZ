@@ -286,7 +286,12 @@ export function FeedScreen({
       {/* Шапка: на телефоне — город доставки (M03), на компьютере — полоса 80 px (D01). */}
       <header className="border-border mb-4 flex flex-wrap items-center gap-2.5 pt-1.5 lg:-mx-8 lg:mb-5 lg:min-h-20 lg:border-b lg:px-8 lg:py-3">
         <h1 className="hidden text-2xl font-black tracking-[-0.02em] lg:block">{t('title')}</h1>
-        <div className="flex min-w-0 flex-1 items-center gap-2 lg:order-2 lg:flex-none">
+        <div
+          className={cn(
+            'flex min-w-0 flex-1 items-center gap-2 lg:order-2 lg:flex-none',
+            mode === 'list' && 'max-md:hidden',
+          )}
+        >
           <div className="lg:bg-primary-soft lg:text-primary-text flex items-center gap-2 lg:h-11 lg:rounded-full lg:pr-4 lg:pl-3">
             <span className="bg-primary-soft grid size-9 shrink-0 place-items-center rounded-xl lg:size-auto lg:bg-transparent">
               <MapPin aria-hidden className="text-primary size-[18px]" />
@@ -302,6 +307,23 @@ export function FeedScreen({
           </div>
         </div>
         <div className="flex-1 lg:order-1" />
+        {/* Поиск: в «Списке» на телефоне — первой строкой (M05), на компьютере — в полосе 360 px (D01). */}
+        <label
+          className={cn(
+            'bg-muted flex h-[46px] w-full items-center gap-2.5 rounded-full px-4 lg:order-1 lg:h-11 lg:w-[360px]',
+            mode === 'swipe' ? 'hidden' : mode === 'auto' ? 'max-md:hidden' : '',
+          )}
+        >
+          <Search aria-hidden className="size-[18px] shrink-0 text-[#a49c92]" />
+          <input
+            className="min-w-0 flex-1 bg-transparent text-sm font-medium outline-none placeholder:text-[#a49c92]"
+            placeholder={t('searchPlaceholder')}
+            aria-label={t('filters.search')}
+            value={search}
+            data-testid="feed-search"
+            onChange={(event) => onSearchChange(event.target.value)}
+          />
+        </label>
         {/* M03: поиск и фильтры у свайпа ведут в «Список», где они живут. */}
         {mode !== 'list' ? (
           <div className="flex items-center gap-2.5 md:hidden">
@@ -434,20 +456,9 @@ export function FeedScreen({
       <section className={suppliers.length === 0 ? 'hidden' : listClass} data-testid="list-mode">
         <div className="flex gap-5">
           <div className="min-w-0 flex-1">
-            {/* Поиск по названию или штрихкоду (M05), фильтры-«пилюли» и чипы (D01). */}
-            <label className="bg-muted flex h-[46px] items-center gap-2.5 rounded-full px-4 lg:h-11">
-              <Search aria-hidden className="size-[18px] shrink-0 text-[#a49c92]" />
-              <input
-                className="min-w-0 flex-1 bg-transparent text-sm font-medium outline-none placeholder:text-[#a49c92]"
-                placeholder={t('searchPlaceholder')}
-                aria-label={t('filters.search')}
-                value={search}
-                data-testid="feed-search"
-                onChange={(event) => onSearchChange(event.target.value)}
-              />
-            </label>
+            {/* Фильтры-«пилюли» и чипы (D01); поиск — в шапке экрана (M05, D01). */}
 
-            <div className="mt-3 flex scrollbar-none gap-2 overflow-x-auto lg:flex-wrap lg:overflow-visible">
+            <div className="flex scrollbar-none gap-2 overflow-x-auto lg:flex-wrap lg:overflow-visible">
               <PillSelect
                 aria-label={t('filters.category')}
                 value={categoryId}

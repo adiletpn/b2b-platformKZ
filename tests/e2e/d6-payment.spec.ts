@@ -1,3 +1,4 @@
+import { toList, setListQuantity } from '../helpers/e2e-flow';
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 import { buildCatalogXlsx, validRow } from '../helpers/catalog-fixture';
 import { testPoolBin } from '@/mocks/bin-registry';
@@ -94,17 +95,16 @@ test('store_pays_order_manually_and_sees_supplier_requisites', async ({}, testIn
 
   // Заявка проходит путь до приёмки.
   await open(storePage, '/ru/feed');
-  await storePage.getByTestId('mode-list').click();
+  await toList(storePage);
   await storePage.getByTestId('feed-search').fill(productName);
   await expect(storePage.getByTestId('list-table')).toContainText(productName);
+  // Строка ищется по названию: до срабатывания поиска первой может быть чужая.
   const quantity = storePage
     .getByTestId('list-table')
     .getByRole('row')
-    .first()
+    .filter({ hasText: productName })
     .getByRole('textbox');
-  await quantity.fill('5');
-  await quantity.blur();
-  await expect(quantity).toHaveValue('5');
+  await setListQuantity(quantity, '5');
 
   await open(storePage, '/ru/cart');
   await storePage.getByTestId('send-orders').click();

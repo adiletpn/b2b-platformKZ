@@ -1,3 +1,4 @@
+import { toList, setListQuantity } from '../helpers/e2e-flow';
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 import { buildCatalogXlsx, validRow } from '../helpers/catalog-fixture';
 import { testPoolBin } from '@/mocks/bin-registry';
@@ -77,7 +78,7 @@ test('order_cannot_be_rated_before_it_is_closed', async ({}, testInfo) => {
   test.skip(testInfo.project.name !== ONLY_PROJECT, 'рейтинги');
 
   await open(storePage, '/ru/feed');
-  await storePage.getByTestId('mode-list').click();
+  await toList(storePage);
   await storePage.getByTestId('feed-search').fill(productName);
   await expect(storePage.getByTestId('list-table')).toContainText(productName);
   // Список перезагружается после дебаунса поиска: ждём, иначе строка подменится под руками.
@@ -85,11 +86,9 @@ test('order_cannot_be_rated_before_it_is_closed', async ({}, testInfo) => {
   const quantity = storePage
     .getByTestId('list-table')
     .getByRole('row')
-    .first()
+    .filter({ hasText: productName })
     .getByRole('textbox');
-  await quantity.fill('5');
-  await quantity.blur();
-  await expect(quantity).toHaveValue('5');
+  await setListQuantity(quantity, '5');
 
   await open(storePage, '/ru/cart');
   await storePage.getByTestId('send-orders').click();

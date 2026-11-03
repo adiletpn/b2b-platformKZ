@@ -1,4 +1,4 @@
-import { toSwipe } from '../helpers/e2e-flow';
+import { toSwipe, toList, setListQuantity } from '../helpers/e2e-flow';
 import { expect, test, type Page } from '@playwright/test';
 import { buildCatalogXlsx, validRow } from '../helpers/catalog-fixture';
 import { testPoolBin } from '@/mocks/bin-registry';
@@ -123,7 +123,7 @@ test('store_feed_shows_only_suppliers_delivering_to_its_city', async () => {
   await page.waitForURL(/\/feed$/);
 
   await expect(page.getByTestId('feed-city')).toHaveText('Тараз');
-  await page.getByTestId('mode-list').click();
+  await toList(page);
 
   await page.getByTestId('feed-search').fill(tarazProduct);
   await expect(page.getByTestId('list-table').getByRole('row')).toHaveCount(1);
@@ -182,7 +182,7 @@ test('swipe_left_skips_card_and_undo_returns_it', async () => {
 });
 
 test('store_sets_quantity_in_list_mode', async () => {
-  await page.getByTestId('mode-list').click();
+  await toList(page);
 
   // Берём по позиции у каждого поставщика: корзина делится на две заявки
   // независимо от того, чью карточку выдал свайп. У чужих фикстур кратность 12.
@@ -193,9 +193,7 @@ test('store_sets_quantity_in_list_mode', async () => {
     await expect(row).toHaveCount(1);
 
     const input = row.getByRole('textbox');
-    await input.fill('5');
-    await input.blur();
-    await expect(input).toHaveValue('5');
+    await setListQuantity(input, '5');
   }
 
   await page.getByTestId('filter-reset').click();
@@ -221,7 +219,7 @@ test('cart_is_split_by_supplier_with_totals_and_minimum', async () => {
 test('repeat_last_order_reports_no_history_before_first_order', async () => {
   await open(page, '/ru/feed');
   // В макете (M05) повтор заказа — баннер режима «Список».
-  await page.getByTestId('mode-list').click();
+  await toList(page);
   await page.getByTestId('repeat-last-order').click();
   await expect(page.getByTestId('feed-notice')).toHaveText('Прошлых заказов пока нет');
 });
@@ -244,7 +242,7 @@ test('swipe_up_sends_card_to_favorites', async () => {
   await expect(page.getByTestId('feed-notice')).toHaveText('Добавлено в избранное');
 
   // Фильтр «только избранное» показывает именно её.
-  await page.getByTestId('mode-list').click();
+  await toList(page);
   await page.getByTestId('filter-onlyFavorites').check();
   const rows = page.getByTestId('list-table').getByRole('row');
   await expect(rows).toHaveCount(1);

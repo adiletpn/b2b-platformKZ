@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import ExcelJS from 'exceljs';
 import { gtin13 } from '../helpers/catalog-fixture';
 import { outsideRegistryBin } from '../helpers/real-bin';
-import { expectNoHorizontalScroll, login } from '../helpers/e2e-flow';
+import { expectNoHorizontalScroll, login, toList, setListQuantity } from '../helpers/e2e-flow';
 import { CATALOG_COLUMNS } from '@/lib/catalog/columns';
 import { open } from '../helpers/open';
 
@@ -130,16 +130,14 @@ test('real_company_path_from_supplier_registration_to_store_cart', async ({
   await store.waitForURL(/\/dashboard$/);
 
   await open(store, '/ru/feed');
-  await store.getByTestId('mode-list').click();
+  await toList(store);
   await store.getByTestId('feed-search').fill(id.product);
   const rows = store.getByTestId('list-table').getByRole('row');
   await expect(rows).toHaveCount(3);
 
   // 6. Корзина: 5 штук поднимаются до минимальной партии 12 (кратно 6).
   const quantity = rows.filter({ hasText: `${id.product}.1` }).getByRole('textbox');
-  await quantity.fill('5');
-  await quantity.blur();
-  await expect(quantity).toHaveValue('12');
+  await setListQuantity(quantity, '5', '12');
   await expect(store.getByTestId('feed-notice')).toContainText('минимальной партии');
 
   await open(store, '/ru/cart');

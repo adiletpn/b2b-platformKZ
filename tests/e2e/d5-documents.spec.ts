@@ -1,3 +1,4 @@
+import { toList, setListQuantity } from '../helpers/e2e-flow';
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 import { buildCatalogXlsx, validRow } from '../helpers/catalog-fixture';
 import { testPoolBin } from '@/mocks/bin-registry';
@@ -65,18 +66,16 @@ test.beforeAll(async ({ browser }, testInfo) => {
 
   // Магазин набирает корзину и отправляет заявку.
   await open(storePage, '/ru/feed');
-  await storePage.getByTestId('mode-list').click();
+  await toList(storePage);
   await storePage.getByTestId('feed-search').fill(productName);
   await expect(storePage.getByTestId('list-table')).toContainText(productName);
   await expect(storePage.getByTestId('list-table').getByRole('row')).toHaveCount(1);
   const quantity = storePage
     .getByTestId('list-table')
     .getByRole('row')
-    .first()
+    .filter({ hasText: productName })
     .getByRole('textbox');
-  await quantity.fill('10');
-  await quantity.blur();
-  await expect(quantity).toHaveValue('10');
+  await setListQuantity(quantity, '10');
 
   await open(storePage, '/ru/cart');
   await storePage.getByTestId('send-orders').click();

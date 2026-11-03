@@ -1,6 +1,12 @@
 import { expect, test } from '@playwright/test';
 import { buildCatalogXlsx, gtin13, validRow } from '../helpers/catalog-fixture';
-import { expectNoHorizontalScroll, registerPair, type Pair } from '../helpers/e2e-flow';
+import {
+  expectNoHorizontalScroll,
+  registerPair,
+  type Pair,
+  toList,
+  setListQuantity,
+} from '../helpers/e2e-flow';
 import { open } from '../helpers/open';
 
 test.describe.configure({ mode: 'serial' });
@@ -37,16 +43,14 @@ test.beforeAll(async ({ browser }, testInfo) => {
   await expect(supplierPage.getByTestId('import-created')).toHaveText('Добавлено товаров: 1');
 
   await open(storePage, '/ru/feed');
-  await storePage.getByTestId('mode-list').click();
+  await toList(storePage);
   await storePage.getByTestId('feed-search').fill(productName);
   const quantity = storePage
     .getByTestId('list-table')
     .getByRole('row')
     .filter({ hasText: productName })
     .getByRole('textbox');
-  await quantity.fill('5');
-  await quantity.blur();
-  await expect(quantity).toHaveValue('5');
+  await setListQuantity(quantity, '5');
   await open(storePage, '/ru/cart');
   await storePage.getByTestId('send-orders').click();
   await storePage.waitForURL(/\/orders$/, { timeout: 30_000 });

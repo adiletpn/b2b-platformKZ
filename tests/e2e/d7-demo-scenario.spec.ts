@@ -1,4 +1,4 @@
-import { toSwipe } from '../helpers/e2e-flow';
+import { toSwipe, toList, setListQuantity } from '../helpers/e2e-flow';
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 import { buildCatalogXlsx, validRow } from '../helpers/catalog-fixture';
 import { testPoolBin } from '@/mocks/bin-registry';
@@ -171,7 +171,7 @@ test('criterion_3_store_picks_products_by_swipe_and_in_list', async ({}, testInf
 
   // Список на компьютере: берём по одной позиции у каждого поставщика.
   await storePage.setViewportSize(DESKTOP_WIDTH);
-  await storePage.getByTestId('mode-list').click();
+  await toList(storePage);
   for (const supplier of suppliers) {
     await storePage.getByTestId('feed-search').fill(supplier.product);
     // Строку ищем по названию: счётчик строк совпадает и до перезагрузки списка.
@@ -181,9 +181,7 @@ test('criterion_3_store_picks_products_by_swipe_and_in_list', async ({}, testInf
       .filter({ hasText: supplier.product });
     await expect(row).toHaveCount(1);
     const input = row.getByRole('textbox');
-    await input.fill('5');
-    await input.blur();
-    await expect(input).toHaveValue('5');
+    await setListQuantity(input, '5');
   }
 
   await checkBothWidths(storePage);

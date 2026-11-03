@@ -1,3 +1,4 @@
+import { toList, setListQuantity } from '../helpers/e2e-flow';
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 import { buildCatalogXlsx, validRow } from '../helpers/catalog-fixture';
 import { testPoolBin } from '@/mocks/bin-registry';
@@ -90,7 +91,7 @@ test.afterAll(async () => {
 
 test('cart_with_three_suppliers_creates_three_orders_in_one_click', async () => {
   await open(storePage, '/ru/feed');
-  await storePage.getByTestId('mode-list').click();
+  await toList(storePage);
 
   // Берём по одному товару у каждого из трёх своих поставщиков.
   for (let index = 0; index < 3; index += 1) {
@@ -99,9 +100,7 @@ test('cart_with_three_suppliers_creates_three_orders_in_one_click', async () => 
     await expect(storePage.getByTestId('list-table')).toContainText(name);
     await expect(storePage.getByTestId('list-table').getByRole('row')).toHaveCount(1);
     const input = storePage.getByTestId('list-table').getByRole('row').first().getByRole('textbox');
-    await input.fill('2');
-    await input.blur();
-    await expect(input).toHaveValue('2');
+    await setListQuantity(input, '2');
   }
 
   await open(storePage, '/ru/cart');

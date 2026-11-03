@@ -7,8 +7,15 @@ import { prisma } from '@/lib/prisma';
 import { FeedScreen } from './feed-screen';
 import { getCartGroups } from '@/lib/cart/cart';
 
-export default async function FeedPage({ params }: { params: Promise<{ locale: string }> }) {
+export default async function FeedPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ locale: string }>;
+  searchParams: Promise<{ view?: string }>;
+}) {
   const { locale } = await params;
+  const { view } = await searchParams;
   setRequestLocale(locale);
 
   const store = await getStoreContext();
@@ -33,6 +40,7 @@ export default async function FeedPage({ params }: { params: Promise<{ locale: s
 
   return (
     <FeedScreen
+      initialMode={view === 'list' ? 'list' : 'auto'}
       locale={locale === 'kk' ? 'kk' : 'ru'}
       cityName={locale === 'kk' ? city.nameKk : city.nameRu}
       initialSwipeOffers={swipeOffers}

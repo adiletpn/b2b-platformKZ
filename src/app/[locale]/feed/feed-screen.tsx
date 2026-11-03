@@ -18,6 +18,7 @@ import { GeographyPanel } from './geography-panel';
 import type { OfferDetails } from '@/lib/feed/offer-details';
 import type { FeedOffer, Option } from './types';
 import { EmptyState, Page } from '@/components/ui/page';
+import { cn } from '@/lib/utils';
 
 type Mode = 'auto' | 'swipe' | 'list';
 
@@ -31,6 +32,7 @@ export function FeedScreen({
   brands,
   cartQuantities,
   initialCartGroups,
+  initialMode = 'auto',
 }: {
   locale: 'ru' | 'kk';
   cityName: string;
@@ -41,9 +43,20 @@ export function FeedScreen({
   brands: string[];
   cartQuantities: Record<string, string>;
   initialCartGroups: CartSupplierGroup[];
+  /** «Список» в нижней панели открывает ленту с ?view=list (макет M05). */
+  initialMode?: Mode;
 }) {
   const t = useTranslations('feed');
-  const [mode, setMode] = useState<Mode>('auto');
+  const [mode, setModeState] = useState<Mode>(initialMode);
+  // Режим живёт и в адресе: по нему нижняя панель подсвечивает «Ленту» или «Список».
+  function setMode(next: Mode) {
+    setModeState(next);
+    window.history.replaceState(
+      null,
+      '',
+      next === 'list' ? '?view=list' : window.location.pathname,
+    );
+  }
   const [swipeOffers, setSwipeOffers] = useState(initialSwipeOffers);
   /** Последний отправленный свайп: «отменить» ждёт его, чтобы не обогнать запись. */
   const lastSwipe = useRef<Promise<unknown> | null>(null);
@@ -276,8 +289,9 @@ export function FeedScreen({
           </div>
         </div>
         <div className="flex-1 lg:order-1" />
+        {/* На телефоне переключатель есть только в списке (M05), у свайпа его нет (M03). */}
         <Segmented
-          className="w-full lg:order-3 lg:w-auto"
+          className={cn('w-full lg:order-3 lg:w-auto', mode !== 'list' && 'max-md:hidden')}
           value={swipeActive}
           onChange={(next) => setMode(next)}
           options={[

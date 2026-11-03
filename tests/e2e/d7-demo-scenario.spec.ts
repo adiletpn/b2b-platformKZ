@@ -1,3 +1,4 @@
+import { toSwipe } from '../helpers/e2e-flow';
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 import { buildCatalogXlsx, validRow } from '../helpers/catalog-fixture';
 import { testPoolBin } from '@/mocks/bin-registry';
@@ -149,7 +150,7 @@ test('criterion_3_store_picks_products_by_swipe_and_in_list', async ({}, testInf
 
   // Свайп на телефоне.
   await storePage.setViewportSize(PHONE_WIDTH);
-  await storePage.getByTestId('mode-swipe').click();
+  await toSwipe(storePage);
   const card = storePage.getByTestId('swipe-card');
   await expect(card).toBeVisible();
   const firstOffer = await card.getAttribute('data-offer-id');

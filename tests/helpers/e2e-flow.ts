@@ -113,3 +113,12 @@ export async function bringOrderToPayment(pair: Pair, orderPath: string) {
   await storePage.getByTestId('to-payment').click();
   await expect(storePage.getByTestId('order-status')).toHaveText('Ожидает оплаты');
 }
+
+/**
+ * Свайп в ленте. На телефоне свайп — режим по умолчанию и переключателя у него нет
+ * (макет M03), переключатель появляется только в «Списке» (M05).
+ */
+export async function toSwipe(page: Page) {
+  const toggle = page.getByTestId('mode-swipe');
+  if (await toggle.isVisible()) await toggle.click();
+}

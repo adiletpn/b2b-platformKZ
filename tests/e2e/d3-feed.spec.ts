@@ -1,3 +1,4 @@
+import { toSwipe } from '../helpers/e2e-flow';
 import { expect, test, type Page } from '@playwright/test';
 import { buildCatalogXlsx, validRow } from '../helpers/catalog-fixture';
 import { testPoolBin } from '@/mocks/bin-registry';
@@ -135,7 +136,7 @@ test('store_feed_shows_only_suppliers_delivering_to_its_city', async () => {
 });
 
 test('swipe_card_shows_photo_and_supplier_rating', async () => {
-  await page.getByTestId('mode-swipe').click();
+  await toSwipe(page);
   await expect(page.getByTestId('swipe-card')).toBeVisible();
 
   // Фото нет — показывается плитка-заглушка вместо пустого места.
@@ -148,7 +149,7 @@ test('swipe_card_shows_photo_and_supplier_rating', async () => {
 });
 
 test('store_picks_products_by_swiping_on_phone', async () => {
-  await page.getByTestId('mode-swipe').click();
+  await toSwipe(page);
 
   const card = page.getByTestId('swipe-card');
   await expect(card).toBeVisible();
@@ -227,7 +228,7 @@ test('repeat_last_order_reports_no_history_before_first_order', async () => {
 
 test('swipe_up_sends_card_to_favorites', async () => {
   await open(page, '/ru/feed');
-  await page.getByTestId('mode-swipe').click();
+  await toSwipe(page);
   const card = page.getByTestId('swipe-card');
   await expect(card).toBeVisible();
   const favorite = await card.getAttribute('data-offer-id');
@@ -253,7 +254,7 @@ test('swipe_up_sends_card_to_favorites', async () => {
 
 test('tap_on_card_opens_details_with_price_comparison', async () => {
   await open(page, '/ru/feed');
-  await page.getByTestId('mode-swipe').click();
+  await toSwipe(page);
   await expect(page.getByTestId('swipe-card')).toBeVisible();
 
   await page.getByTestId('swipe-details').click();

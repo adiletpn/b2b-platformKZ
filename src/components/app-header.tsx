@@ -214,7 +214,8 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      <header className="border-border bg-background/90 lg:bg-sidebar lg:text-sidebar-foreground sticky top-0 z-30 flex flex-wrap items-center gap-x-3 px-4 pt-2.5 backdrop-blur sm:px-6 lg:fixed lg:inset-y-0 lg:left-0 lg:w-[248px] lg:flex-col lg:flex-nowrap lg:items-stretch lg:border-r lg:px-4 lg:pt-[22px] lg:backdrop-blur-none">
+      {/* На телефоне шапки нет, как в макете M03–M13: у экрана свой заголовок, язык и выход — в «Кабинете». */}
+      <header className="border-border bg-background/90 lg:bg-sidebar lg:text-sidebar-foreground sticky top-0 z-30 flex flex-wrap items-center gap-x-3 px-4 pt-2.5 backdrop-blur max-lg:hidden sm:px-6 lg:fixed lg:inset-y-0 lg:left-0 lg:w-[248px] lg:flex-col lg:flex-nowrap lg:items-stretch lg:border-r lg:px-4 lg:pt-[22px] lg:backdrop-blur-none">
         <div className="order-1 flex min-w-0 items-center lg:px-2 lg:pb-5">
           <Brand name={tApp('name')} href="/dashboard" compact />
         </div>

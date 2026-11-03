@@ -195,7 +195,7 @@ export default async function OrdersPage({
                             )}
                             data-testid={`order-row-${order.number}`}
                           >
-                            <td className="px-4 py-3.5 text-[13px] font-extrabold whitespace-nowrap max-md:flex-1 max-md:p-0 max-md:font-sans max-md:text-[15px] max-md:font-extrabold">
+                            <td className="px-4 py-3.5 text-[13px] font-extrabold whitespace-nowrap max-md:min-w-0 max-md:flex-1 max-md:truncate max-md:p-0 max-md:font-sans max-md:text-[15px] max-md:font-extrabold">
                               {/* На широком экране номер выбирает заявку для правой панели (D02). */}
                               <Link
                                 href={selectHref(order.id)}

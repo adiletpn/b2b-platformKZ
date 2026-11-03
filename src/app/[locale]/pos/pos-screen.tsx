@@ -26,6 +26,7 @@ import { cn } from '@/lib/utils';
 import { CameraScanButton } from '@/components/camera-scanner';
 import { NotYetButton } from '@/components/ui/not-yet';
 import { money as formatMoney } from '@/lib/format';
+import { usePhoneCode } from '@/lib/sms/use-phone-code';
 
 type Product = {
   productId: string;
@@ -187,6 +188,7 @@ export function PosScreen({
   const [approval, setApproval] = useState<{ phone: string; code: string; issued?: string } | null>(
     null,
   );
+  const phoneCode = usePhoneCode();
   const [pending, setPending] = useState(false);
   const today = new Date(Date.now() + 5 * 3_600_000).toISOString().slice(0, 10);
   const [period, setPeriod] = useState({ from: today, to: today });
@@ -489,13 +491,32 @@ export function PosScreen({
     if (!lastReceipt) return;
     setPending(true);
     setError(null);
+    // Код старшего превращается в подтверждение: у Firebase — ID-токен, у мока — сам код.
+    let proof: { approverCode?: string; approverIdToken?: string } = {};
+    if (approval?.code) {
+      const proved = await phoneCode.prove(approval.code);
+      if (!proved.ok) {
+        setPending(false);
+        setError({
+          key:
+            proved.error === 'invalid' || proved.error === 'expired'
+              ? 'invalid_code'
+              : proved.error,
+        });
+        return;
+      }
+      proof =
+        'idToken' in proved.proof
+          ? { approverIdToken: proved.proof.idToken }
+          : { approverCode: proved.proof.code };
+    }
     const response = await fetch('/api/pos/refund', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
         receiptId: lastReceipt.id,
         approverPhone: approval?.phone,
-        approverCode: approval?.code,
+        ...proof,
       }),
     });
     const data = (await response.json().catch(() => ({}))) as { status?: string; error?: string };
@@ -522,12 +543,22 @@ export function PosScreen({
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ action: 'request_code', approverPhone: approval.phone }),
     });
-    const data = (await response.json().catch(() => ({}))) as { status?: string; code?: string };
-    if (data.status !== 'ok') {
+    const data = (await response.json().catch(() => ({}))) as {
+      status?: string;
+      code?: string;
+      phone?: string;
+      via?: 'firebase' | 'mock';
+    };
+    if (data.status !== 'ok' || !data.phone) {
       setError({ key: data.status ?? 'unknown' });
       return;
     }
-    // У мока SMS код в ответе, с настоящим провайдером он только в SMS старшему.
+    // С Firebase код старшему отправляет браузер кассы; у мока код приходит в ответе.
+    const sent = await phoneCode.send({ phone: data.phone, via: data.via });
+    if (!sent.ok) {
+      setError({ key: sent.error });
+      return;
+    }
     setApproval({ ...approval, issued: data.code ?? '' });
   }
 

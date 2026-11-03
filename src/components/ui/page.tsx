@@ -42,7 +42,8 @@ function PageHeader({
 }) {
   return (
     <header className="border-border mb-4 flex flex-wrap items-center justify-between gap-3 pt-1.5 lg:-mx-8 lg:mb-6 lg:min-h-20 lg:border-b lg:px-8 lg:py-3">
-      <div className="flex min-w-0 flex-1 items-center gap-3">
+      {/* Основа 14rem: кнопки уходят на новую строку, а не сжимают заголовок в столбик. */}
+      <div className="flex min-w-0 flex-[1_1_14rem] items-center gap-3">
         {leading}
         <div className="min-w-0">
           <h1 className="text-[28px] leading-tight font-black tracking-[-0.025em] break-words lg:text-2xl lg:tracking-[-0.02em]">

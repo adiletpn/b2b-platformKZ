@@ -1,48 +1,41 @@
 import { randomInt } from 'node:crypto';
 import { prisma } from '@/lib/prisma';
-import { isSmsLive, sendCodeSms } from '@/lib/sms/sms';
+import { deliverCode, isSmsLive, type PhoneProof } from '@/lib/sms/sms';
+import { verifyFirebasePhone } from '@/lib/sms/firebase';
 import { acceptPendingInvitations } from '@/lib/employees/invitations';
 
 const CODE_TTL_MINUTES = 5;
 const MAX_ATTEMPTS = 5;
-/** Настоящее SMS стоит денег: повторный код на тот же номер не чаще раза в минуту. */
-const RESEND_SECONDS = 60;
 
 function generateCode(): string {
-  // Код уходит в настоящих SMS: генератор должен быть криптостойким, а не Math.random.
   return String(randomInt(100000, 1000000));
 }
 
 export type IssueResult =
-  /** code есть только у мока SMS: тогда его показывает интерфейс демо. */
-  | { ok: true; code: string | null; expiresAt: Date }
+  /**
+   * via: 'firebase' — код отправит браузер через Firebase, сервер его не знает;
+   * via: 'mock' — код есть в ответе, его показывает интерфейс демо.
+   */
+  | { ok: true; via: 'firebase'; code: null; expiresAt: Date }
+  | { ok: true; via: 'mock'; code: string; expiresAt: Date }
   | { ok: false; error: 'sms_failed' | 'too_many_requests' };
 
-export async function issueLoginCode(
-  phone: string,
-  locale: 'ru' | 'kk' = 'ru',
-): Promise<IssueResult> {
-  if (isSmsLive()) {
-    const recent = await prisma.otpCode.findFirst({
-      where: { phone, createdAt: { gt: new Date(Date.now() - RESEND_SECONDS * 1000) } },
-    });
-    if (recent) return { ok: false, error: 'too_many_requests' };
-  }
+export async function issueLoginCode(phone: string): Promise<IssueResult> {
+  const expiresAt = new Date(Date.now() + CODE_TTL_MINUTES * 60 * 1000);
+  // С Firebase код генерирует и ограничивает по частоте сам Firebase: в базе его нет.
+  if (isSmsLive()) return { ok: true, via: 'firebase', code: null, expiresAt };
 
   const code = generateCode();
-  const sent = await sendCodeSms(phone, code, locale);
-  if (!sent.ok) return { ok: false, error: sent.error };
-
-  const expiresAt = new Date(Date.now() + CODE_TTL_MINUTES * 60 * 1000);
+  deliverCode(phone, code);
   await prisma.otpCode.create({ data: { phone, code, expiresAt } });
-  return { ok: true, code: sent.showCodeInUi ? code : null, expiresAt };
+  return { ok: true, via: 'mock', code, expiresAt };
 }
 
 export type VerifyResult =
   { ok: true; userId: string } | { ok: false; reason: 'invalid' | 'expired' };
 
-/** Проверка и гашение кода без входа: им же старший подтверждает возврат на кассе. */
-export async function consumeCode(
+/** Проверка и гашение кода мока без входа. */
+async function consumeMockCode(
   phone: string,
   code: string,
 ): Promise<{ ok: true } | { ok: false; reason: 'invalid' | 'expired' }> {
@@ -63,8 +56,27 @@ export async function consumeCode(
   return { ok: true };
 }
 
-export async function verifyLoginCode(phone: string, code: string): Promise<VerifyResult> {
-  const consumed = await consumeCode(phone, code);
+/**
+ * Подтверждение номера без входа: им же старший подтверждает возврат на кассе.
+ * С Firebase нужен ID-токен на этот номер, голый код не принимается — иначе
+ * код можно было бы подобрать, минуя Firebase.
+ */
+export async function consumeCode(
+  phone: string,
+  proof: PhoneProof,
+): Promise<{ ok: true } | { ok: false; reason: 'invalid' | 'expired' }> {
+  if (isSmsLive()) {
+    if (!proof.idToken) return { ok: false, reason: 'invalid' };
+    return (await verifyFirebasePhone(proof.idToken, phone))
+      ? { ok: true }
+      : { ok: false, reason: 'invalid' };
+  }
+  if (!proof.code) return { ok: false, reason: 'invalid' };
+  return consumeMockCode(phone, proof.code.trim());
+}
+
+export async function verifyLoginCode(phone: string, proof: PhoneProof): Promise<VerifyResult> {
+  const consumed = await consumeCode(phone, proof);
   if (!consumed.ok) return consumed;
 
   const user = await prisma.user.upsert({

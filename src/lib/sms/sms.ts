@@ -1,48 +1,38 @@
-import { createTranslator } from 'next-intl';
-import { maskPhone } from '@/lib/phone';
-import { reportError } from '@/mocks/monitoring';
 import { sendLoginCode as sendMockCode } from '@/mocks/sms';
-import { sendViaMobizon } from './mobizon';
-import ru from '../../../messages/ru.json';
-import kk from '../../../messages/kk.json';
+import { isFirebaseSmsLive } from './firebase';
 
 /**
- * Отправка кодов по SMS. Как остальные моки (CLAUDE.md, «Моки»): без `SMS_API_KEY`
- * работает мок и код показывается в интерфейсе, с ключом код уходит провайдеру
- * и в ответах API его нет — иначе войти можно было бы под чужим номером.
+ * Коды по SMS. С Firebase (переменные NEXT_PUBLIC_FIREBASE_*) код отправляет и проверяет
+ * Firebase в браузере, сервер его не знает и проверяет только ID-токен с номером.
+ * Без Firebase работает мок, как остальные моки (CLAUDE.md, «Моки»): код генерирует
+ * сервер и показывает его в интерфейсе.
  */
-export type SmsSendResult =
-  | { ok: true; providerMessageId: string; showCodeInUi: boolean }
-  | { ok: false; error: 'sms_failed' };
+export type CodeDelivery = { via: 'firebase' } | { via: 'mock'; code: string };
 
 export function isSmsLive(): boolean {
-  return Boolean(process.env.SMS_API_KEY);
+  return isFirebaseSmsLive();
 }
 
-export async function sendCodeSms(
-  phone: string,
-  code: string,
-  locale: 'ru' | 'kk' = 'ru',
-): Promise<SmsSendResult> {
-  const apiKey = process.env.SMS_API_KEY;
-  if (!apiKey) {
-    const mock = sendMockCode(phone, code);
-    return { ok: true, providerMessageId: mock.providerMessageId, showCodeInUi: true };
-  }
+/** Доставка кода: у Firebase его шлёт клиент, у мока код уходит в лог и в интерфейс. */
+export function deliverCode(phone: string, code: string): CodeDelivery {
+  if (isSmsLive()) return { via: 'firebase' };
+  sendMockCode(phone, code);
+  return { via: 'mock', code };
+}
 
-  const t = createTranslator({ locale, messages: locale === 'kk' ? kk : ru, namespace: 'sms' });
-  const result = await sendViaMobizon(phone, t('loginCode', { code }), {
-    apiKey,
-    sender: process.env.SMS_SENDER || undefined,
-  });
+/**
+ * Подтверждение номера: код из мока или ID-токен Firebase. Какой из двух нужен,
+ * решает сервер по isSmsLive(): с Firebase голый код не принимается.
+ */
+export type PhoneProof = { code?: string; idToken?: string };
 
-  // Правило 11: номер в логе и в мониторинге только маской.
-  if (!result.ok) {
-    reportError(new Error(`SMS не отправлено на ${maskPhone(phone)}: ${result.reason}`), {
-      provider: 'mobizon',
-    });
-    return { ok: false, error: 'sms_failed' };
-  }
-  console.info(`[sms-mobizon] код входа отправлен на ${maskPhone(phone)}`);
-  return { ok: true, providerMessageId: result.messageId, showCodeInUi: false };
+export function readProof(body: { code?: unknown; idToken?: unknown }): PhoneProof {
+  return {
+    ...(typeof body.code === 'string' ? { code: body.code } : {}),
+    ...(typeof body.idToken === 'string' ? { idToken: body.idToken } : {}),
+  };
+}
+
+export function hasProof(proof: PhoneProof): boolean {
+  return Boolean(proof.code || proof.idToken);
 }

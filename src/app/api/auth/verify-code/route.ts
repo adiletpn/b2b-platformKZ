@@ -3,13 +3,19 @@ import { verifyLoginCode } from '@/lib/auth/otp';
 import { createSession } from '@/lib/auth/session';
 import { normalizePhone } from '@/lib/phone';
 import { prisma } from '@/lib/prisma';
+import { hasProof, readProof } from '@/lib/sms/sms';
 
 export async function POST(request: Request) {
-  const body = (await request.json()) as { phone?: string; code?: string };
+  const body = (await request.json().catch(() => ({}))) as {
+    phone?: string;
+    code?: string;
+    idToken?: string;
+  };
   const phone = normalizePhone(body.phone ?? '');
-  if (!phone || !body.code) return NextResponse.json({ error: 'invalid_phone' }, { status: 400 });
+  const proof = readProof(body);
+  if (!phone || !hasProof(proof)) return NextResponse.json({ error: 'invalid_phone' }, { status: 400 });
 
-  const result = await verifyLoginCode(phone, body.code);
+  const result = await verifyLoginCode(phone, proof);
   if (!result.ok) return NextResponse.json({ error: result.reason }, { status: 400 });
 
   const user = await prisma.user.findUnique({

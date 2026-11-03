@@ -21,5 +21,9 @@ export async function POST(request: Request) {
     );
   }
   // Код в ответе только у мока SMS, как во входе компаний.
-  return NextResponse.json({ phone, ...(issued.code ? { code: issued.code } : {}) });
+  return NextResponse.json({
+    phone,
+    via: issued.via,
+    ...(issued.code ? { code: issued.code } : {}),
+  });
 }

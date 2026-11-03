@@ -9,6 +9,7 @@ import { Field } from '@/components/ui/field';
 import { Page, PageHeader } from '@/components/ui/page';
 import { PERMISSION_ACTIONS, PERMISSION_SECTIONS } from '@/lib/employees/permission-matrix';
 import { money } from '@/lib/format';
+import { usePhoneCode } from '@/lib/sms/use-phone-code';
 
 type Role = { id: string; code: string; name: string; isTemplate: boolean };
 type Location = { id: string; address: string };
@@ -65,6 +66,7 @@ export function EmployeesScreen({
   const [transferTo, setTransferTo] = useState('');
   const [transferCode, setTransferCode] = useState('');
   const [transferred, setTransferred] = useState(false);
+  const phoneCode = usePhoneCode();
 
   const [editing, setEditing] = useState<string | null>(null);
   const [accessSaved, setAccessSaved] = useState(false);
@@ -135,21 +137,38 @@ export function EmployeesScreen({
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ membershipId: transferTo }),
     });
-    const data = (await response.json()) as { status?: string; transferId?: string; code?: string };
-    if (data.status !== 'ok' || !data.transferId) {
+    const data = (await response.json()) as {
+      status?: string;
+      transferId?: string;
+      code?: string;
+      phone?: string;
+      via?: 'firebase' | 'mock';
+    };
+    if (data.status !== 'ok' || !data.transferId || !data.phone) {
       setError(data.status ?? 'unknown');
       return;
     }
-    // У мока SMS код приходит в ответе и показывается на экране.
+    // С Firebase код на номер Владельца отправляет браузер; у мока он приходит в ответе.
+    const sent = await phoneCode.send({ phone: data.phone, via: data.via });
+    if (!sent.ok) {
+      setError(sent.error);
+      return;
+    }
     setTransfer({ id: data.transferId, code: data.code ?? '' });
   }
 
   async function confirmTransfer() {
     if (!transfer) return;
+    setError(null);
+    const proved = await phoneCode.prove(transferCode);
+    if (!proved.ok) {
+      setError(proved.error === 'invalid' ? 'invalid_code' : proved.error);
+      return;
+    }
     // Без обновления: прежний Владелец теряет доступ к экрану, а итог должен остаться виден.
     const ok = await send(
       '/api/company/owner',
-      { transferId: transfer.id, code: transferCode },
+      { transferId: transfer.id, ...proved.proof },
       'POST',
       false,
     );

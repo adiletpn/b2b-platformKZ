@@ -702,7 +702,8 @@ export function FeedScreen({
           </div>
 
           {/* Корзина справа (макет D01): группы по поставщикам и отправка заявок. */}
-          <aside className="border-border bg-card hidden w-[320px] shrink-0 flex-col gap-3 self-start rounded-[20px] border p-[22px] xl:flex">
+          {/* Корзина справа (D01): колонка 360 px во всю высоту под шапкой, итог внизу. */}
+          <aside className="border-border bg-card sticky top-0 -mt-5 -mr-8 -mb-8 hidden h-[calc(100vh-5rem)] w-[360px] shrink-0 flex-col gap-3 overflow-y-auto border-l p-[22px] xl:flex">
             <div className="flex items-baseline justify-between gap-2">
               <span className="text-xl font-black">{t('cartPanel')}</span>
               <span className="text-muted-foreground text-[13px] font-semibold">
@@ -716,12 +717,13 @@ export function FeedScreen({
                 {cartGroups.map((group, index) => (
                   <CartGroupCard key={group.supplierId} group={group} index={index} />
                 ))}
+                <div className="flex-1" />
                 <div className="mt-1 flex items-baseline justify-between">
                   <span className="text-muted-foreground text-sm font-semibold">{t('total')}</span>
                   <span className="text-2xl font-black tabular-nums">{money(cartTotal)} ₸</span>
                 </div>
                 <Link href="/cart" className={buttonVariants({ size: 'lg' })}>
-                  {t('sendOrders')}
+                  {t('sendOrders', { count: cartGroups.length })}
                 </Link>
               </>
             )}

@@ -41,6 +41,7 @@ export default async function PosPage({ params }: { params: Promise<{ locale: st
           productId: balance.productId,
           name: locale === 'kk' ? balance.product.nameKk : balance.product.nameRu,
           barcode: balance.product.barcode,
+          photoUrl: balance.product.photoUrls[0] ?? null,
           price: priceByProduct.get(balance.productId)!.toFixed(2),
           stock: balance.quantity.toFixed(3),
           isMarked: balance.product.isMarked,

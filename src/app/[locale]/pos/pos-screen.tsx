@@ -25,13 +25,16 @@ import { Page, PageHeader } from '@/components/ui/page';
 import { cn } from '@/lib/utils';
 import { CameraScanButton } from '@/components/camera-scanner';
 import { NotYetButton } from '@/components/ui/not-yet';
-import { money as formatMoney } from '@/lib/format';
+import { money as formatMoney, quantity as formatQuantity } from '@/lib/format';
+import { ProductPhoto } from '@/components/product-photo';
 import { usePhoneCode } from '@/lib/sms/use-phone-code';
 
 type Product = {
   productId: string;
   name: string;
   barcode: string;
+  /** Фото плитки (макет D08); без фото — заглушка. */
+  photoUrl?: string | null;
   price: string;
   stock: string;
   /** Маркированный: каждая единица продаётся со своим кодом DataMatrix. */
@@ -740,8 +743,9 @@ export function PosScreen({
                   aria-hidden
                   className="text-muted-foreground absolute top-3.5 left-3 size-4"
                 />
+                {/* Макет D08: поле сканера — главное на кассе, оранжевая рамка. */}
                 <Input
-                  className="pl-9"
+                  className="border-primary h-14 rounded-[18px] border-2 pl-9 text-base"
                   value={scan}
                   placeholder={t('scanPlaceholder')}
                   data-testid="pos-scan"
@@ -774,24 +778,30 @@ export function PosScreen({
           </div>
 
           <ul
-            className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-4"
+            className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5"
             data-testid="pos-tiles"
           >
             {visible.map((product) => (
               <li key={product.productId}>
                 <button
                   type="button"
-                  className="border-border hover:border-primary hover:bg-primary-soft/40 flex h-full w-full flex-col justify-between gap-2 rounded-2xl border p-3 text-left text-sm transition-colors active:scale-[0.98]"
+                  className="border-border bg-card hover:border-primary flex w-full flex-col gap-2 rounded-[18px] border p-2.5 text-left transition-colors active:scale-[0.98]"
                   data-testid="pos-tile"
                   onClick={() => add(product)}
                 >
-                  <span className="line-clamp-2 font-medium break-words">{product.name}</span>
+                  {/* Макет D08: фото на бежевом, название в две строки, цена крупно. */}
+                  <span className="grid h-24 place-items-center rounded-xl bg-[#f6f2ec]">
+                    <ProductPhoto src={product.photoUrl ?? null} name={product.name} size="md" />
+                  </span>
+                  <span className="line-clamp-2 h-8 text-[13px] leading-tight font-bold break-words">
+                    {product.name}
+                  </span>
                   <span className="flex items-baseline justify-between gap-2">
-                    <span className="font-semibold tabular-nums">
+                    <span className="text-[15px] font-black tabular-nums">
                       {formatMoney(product.price)} ₸
                     </span>
-                    <span className="text-muted-foreground text-xs tabular-nums">
-                      {product.stock}
+                    <span className="text-muted-foreground text-xs font-semibold tabular-nums">
+                      {formatQuantity(product.stock)}
                     </span>
                   </span>
                 </button>

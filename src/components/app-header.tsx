@@ -59,7 +59,8 @@ function Brand({
         className="size-8 shrink-0 rounded-[10px]"
       />
       <span
-        className={`truncate text-lg font-black tracking-[-0.03em] ${compact ? 'hidden sm:inline lg:inline' : ''}`}
+        // Название — рукописным шрифтом (просьба заказчика 3.11.2026), значок — Onest-сетка рядом.
+        className={`font-brand truncate pr-1 text-[27px] leading-none font-bold ${compact ? 'hidden sm:inline lg:inline' : ''}`}
       >
         {name}
       </span>

@@ -7,6 +7,9 @@ import { Input } from '@/components/ui/input';
 import { Field } from '@/components/ui/field';
 import { Page, PageHeader } from '@/components/ui/page';
 import type { CatalogRow } from '@/lib/catalog/offer-row';
+import { ProductPhoto } from '@/components/product-photo';
+import { Badge } from '@/components/ui/badge';
+import { money, quantity } from '@/lib/format';
 import { Notice } from '@/components/ui/field';
 import { CATALOG_COLUMNS } from '@/lib/catalog/columns';
 import { ManualOfferForm } from './manual-offer-form';
@@ -281,33 +284,73 @@ export function CatalogScreen({
         {offers.length === 0 ? (
           <p className="text-muted-foreground mt-4 text-sm">{t('empty')}</p>
         ) : (
-          <div className="mt-3 overflow-x-auto">
-            <table className="w-full min-w-[640px] text-sm">
-              <thead className="text-muted-foreground text-left">
+          // Макет D04: товар с фото и штрихкодом, категория, цены без и с НДС, остаток
+          // («Нет в наличии» плашкой), минимальная партия и признаки товара.
+          <div className="border-border -mx-4 mt-3 overflow-x-auto border-t sm:-mx-5">
+            <table className="w-full min-w-[860px] text-sm">
+              <thead className="text-left">
                 <tr>
-                  <th className="py-2 pr-3 font-medium">{t('columns.name')}</th>
-                  <th className="py-2 pr-3 font-medium">{t('columns.barcode')}</th>
-                  <th className="py-2 pr-3 text-right font-medium">{t('columns.price')}</th>
-                  <th className="py-2 pr-3 text-right font-medium">{t('columns.priceWithVat')}</th>
-                  <th className="py-2 pr-3 text-right font-medium">{t('columns.vat')}</th>
-                  <th className="py-2 pr-3 text-right font-medium">{t('columns.stock')}</th>
+                  <th className="px-4 py-2.5 sm:pl-5">{t('columns.name')}</th>
+                  <th className="px-4 py-2.5">{t('columns.category')}</th>
+                  <th className="px-4 py-2.5 text-right">{t('columns.price')}</th>
+                  <th className="px-4 py-2.5 text-right">
+                    {t('columns.priceWithVatRate', {
+                      rate: offers[0] ? Number(offers[0].vatRate) : 0,
+                    })}
+                  </th>
+                  <th className="px-4 py-2.5 text-right">{t('columns.stock')}</th>
+                  <th className="px-4 py-2.5 text-right">{t('columns.minBatch')}</th>
+                  <th className="px-4 py-2.5 sm:pr-5">{t('columns.flags')}</th>
                 </tr>
               </thead>
               <tbody className="divide-border divide-y" data-testid="offers-table">
-                {offers.map((offer) => (
-                  <tr key={offer.id}>
-                    <td className="py-2 pr-3">{locale === 'kk' ? offer.nameKk : offer.nameRu}</td>
-                    <td className="py-2 pr-3 text-[13px] font-bold tabular-nums">
-                      {offer.barcode}
-                    </td>
-                    <td className="py-2 pr-3 text-right tabular-nums">{offer.priceWithoutVat}</td>
-                    <td className="py-2 pr-3 text-right tabular-nums">{offer.priceWithVat}</td>
-                    <td className="py-2 pr-3 text-right tabular-nums">{offer.vatRate}</td>
-                    <td className="py-2 pr-3 text-right tabular-nums">
-                      {offer.stock} {locale === 'kk' ? offer.unitKk : offer.unitRu}
-                    </td>
-                  </tr>
-                ))}
+                {offers.map((offer) => {
+                  const name = locale === 'kk' ? offer.nameKk : offer.nameRu;
+                  const unit = locale === 'kk' ? offer.unitKk : offer.unitRu;
+                  const outOfStock = Number(offer.stock) <= 0;
+                  return (
+                    <tr key={offer.id}>
+                      <td className="px-4 py-3 sm:pl-5">
+                        <div className="flex items-center gap-3">
+                          <ProductPhoto src={offer.photoUrl} name={name} size="sm" />
+                          <div className="min-w-0">
+                            <p className="font-bold break-words">{name}</p>
+                            <p className="text-muted-foreground text-xs font-semibold tabular-nums">
+                              {offer.barcode}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        {(locale === 'kk' ? offer.categoryKk : offer.categoryRu) ?? '—'}
+                      </td>
+                      <td className="px-4 py-3 text-right whitespace-nowrap tabular-nums">
+                        {money(offer.priceWithoutVat)} ₸
+                      </td>
+                      <td className="px-4 py-3 text-right font-extrabold whitespace-nowrap tabular-nums">
+                        {money(offer.priceWithVat)} ₸
+                      </td>
+                      <td className="px-4 py-3 text-right whitespace-nowrap tabular-nums">
+                        {outOfStock ? (
+                          <Badge tone="danger">{t('outOfStock')}</Badge>
+                        ) : (
+                          <span className="font-extrabold">
+                            {quantity(offer.stock)} {unit}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-right whitespace-nowrap tabular-nums">
+                        {quantity(offer.minBatch)} {unit}
+                      </td>
+                      <td className="px-4 py-3 sm:pr-5">
+                        <div className="flex flex-wrap gap-1">
+                          {offer.isMarked ? <Badge tone="info">{t('flagMarked')}</Badge> : null}
+                          {offer.requiresSnt ? <Badge>{t('flagSnt')}</Badge> : null}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

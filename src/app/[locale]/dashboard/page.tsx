@@ -70,7 +70,8 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
     <Page width="lg">
       <PageHeader
         title={tHome('greeting')}
-        description={company.name}
+        // Макет M13: на телефоне под заголовком ничего, компания — в карточке ниже.
+        description={<span className="max-lg:hidden">{company.name}</span>}
         actions={
           // На телефоне разделы — в нижней панели и списке ниже (M13), кнопок в шапке нет.
           <div className="hidden flex-wrap items-center gap-2.5 lg:flex">

@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { notFound } from 'next/navigation';
 import { hasLocale, NextIntlClientProvider } from 'next-intl';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { Onest } from 'next/font/google';
+import { Dancing_Script, Onest } from 'next/font/google';
 import { routing } from '@/i18n/routing';
 import { AppShell } from '@/components/app-header';
 import { ServiceWorkerRegistration } from '@/components/service-worker';
@@ -20,6 +20,15 @@ const onest = Onest({
   subsets: ['latin', 'cyrillic', 'cyrillic-ext'],
   weight: ['400', '500', '600', '700', '800', '900'],
   variable: '--font-onest',
+  display: 'swap',
+});
+
+// Рукописный шрифт названия в логотипе (просьба заказчика 3.11.2026). Только латиница:
+// «Arbafind» пишется латиницей на обоих языках.
+const brand = Dancing_Script({
+  subsets: ['latin'],
+  weight: ['700'],
+  variable: '--font-dancing',
   display: 'swap',
 });
 
@@ -49,7 +58,7 @@ export default async function LocaleLayout({
   setRequestLocale(locale);
 
   return (
-    <html lang={locale} className={onest.variable}>
+    <html lang={locale} className={`${onest.variable} ${brand.variable}`}>
       <body>
         <NextIntlClientProvider>
           {/* Шапка общая: разделы, язык и выход доступны с любого экрана. */}

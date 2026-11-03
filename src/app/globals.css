@@ -33,6 +33,7 @@
   --shadow-card: var(--shadow-soft);
   --shadow-lift: var(--shadow-strong);
   --shadow-cta: var(--shadow-primary);
+  --font-brand: var(--font-dancing), 'Dancing Script', cursive;
   --font-sans: var(--font-onest), 'Onest', 'SF Pro Text', 'Segoe UI', 'Roboto', Arial, sans-serif;
 }
 

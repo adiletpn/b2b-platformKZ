@@ -22,6 +22,7 @@ export async function POST(request: Request) {
     action?: string;
     approverPhone?: string;
     approverCode?: string;
+    approverIdToken?: string;
   };
 
   if (body.action === 'request_code') {
@@ -31,10 +32,13 @@ export async function POST(request: Request) {
 
   let approvedById: string | null = null;
   if (!(await hasPermission(guard.access, 'POS', 'UPDATE'))) {
-    if (!body.approverPhone || !body.approverCode) {
+    if (!body.approverPhone || !(body.approverCode || body.approverIdToken)) {
       return NextResponse.json({ status: 'approval_required' }, { status: 403 });
     }
-    const approval = await checkApproval(companyId, body.approverPhone, body.approverCode);
+    const approval = await checkApproval(companyId, body.approverPhone, {
+      ...(body.approverCode ? { code: body.approverCode } : {}),
+      ...(body.approverIdToken ? { idToken: body.approverIdToken } : {}),
+    });
     if (approval.status !== 'ok') return NextResponse.json(approval, { status: 400 });
     approvedById = approval.approverId;
   }

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requirePermission } from '@/lib/auth/permissions';
+import { readProof, hasProof } from '@/lib/sms/sms';
 import { confirmOwnerTransfer, requestOwnerTransfer } from '@/lib/registration/owner-transfer';
 
 /** Шаг 1: запрос кода. Шаг 2: подтверждение кодом (раздел 3.11 ТЗ). */
@@ -16,15 +17,17 @@ export async function POST(request: Request) {
     membershipId?: string;
     transferId?: string;
     code?: string;
+    idToken?: string;
   };
+  const proof = readProof(body);
 
   const result =
-    body.transferId && body.code !== undefined
+    body.transferId && hasProof(proof)
       ? await confirmOwnerTransfer(
           guard.access.companyId,
           guard.access.userId,
           body.transferId,
-          body.code,
+          proof,
         )
       : await requestOwnerTransfer(
           guard.access.companyId,

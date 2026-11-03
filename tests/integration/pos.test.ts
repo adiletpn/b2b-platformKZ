@@ -551,16 +551,16 @@ describe('маркировка, акциз и электронный чек (р�
 
     const issued = await requestApprovalCode(shop.companyId, owner.phone);
     expect(issued.status).toBe('ok');
-    expect(await checkApproval(shop.companyId, owner.phone, '000000')).toEqual({
+    expect(await checkApproval(shop.companyId, owner.phone, { code: '000000' })).toEqual({
       status: 'invalid_code',
     });
     const code = (issued as { code: string }).code;
-    expect(await checkApproval(shop.companyId, owner.phone, code)).toEqual({
+    expect(await checkApproval(shop.companyId, owner.phone, { code })).toEqual({
       status: 'ok',
       approverId: owner.id,
     });
     // Код одноразовый.
-    expect((await checkApproval(shop.companyId, owner.phone, code)).status).toBe('invalid_code');
+    expect((await checkApproval(shop.companyId, owner.phone, { code })).status).toBe('invalid_code');
   });
 
   it('recommendations_follow_sales_speed', async () => {

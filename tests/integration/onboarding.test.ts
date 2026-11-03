@@ -118,7 +118,7 @@ describe('передача прав Владельца', () => {
       store.companyId,
       store.ownerId,
       requested.transferId,
-      requested.code!,
+      { code: requested.code! },
     );
     expect(confirmed).toEqual({ status: 'ok', newOwnerMembershipId: employee.membershipId });
 
@@ -153,7 +153,9 @@ describe('передача прав Владельца', () => {
     if (requested.status !== 'ok') throw new Error(requested.status);
 
     expect(
-      await confirmOwnerTransfer(store.companyId, store.ownerId, requested.transferId, '000000'),
+      await confirmOwnerTransfer(store.companyId, store.ownerId, requested.transferId, {
+        code: '000000',
+      }),
     ).toEqual({ status: 'invalid_code' });
 
     const owner = await prisma.membership.findFirstOrThrow({
@@ -182,7 +184,7 @@ describe('передача прав Владельца', () => {
         store.companyId,
         store.ownerId,
         requested.transferId,
-        requested.code!,
+        { code: requested.code! },
       ),
     ).toEqual({ status: 'expired' });
   });

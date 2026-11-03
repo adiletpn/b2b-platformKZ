@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma';
 import { normalizePhone } from '@/lib/phone';
 import { consumeCode, issueLoginCode } from '@/lib/auth/otp';
 import { hasPermission } from '@/lib/auth/permissions';
+import type { PhoneProof } from '@/lib/sms/sms';
 
 /**
  * Возврат чека с подтверждением старшего (разделы 4.2 и 3.12 ТЗ). Кассир без права
@@ -40,23 +41,31 @@ async function findSenior(companyId: string, rawPhone: string) {
   return { status: 'ok' as const, phone, userId: membership.userId };
 }
 
-/** Код старшему. У мока SMS он возвращается в ответе, как код входа. */
+/**
+ * Код старшему. У мока SMS он возвращается в ответе, как код входа; с Firebase
+ * (via: 'firebase') код старшему отправляет браузер кассы.
+ */
 export async function requestApprovalCode(companyId: string, rawPhone: string) {
   const senior = await findSenior(companyId, rawPhone);
   if (senior.status !== 'ok') return senior;
   const issued = await issueLoginCode(senior.phone);
   if (!issued.ok) return { status: issued.error };
-  return { status: 'ok' as const, ...(issued.code ? { code: issued.code } : {}) };
+  return {
+    status: 'ok' as const,
+    via: issued.via,
+    phone: senior.phone,
+    ...(issued.code ? { code: issued.code } : {}),
+  };
 }
 
 export async function checkApproval(
   companyId: string,
   rawPhone: string,
-  code: string,
+  proof: PhoneProof,
 ): Promise<ApprovalResult> {
   const senior = await findSenior(companyId, rawPhone);
   if (senior.status !== 'ok') return senior;
-  const consumed = await consumeCode(senior.phone, code.trim());
+  const consumed = await consumeCode(senior.phone, proof);
   if (!consumed.ok) return { status: 'invalid_code' };
   return { status: 'ok', approverId: senior.userId };
 }

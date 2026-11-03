@@ -1,21 +1,25 @@
 import { randomInt } from 'node:crypto';
 import { prisma } from '@/lib/prisma';
 import { writeAudit } from '@/lib/auth/permissions';
-import { sendCodeSms } from '@/lib/sms/sms';
+import { deliverCode, isSmsLive, type PhoneProof } from '@/lib/sms/sms';
+import { verifyFirebasePhone } from '@/lib/sms/firebase';
 import { notify } from '@/mocks/notifications';
 
 const CODE_TTL_MINUTES = 10;
 
 export type TransferRequest =
-  /** code есть только у мока SMS: тогда его показывает интерфейс демо. */
-  | { status: 'ok'; transferId: string; code?: string }
+  /**
+   * code есть только у мока SMS: тогда его показывает интерфейс демо. С Firebase
+   * (via: 'firebase') код на phone Владельца отправляет браузер.
+   */
+  | { status: 'ok'; transferId: string; via: 'firebase' | 'mock'; phone: string; code?: string }
   | { status: 'sms_failed' }
   | { status: 'not_owner' }
   | { status: 'not_found' };
 
 /**
  * Раздел 3.11 ТЗ: права Владельца передаются другому сотруднику с подтверждением кодом.
- * Код уходит Владельцу по SMS; у мока SMS он показывается в интерфейсе.
+ * Код уходит Владельцу по SMS (через Firebase); у мока SMS он показывается в интерфейсе.
  */
 export async function requestOwnerTransfer(
   companyId: string,
@@ -33,9 +37,10 @@ export async function requestOwnerTransfer(
   });
   if (!target || target.id === owner.id) return { status: 'not_found' };
 
+  // С Firebase код знает только Firebase: в базе остаётся случайное значение,
+  // подтверждение идёт ID-токеном на номер Владельца.
   const code = String(randomInt(100000, 1000000));
-  const sent = await sendCodeSms(owner.user.phone, code);
-  if (!sent.ok) return { status: 'sms_failed' };
+  const sent = deliverCode(owner.user.phone, code);
 
   const transfer = await prisma.ownerTransfer.create({
     data: {
@@ -52,7 +57,9 @@ export async function requestOwnerTransfer(
   return {
     status: 'ok',
     transferId: transfer.id,
-    ...(sent.showCodeInUi ? { code } : {}),
+    via: sent.via,
+    phone: owner.user.phone,
+    ...(sent.via === 'mock' ? { code } : {}),
   };
 }
 
@@ -67,7 +74,7 @@ export async function confirmOwnerTransfer(
   companyId: string,
   actorId: string,
   transferId: string,
-  code: string,
+  proof: PhoneProof,
 ): Promise<TransferResult> {
   const transfer = await prisma.ownerTransfer.findFirst({
     where: { id: transferId, companyId, confirmedAt: null },
@@ -76,10 +83,14 @@ export async function confirmOwnerTransfer(
 
   const owner = await prisma.membership.findFirst({
     where: { id: transfer.fromMembership, companyId, userId: actorId, role: 'OWNER' },
+    include: { user: { select: { phone: true } } },
   });
   if (!owner) return { status: 'not_found' };
   if (transfer.expiresAt < new Date()) return { status: 'expired' };
-  if (transfer.code !== code.trim()) return { status: 'invalid_code' };
+  const confirmed = isSmsLive()
+    ? proof.idToken !== undefined && (await verifyFirebasePhone(proof.idToken, owner.user.phone))
+    : proof.code !== undefined && transfer.code === proof.code.trim();
+  if (!confirmed) return { status: 'invalid_code' };
 
   const target = await prisma.membership.findFirstOrThrow({
     where: { id: transfer.toMembership, companyId },

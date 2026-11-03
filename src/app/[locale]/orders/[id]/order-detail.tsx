@@ -381,14 +381,18 @@ export function OrderDetail({
           </Link>
         }
         title={
-          <span className="text-[20px] lg:text-2xl">
+          // M08: заголовок 18/800 в одну строку, длинный номер сокращается.
+          <span className="block truncate text-[18px] font-extrabold lg:text-2xl lg:font-black">
             {t('orderTitle')} <span data-testid="order-number">{order.number}</span>
           </span>
         }
         description={`${order.counterparty} · ${order.createdOn}`}
         actions={
           <>
-            <OrderStatusBadge status={order.status} testId="order-status" />
+            {/* M08: на телефоне статус виден по шкале, в шапке справа только чат. */}
+            <span className="max-md:hidden">
+              <OrderStatusBadge status={order.status} testId="order-status" />
+            </span>
             <Button
               variant="secondary"
               size="icon"
@@ -589,13 +593,16 @@ export function OrderDetail({
         </table>
         <div className="border-border flex items-baseline justify-between gap-3 border-t px-4 py-3.5">
           {order.originalTotal !== order.total ? (
-            <span className="text-muted-foreground text-[15px] font-bold" data-testid="order-was">
+            <span
+              className="text-muted-foreground text-[13px] font-semibold whitespace-nowrap lg:text-[15px] lg:font-bold"
+              data-testid="order-was"
+            >
               {t('was')} <span className="line-through">{money(order.originalTotal)} ₸</span>
             </span>
           ) : (
             <span className="text-muted-foreground text-[15px] font-bold">{t('total')}</span>
           )}
-          <span className="text-[22px] font-black tracking-[-0.02em] tabular-nums">
+          <span className="text-[20px] font-black tracking-[-0.02em] whitespace-nowrap tabular-nums lg:text-[22px]">
             {order.originalTotal !== order.total ? `${t('became')} ` : ''}
             <span data-testid="order-total">{money(order.total)}</span> ₸
           </span>

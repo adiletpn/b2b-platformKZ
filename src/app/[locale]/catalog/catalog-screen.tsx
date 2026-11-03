@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { Download, Plus, Upload } from 'lucide-react';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Field } from '@/components/ui/field';
@@ -60,6 +61,7 @@ export function CatalogScreen({
   const t = useTranslations('catalog');
   const tDays = useTranslations('weekdays');
   const [file, setFile] = useState<File | null>(null);
+  const [manualOpen, setManualOpen] = useState(false);
   const [result, setResult] = useState<ImportResult | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -165,17 +167,41 @@ export function CatalogScreen({
 
   return (
     <Page width="lg">
-      <PageHeader title={t('title')} description={t('subtitle')} />
+      {/* Макет D04: в шапке число товаров и городов, «Шаблон Excel», «Загрузить Excel», «Добавить товар». */}
+      <PageHeader
+        title={t('title')}
+        description={t('summary', { count: total, cities: zones.length })}
+        actions={
+          <>
+            <a
+              href={`/api/catalog/template?locale=${locale}`}
+              className={buttonVariants({ variant: 'outline' })}
+              data-testid="download-template"
+            >
+              <Download aria-hidden />
+              {t('templateButton')}
+            </a>
+            <label
+              htmlFor="catalog-file"
+              className={`${buttonVariants({ variant: 'dark' })} cursor-pointer`}
+            >
+              <Upload aria-hidden />
+              {t('uploadButton')}
+            </label>
+            <a
+              href="#manual-offer"
+              className={buttonVariants()}
+              onClick={() => setManualOpen(true)}
+              data-testid="add-offer"
+            >
+              <Plus aria-hidden />
+              {t('addOffer')}
+            </a>
+          </>
+        }
+      />
 
       <section className="border-border bg-card mt-6 space-y-3 rounded-2xl border p-4">
-        <a
-          href={`/api/catalog/template?locale=${locale}`}
-          className={buttonVariants({ variant: 'outline' })}
-          data-testid="download-template"
-        >
-          {t('downloadTemplate')}
-        </a>
-
         <form className="flex flex-wrap items-end gap-3" onSubmit={upload}>
           <div className="min-w-0 flex-1">
             <Field label={t('uploadLabel')}>
@@ -252,7 +278,12 @@ export function CatalogScreen({
         ) : null}
       </section>
 
-      <details className="mt-4">
+      <details
+        id="manual-offer"
+        className="mt-4 scroll-mt-4"
+        open={manualOpen}
+        onToggle={(event) => setManualOpen(event.currentTarget.open)}
+      >
         <summary className="cursor-pointer text-sm font-medium" data-testid="manual-toggle">
           {t('manualTitle')}
         </summary>

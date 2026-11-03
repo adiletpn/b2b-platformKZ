@@ -289,7 +289,6 @@
   "catalog": {
     "title": "Тауарлар каталогы",
     "subtitle": "Тауарларды Excel үлгісімен жүктеңіз немесе карточканы қолмен енгізіңіз",
-    "downloadTemplate": "Excel үлгісін жүктеу",
     "uploadLabel": "Каталог файлы",
     "upload": "Жүктеу",
     "uploading": "Жүктелуде",
@@ -400,7 +399,11 @@
     },
     "outOfStock": "Қолда жоқ",
     "flagMarked": "Таңбаланатын",
-    "flagSnt": "ІЖТ қажет"
+    "flagSnt": "ІЖТ қажет",
+    "summary": "{count} тауар · {cities} жеткізу қаласы",
+    "templateButton": "Excel үлгісі",
+    "uploadButton": "Excel жүктеу",
+    "addOffer": "Тауар қосу"
   },
   "feed": {
     "title": "Каталог",

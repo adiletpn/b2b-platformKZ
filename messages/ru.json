@@ -289,7 +289,6 @@
   "catalog": {
     "title": "Каталог товаров",
     "subtitle": "Загрузите товары из Excel по шаблону или заведите карточку вручную",
-    "downloadTemplate": "Скачать шаблон Excel",
     "uploadLabel": "Файл каталога",
     "upload": "Загрузить",
     "uploading": "Загрузка",
@@ -400,7 +399,11 @@
     },
     "outOfStock": "Нет в наличии",
     "flagMarked": "Маркируемый",
-    "flagSnt": "Требует СНТ"
+    "flagSnt": "Требует СНТ",
+    "summary": "{count, plural, one {# товар} few {# товара} other {# товаров}} · {cities, plural, one {# город доставки} few {# города доставки} other {# городов доставки}}",
+    "templateButton": "Шаблон Excel",
+    "uploadButton": "Загрузить Excel",
+    "addOffer": "Добавить товар"
   },
   "feed": {
     "title": "Каталог",

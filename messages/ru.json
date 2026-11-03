@@ -664,6 +664,13 @@
       "shipped": "Отгружены",
       "waitingPayment": "Ждут оплату",
       "yesterday": "вчера"
+    },
+    "panel": {
+      "changedTitle": "Поставщик изменил заявку",
+      "open": "Открыть заявку",
+      "history": "История",
+      "documents": "Документы",
+      "confirm": "Подтвердить изменения"
     }
   },
   "documents": {

@@ -664,6 +664,13 @@
       "shipped": "Жөнелтілді",
       "waitingPayment": "Төлемді күтуде",
       "yesterday": "кеше"
+    },
+    "panel": {
+      "changedTitle": "Жеткізуші өтінімді өзгертті",
+      "open": "Өтінімді ашу",
+      "history": "Тарих",
+      "documents": "Құжаттар",
+      "confirm": "Өзгерістерді растау"
     }
   },
   "documents": {

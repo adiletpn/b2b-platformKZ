@@ -17,16 +17,18 @@ import { OrderStatusBadge } from '@/components/order-status-badge';
 import { NotificationList } from './notification-list';
 import { ApprovalList } from './approval-list';
 import { SupplierBoard, type BoardOrder } from './supplier-board';
+import { OrderSidePanel } from './order-side-panel';
 
 export default async function OrdersPage({
   params,
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string; order?: string }>;
 }) {
   const { locale } = await params;
-  const tab = parseOrderTab((await searchParams).tab);
+  const query = await searchParams;
+  const tab = parseOrderTab(query.tab);
   setRequestLocale(locale);
 
   const active = await getActiveCompany();
@@ -114,6 +116,11 @@ export default async function OrdersPage({
     return null;
   }
 
+  // Правая панель D02 на широком экране: выбранная заявка или первая в списке.
+  const selectedId = board ? null : (orders.find((o) => o.id === query.order)?.id ?? orders[0]?.id);
+  const selectHref = (id: string) =>
+    `/orders?${new URLSearchParams({ ...(tab === 'active' ? {} : { tab }), order: id }).toString()}`;
+
   return (
     <Page width="lg">
       <PageHeader title={t('title')} />
@@ -142,126 +149,145 @@ export default async function OrdersPage({
         ))}
       </nav>
 
-      <ApprovalList approvals={approvals} />
+      <div className="min-[1400px]:flex min-[1400px]:gap-6">
+        <div className="min-w-0 flex-1">
+          <ApprovalList approvals={approvals} />
 
-      {orders.length === 0 ? (
-        <EmptyState>
-          <span data-testid="orders-empty">{t('empty')}</span>
-        </EmptyState>
-      ) : (
-        // На телефоне та же таблица складывается в карточки (макет M07): один DOM, без дублей.
-        <>
-          {board ? <SupplierBoard orders={boardOrders} /> : null}
-          <Card
-            className={cn(
-              'overflow-hidden p-0 max-md:overflow-visible max-md:border-0 max-md:bg-transparent max-md:shadow-none',
-              board && 'lg:hidden',
-            )}
-          >
-            <div className="overflow-x-auto max-md:overflow-visible">
-              <table className="w-full min-w-[640px] text-sm max-md:block max-md:min-w-0">
-                <thead className="border-border border-b text-left max-md:hidden">
-                  <tr>
-                    <th className="px-4 py-2.5 font-medium">{t('number')}</th>
-                    <th className="px-4 py-2.5 font-medium">{t('counterparty')}</th>
-                    <th className="px-4 py-2.5 font-medium">{t('statusLabel')}</th>
-                    <th className="px-4 py-2.5 text-right font-medium">{t('total')}</th>
-                    <th className="px-4 py-2.5" />
-                    <th className="px-4 py-2.5" />
-                  </tr>
-                </thead>
-                <tbody
-                  className="divide-border divide-y max-md:block max-md:space-y-2.5 max-md:divide-y-0"
-                  data-testid="orders-table"
-                >
-                  {orders.map((order) => {
-                    const action = nextAction(order);
-                    return (
-                      <tr
-                        key={order.id}
-                        className="max-md:border-border max-md:bg-card max-md:shadow-card max-md:relative max-md:flex max-md:flex-wrap max-md:items-center max-md:gap-x-2 max-md:gap-y-1.5 max-md:rounded-[20px] max-md:border max-md:px-4 max-md:py-3.5"
-                        data-testid={`order-row-${order.number}`}
-                      >
-                        <td className="px-4 py-3.5 text-[13px] font-extrabold whitespace-nowrap max-md:flex-1 max-md:p-0 max-md:font-sans max-md:text-[15px] max-md:font-extrabold">
-                          {order.number}
-                        </td>
-                        <td className="px-4 py-3.5 font-semibold break-words max-md:order-3 max-md:w-full max-md:p-0">
-                          {order.storeId === companyId ? order.supplier.name : order.store.name}
-                          <span className="mt-0.5 flex items-baseline justify-between gap-3 text-[13px] font-semibold">
-                            <span className="text-muted-foreground">
-                              {t('itemsCount', { count: order._count.items })}
-                              {order.deliveryDate
-                                ? ` · ${formatShortDate(order.deliveryDate, locale)}`
-                                : ''}
-                            </span>
-                            <span className="text-foreground text-[15px] font-extrabold whitespace-nowrap md:hidden">
-                              {money(order.totalWithVat.toFixed(2))} ₸
-                            </span>
-                          </span>
-                        </td>
-                        <td className="px-4 py-3.5 max-md:order-2 max-md:p-0">
-                          <OrderStatusBadge
-                            status={order.status}
-                            testId={`order-status-${order.number}`}
-                          />
-                          {order.creditHold && order.status === 'DRAFT' ? (
-                            <Badge
-                              tone="warning"
-                              className="ml-1.5"
-                              data-testid="order-credit-hold"
-                            >
-                              {t('creditHoldBadge')}
-                            </Badge>
-                          ) : null}
-                        </td>
-                        <td className="px-4 py-3.5 text-right font-extrabold whitespace-nowrap max-md:hidden">
-                          {money(order.totalWithVat.toFixed(2))} ₸
-                        </td>
-                        {action ? (
-                          <td
-                            aria-hidden
-                            className="max-md:border-border hidden max-md:order-5 max-md:mt-1 max-md:block max-md:w-full max-md:border-t"
-                          />
-                        ) : null}
-                        <td className="px-4 py-3.5 max-md:order-5 max-md:flex-1 max-md:p-0 max-md:pt-1.5">
-                          {action ? (
-                            <span
-                              className={cn(
-                                'max-md:border-border text-[13px] font-extrabold max-md:block',
-                                action.urgent ? 'text-primary-text' : 'text-muted-foreground',
-                              )}
-                            >
-                              {action.text}
-                            </span>
-                          ) : null}
-                        </td>
-                        <td className="px-4 py-3.5 text-right max-md:order-6 max-md:p-0">
-                          {/* Ссылка растянута на всю карточку на телефоне: карточка нажимается целиком. */}
-                          <Link
-                            href={`/orders/${order.id}`}
-                            aria-label={t('open')}
-                            className={cn(
-                              buttonVariants({ variant: 'outline', size: 'sm' }),
-                              "max-md:size-auto max-md:border-0 max-md:bg-transparent max-md:p-0 max-md:shadow-none max-md:after:absolute max-md:after:inset-0 max-md:after:rounded-[20px] max-md:after:content-['']",
-                            )}
-                            data-testid={`order-open-${order.number}`}
-                          >
-                            <span className="max-md:hidden">{t('open')}</span>
-                            <ChevronRight
-                              aria-hidden
-                              className="text-muted-foreground size-4 md:hidden"
-                            />
-                          </Link>
-                        </td>
+          {orders.length === 0 ? (
+            <EmptyState>
+              <span data-testid="orders-empty">{t('empty')}</span>
+            </EmptyState>
+          ) : (
+            // На телефоне та же таблица складывается в карточки (макет M07): один DOM, без дублей.
+            <>
+              {board ? <SupplierBoard orders={boardOrders} /> : null}
+              <Card
+                className={cn(
+                  'overflow-hidden p-0 max-md:overflow-visible max-md:border-0 max-md:bg-transparent max-md:shadow-none',
+                  board && 'lg:hidden',
+                )}
+              >
+                <div className="overflow-x-auto max-md:overflow-visible">
+                  <table className="w-full min-w-[640px] text-sm max-md:block max-md:min-w-0">
+                    <thead className="border-border border-b text-left max-md:hidden">
+                      <tr>
+                        <th className="px-4 py-2.5 font-medium">{t('number')}</th>
+                        <th className="px-4 py-2.5 font-medium">{t('counterparty')}</th>
+                        <th className="px-4 py-2.5 font-medium">{t('statusLabel')}</th>
+                        <th className="px-4 py-2.5 text-right font-medium">{t('total')}</th>
+                        <th className="px-4 py-2.5 min-[1400px]:hidden" />
+                        <th className="px-4 py-2.5 min-[1400px]:hidden" />
                       </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </Card>
-        </>
-      )}
+                    </thead>
+                    <tbody
+                      className="divide-border divide-y max-md:block max-md:space-y-2.5 max-md:divide-y-0"
+                      data-testid="orders-table"
+                    >
+                      {orders.map((order) => {
+                        const action = nextAction(order);
+                        return (
+                          <tr
+                            key={order.id}
+                            className={cn(
+                              'min-[1400px]:hover:bg-row-highlight min-[1400px]:relative',
+                              order.id === selectedId && 'min-[1400px]:bg-row-highlight',
+                              'max-md:border-border max-md:bg-card max-md:shadow-card max-md:relative max-md:flex max-md:flex-wrap max-md:items-center max-md:gap-x-2 max-md:gap-y-1.5 max-md:rounded-[20px] max-md:border max-md:px-4 max-md:py-3.5',
+                            )}
+                            data-testid={`order-row-${order.number}`}
+                          >
+                            <td className="px-4 py-3.5 text-[13px] font-extrabold whitespace-nowrap max-md:flex-1 max-md:p-0 max-md:font-sans max-md:text-[15px] max-md:font-extrabold">
+                              {/* На широком экране номер выбирает заявку для правой панели (D02). */}
+                              <Link
+                                href={selectHref(order.id)}
+                                scroll={false}
+                                className="pointer-events-none min-[1400px]:pointer-events-auto min-[1400px]:after:absolute min-[1400px]:after:inset-0 min-[1400px]:after:content-['']"
+                                tabIndex={-1}
+                              >
+                                {order.number}
+                              </Link>
+                            </td>
+                            <td className="px-4 py-3.5 font-semibold break-words max-md:order-3 max-md:w-full max-md:p-0">
+                              {order.storeId === companyId ? order.supplier.name : order.store.name}
+                              <span className="mt-0.5 flex items-baseline justify-between gap-3 text-[13px] font-semibold">
+                                <span className="text-muted-foreground">
+                                  {t('itemsCount', { count: order._count.items })}
+                                  {order.deliveryDate
+                                    ? ` · ${formatShortDate(order.deliveryDate, locale)}`
+                                    : ''}
+                                </span>
+                                <span className="text-foreground text-[15px] font-extrabold whitespace-nowrap md:hidden">
+                                  {money(order.totalWithVat.toFixed(2))} ₸
+                                </span>
+                              </span>
+                            </td>
+                            <td className="px-4 py-3.5 max-md:order-2 max-md:p-0">
+                              <OrderStatusBadge
+                                status={order.status}
+                                testId={`order-status-${order.number}`}
+                              />
+                              {order.creditHold && order.status === 'DRAFT' ? (
+                                <Badge
+                                  tone="warning"
+                                  className="ml-1.5"
+                                  data-testid="order-credit-hold"
+                                >
+                                  {t('creditHoldBadge')}
+                                </Badge>
+                              ) : null}
+                            </td>
+                            <td className="px-4 py-3.5 text-right font-extrabold whitespace-nowrap max-md:hidden">
+                              {money(order.totalWithVat.toFixed(2))} ₸
+                            </td>
+                            {action ? (
+                              <td
+                                aria-hidden
+                                className="max-md:border-border hidden max-md:order-5 max-md:mt-1 max-md:block max-md:w-full max-md:border-t"
+                              />
+                            ) : null}
+                            <td className="px-4 py-3.5 max-md:order-5 max-md:flex-1 max-md:p-0 max-md:pt-1.5 min-[1400px]:hidden">
+                              {action ? (
+                                <span
+                                  className={cn(
+                                    'max-md:border-border text-[13px] font-extrabold max-md:block',
+                                    action.urgent ? 'text-primary-text' : 'text-muted-foreground',
+                                  )}
+                                >
+                                  {action.text}
+                                </span>
+                              ) : null}
+                            </td>
+                            <td className="px-4 py-3.5 text-right max-md:order-6 max-md:p-0 min-[1400px]:hidden">
+                              {/* Ссылка растянута на всю карточку на телефоне: карточка нажимается целиком. */}
+                              <Link
+                                href={`/orders/${order.id}`}
+                                aria-label={t('open')}
+                                className={cn(
+                                  buttonVariants({ variant: 'outline', size: 'sm' }),
+                                  "max-md:size-auto max-md:border-0 max-md:bg-transparent max-md:p-0 max-md:shadow-none max-md:after:absolute max-md:after:inset-0 max-md:after:rounded-[20px] max-md:after:content-['']",
+                                )}
+                                data-testid={`order-open-${order.number}`}
+                              >
+                                <span className="max-md:hidden">{t('open')}</span>
+                                <ChevronRight
+                                  aria-hidden
+                                  className="text-muted-foreground size-4 md:hidden"
+                                />
+                              </Link>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </Card>
+            </>
+          )}
+        </div>
+        {selectedId ? (
+          <OrderSidePanel orderId={selectedId} companyId={companyId} locale={locale} />
+        ) : null}
+      </div>
 
       <NotificationList
         notifications={notifications.map((item) => ({

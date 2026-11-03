@@ -486,15 +486,23 @@ export function OrderDetail({
                   ) : null}
                   {canConfirm ? (
                     <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                      {/* Макет M12: «Нет в наличии» — красная пилюля, замена предлагается только после неё. */}
                       <Button
-                        variant="ghost"
+                        variant="outline"
                         size="sm"
+                        className={cn(
+                          'text-danger h-7 border-[#f3cfcb] px-3 text-xs',
+                          Number(quantities[item.id] ?? '1') === 0 &&
+                            'bg-danger-soft border-transparent',
+                        )}
                         data-testid={`out-of-stock-${item.id}`}
                         onClick={() => setQuantities((current) => ({ ...current, [item.id]: '0' }))}
                       >
                         {t('outOfStock')}
                       </Button>
-                      {substituteOffers.length > 0 ? (
+                      {substituteOffers.length > 0 &&
+                      (Number(quantities[item.id] ?? '1') === 0 ||
+                        substitutes[item.id]?.offerId) ? (
                         <>
                           <select
                             className="border-input bg-background h-8 max-w-48 rounded-xl border px-2 text-xs"
@@ -560,7 +568,13 @@ export function OrderDetail({
                     </span>
                   )}
                 </td>
-                <td className="px-3 py-3 text-right text-[15px] font-extrabold whitespace-nowrap tabular-nums">
+                {/* M12: у поставщика на телефоне строка без суммы — поле количества и итог ниже. */}
+                <td
+                  className={cn(
+                    'px-3 py-3 text-right text-[15px] font-extrabold whitespace-nowrap tabular-nums',
+                    canConfirm && 'max-md:hidden',
+                  )}
+                >
                   {item.quantityConfirmed !== null && Number(item.quantityConfirmed) === 0 ? (
                     <span className="text-muted-foreground line-through">
                       {money(item.orderedTotal)} ₸

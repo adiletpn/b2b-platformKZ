@@ -853,7 +853,16 @@
     "alertExpiringHint": "Сату FEFO бойынша — ең жақын мерзім бірінші",
     "alertMinimum": "Минимумнан төмен: {count} тауар",
     "alertMinimumHint": "Бұрынғы жеткізушілерге өтінім жобасы жиналды",
-    "openDraft": "Жобаны ашу"
+    "openDraft": "Жобаны ашу",
+    "tabs": {
+      "balances": "Қалдықтар",
+      "documents": "Қозғалыс құжаттары",
+      "inventory": "Түгендеу",
+      "pricing": "Қайта бағалау",
+      "batches": "Партиялар мен мерзімдер"
+    },
+    "labelsButton": "Баға белгілері",
+    "documentButton": "Құжат"
   },
   "payment": {
     "title": "Төлем",

@@ -853,7 +853,16 @@
     "alertExpiringHint": "Продажа идёт по FEFO — ближайший срок первым",
     "alertMinimum": "Ниже минимума: {count, plural, one {# товар} few {# товара} other {# товаров}}",
     "alertMinimumHint": "Собран черновик заявки к прошлым поставщикам",
-    "openDraft": "Открыть черновик"
+    "openDraft": "Открыть черновик",
+    "tabs": {
+      "balances": "Остатки",
+      "documents": "Документы движения",
+      "inventory": "Инвентаризация",
+      "pricing": "Переоценка",
+      "batches": "Партии и сроки"
+    },
+    "labelsButton": "Ценники",
+    "documentButton": "Документ"
   },
   "payment": {
     "title": "Оплата",

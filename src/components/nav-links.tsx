@@ -118,7 +118,18 @@ export function NavLinks({
                     active ? 'text-primary' : 'text-muted-foreground',
                   )}
                 />
-                <span className="lg:truncate">{item.label}</span>
+                <span className="lg:flex-1 lg:truncate">{item.label}</span>
+                {item.badge ? (
+                  <span
+                    className={cn(
+                      'rounded-full px-2 py-0.5 text-[11px] font-extrabold',
+                      active ? 'bg-primary text-white' : 'bg-muted text-foreground',
+                    )}
+                    data-testid={`badge-${item.href.slice(1)}`}
+                  >
+                    {item.badge}
+                  </span>
+                ) : null}
               </Link>
             );
           })}

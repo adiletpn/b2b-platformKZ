@@ -7,6 +7,7 @@ import { LanguageSwitcher } from '@/components/language-switcher';
 import { LogoutButton } from '@/components/logout-button';
 import { NavLinks } from '@/components/nav-links';
 import { TabBar, type TabItem } from '@/components/tab-bar';
+import { shellCounts } from '@/lib/shell/counts';
 
 type NavItem = {
   href:
@@ -30,6 +31,8 @@ type NavItem = {
   label: string;
   testId: string;
   icon: string;
+  /** Счётчик справа от раздела (макет D01): корзина, заявки, чаты. */
+  badge?: number;
 };
 
 export type NavGroup = { label: string; items: NavItem[] };
@@ -169,7 +172,22 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   const store = company.type !== 'SUPPLIER';
-  const groups = await navGroups(company.type);
+  const counts = await shellCounts(company.id, {
+    store,
+    allowedLocationIds: membership!.allowedLocationIds,
+  });
+  const badgeFor = (href: string) =>
+    href === '/cart'
+      ? counts.cart
+      : href === '/orders'
+        ? counts.orders
+        : href === '/chat'
+          ? counts.chat
+          : 0;
+  const groups = (await navGroups(company.type)).map((group) => ({
+    ...group,
+    items: group.items.map((item) => ({ ...item, badge: badgeFor(item.href) })),
+  }));
 
   const tRoles = await getTranslations('employees.roles');
   const userName = session?.user.name ?? null;

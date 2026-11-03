@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { getTranslations } from 'next-intl/server';
 import { LogIn } from 'lucide-react';
 import { Link } from '@/i18n/navigation';
@@ -196,17 +197,18 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
   // Нижняя панель на телефоне (макет M03–M13): пять главных разделов по типу компании.
   const tabs: TabItem[] = store
     ? [
+        // Макет M03: Лента · Список · Корзина · Заявки · Кабинет. Касса — в списке «Кабинета».
         { href: '/feed', label: t('feedTab'), icon: 'feed' },
-        { href: '/cart', label: t('cartLink'), icon: 'cart' },
-        { href: '/orders', label: t('ordersLink'), icon: 'orders' },
-        { href: '/pos', label: t('posLink'), icon: 'pos' },
+        { href: '/feed', view: 'list', label: t('listTab'), icon: 'list' },
+        { href: '/cart', label: t('cartLink'), icon: 'cart', badge: counts.cart },
+        { href: '/orders', label: t('ordersLink'), icon: 'orders', badge: counts.orders },
         { href: '/dashboard', label: t('cabinetTab'), icon: 'cabinet' },
       ]
     : [
-        { href: '/orders', label: t('ordersLink'), icon: 'orders' },
+        { href: '/orders', label: t('ordersLink'), icon: 'orders', badge: counts.orders },
         { href: '/catalog', label: t('catalogLink'), icon: 'catalog' },
         { href: '/deliveries', label: t('deliveriesLink'), icon: 'deliveries' },
-        { href: '/chat', label: t('chatLink'), icon: 'chat' },
+        { href: '/chat', label: t('chatLink'), icon: 'chat', badge: counts.chat },
         { href: '/dashboard', label: t('cabinetTab'), icon: 'cabinet' },
       ];
 
@@ -258,7 +260,10 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
       </header>
 
       <div className="pb-24 lg:pb-0 lg:pl-[248px]">{children}</div>
-      <TabBar items={tabs} />
+      {/* useSearchParams в панели: без Suspense страница теряет статический рендер. */}
+      <Suspense fallback={null}>
+        <TabBar items={tabs} />
+      </Suspense>
     </>
   );
 }

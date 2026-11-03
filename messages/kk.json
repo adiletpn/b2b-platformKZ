@@ -1167,7 +1167,11 @@
       "user_unblocked": "Пайдаланушы бұғаттан шығарылды",
       "ticket_replied": "Өтінішке жауап",
       "ticket_updated": "Өтініш өзгертілді",
-      "broadcast_sent": "Тарату жіберілді"
+      "broadcast_sent": "Тарату жіберілді",
+      "banner_created": "Баннер қосылды",
+      "banner_deleted": "Баннер жойылды",
+      "brand_renamed": "Бренд атауы өзгертілді",
+      "product_merged": "Тауар телнұсқалары біріктірілді"
     },
     "errors": {
       "invalid_phone": "Нөмірді +7 форматында, 10 санмен енгізіңіз",

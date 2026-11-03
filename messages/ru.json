@@ -1167,7 +1167,11 @@
       "user_unblocked": "Пользователь разблокирован",
       "ticket_replied": "Ответ на обращение",
       "ticket_updated": "Изменено обращение",
-      "broadcast_sent": "Отправлена рассылка"
+      "broadcast_sent": "Отправлена рассылка",
+      "banner_created": "Баннер добавлен",
+      "banner_deleted": "Баннер удалён",
+      "brand_renamed": "Бренд переименован",
+      "product_merged": "Дубли товара объединены"
     },
     "errors": {
       "invalid_phone": "Введите номер в формате +7 и 10 цифр",

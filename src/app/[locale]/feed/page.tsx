@@ -1,4 +1,4 @@
-import { setRequestLocale } from 'next-intl/server';
+import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { redirect } from '@/i18n/navigation';
 import { getStoreContext } from '@/lib/auth/store-context';
 import { getFeed } from '@/lib/feed/query';
@@ -6,7 +6,8 @@ import { visibleSupplierWhere } from '@/lib/admin/settings';
 import { prisma } from '@/lib/prisma';
 import { FeedScreen } from './feed-screen';
 import { getCartGroups } from '@/lib/cart/cart';
-import { plainQuantity } from '@/lib/format';
+import { formatShortDate, money, plainQuantity } from '@/lib/format';
+import { lastOrderSummary } from '@/lib/feed/swipe';
 
 export default async function FeedPage({
   params,
@@ -37,11 +38,23 @@ export default async function FeedPage({
     getCartGroups(locationId, cityId),
   ]);
 
+  const lastOrder = await lastOrderSummary(companyId);
+  const t = await getTranslations('feed');
   const brands = [...new Set(listOffers.map((offer) => offer.brand).filter(Boolean))] as string[];
 
   return (
     <FeedScreen
       initialMode={view === 'list' ? 'list' : 'auto'}
+      lastOrderLine={
+        lastOrder
+          ? [
+              lastOrder.number,
+              formatShortDate(lastOrder.createdAt, locale),
+              t('lastOrderItems', { count: lastOrder.items }),
+              `${money(lastOrder.total)} ₸`,
+            ].join(' · ')
+          : null
+      }
       locale={locale === 'kk' ? 'kk' : 'ru'}
       cityName={locale === 'kk' ? city.nameKk : city.nameRu}
       initialSwipeOffers={swipeOffers}

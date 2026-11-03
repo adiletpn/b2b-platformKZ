@@ -514,7 +514,8 @@
       "promo": "Акциялар",
       "new": "Жаңалықтар",
       "tomorrow": "Ертең жеткізу"
-    }
+    },
+    "lastOrderItems": "{count} позиция"
   },
   "cart": {
     "title": "Себет",

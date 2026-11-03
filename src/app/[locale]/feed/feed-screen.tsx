@@ -33,6 +33,7 @@ export function FeedScreen({
   cartQuantities,
   initialCartGroups,
   initialMode = 'auto',
+  lastOrderLine = null,
 }: {
   locale: 'ru' | 'kk';
   cityName: string;
@@ -45,6 +46,8 @@ export function FeedScreen({
   initialCartGroups: CartSupplierGroup[];
   /** «Список» в нижней панели открывает ленту с ?view=list (макет M05). */
   initialMode?: Mode;
+  /** «З-1038 · 14 окт · 32 позиции · 184 300 ₸» под баннером повтора (M05). */
+  lastOrderLine?: string | null;
 }) {
   const t = useTranslations('feed');
   const [mode, setModeState] = useState<Mode>(initialMode);
@@ -552,8 +555,15 @@ export function FeedScreen({
                 <span className="bg-primary grid size-[42px] shrink-0 place-items-center rounded-[14px] lg:size-auto lg:bg-transparent">
                   <Repeat2 aria-hidden className="lg:text-primary size-5 text-white" />
                 </span>
-                <span className="text-primary-text flex-1 text-[15px] font-extrabold lg:text-sm">
-                  {t('repeatLastOrder')}
+                <span className="flex-1">
+                  <span className="lg:text-primary-text block text-[15px] font-extrabold lg:text-sm">
+                    {t('repeatLastOrder')}
+                  </span>
+                  {lastOrderLine ? (
+                    <span className="mt-0.5 block text-xs font-semibold text-[#a0662a] lg:hidden">
+                      {lastOrderLine}
+                    </span>
+                  ) : null}
                 </span>
                 <ChevronRight aria-hidden className="text-primary size-[18px] lg:hidden" />
               </button>

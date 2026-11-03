@@ -62,6 +62,27 @@ export async function undoLastSwipe(storeId: string, locationId: string) {
  * Раздел 3.3 ТЗ, «Повторить прошлый заказ»: позиции последней отправленной заявки
  * возвращаются в корзину с теми же количествами.
  */
+/** Прошлая заявка для баннера «Повторить прошлый заказ» (макет M05): та же, что повторяется. */
+export async function lastOrderSummary(storeId: string) {
+  const order = await prisma.order.findFirst({
+    where: { storeId, status: { not: 'DRAFT' } },
+    orderBy: { createdAt: 'desc' },
+    select: {
+      number: true,
+      createdAt: true,
+      totalWithVat: true,
+      _count: { select: { items: true } },
+    },
+  });
+  if (!order) return null;
+  return {
+    number: order.number,
+    createdAt: order.createdAt,
+    items: order._count.items,
+    total: order.totalWithVat.toFixed(2),
+  };
+}
+
 export async function repeatLastOrder(storeId: string, locationId: string) {
   const lastOrder = await prisma.order.findFirst({
     where: { storeId, status: { not: 'DRAFT' } },

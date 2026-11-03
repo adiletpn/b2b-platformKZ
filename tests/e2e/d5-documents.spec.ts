@@ -76,7 +76,7 @@ test.beforeAll(async ({ browser }, testInfo) => {
     .getByRole('textbox');
   await quantity.fill('10');
   await quantity.blur();
-  await expect(quantity).toHaveValue('10.000');
+  await expect(quantity).toHaveValue('10');
 
   await open(storePage, '/ru/cart');
   await storePage.getByTestId('send-orders').click();

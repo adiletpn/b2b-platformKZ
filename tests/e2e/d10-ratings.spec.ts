@@ -89,7 +89,7 @@ test('order_cannot_be_rated_before_it_is_closed', async ({}, testInfo) => {
     .getByRole('textbox');
   await quantity.fill('5');
   await quantity.blur();
-  await expect(quantity).toHaveValue('5.000');
+  await expect(quantity).toHaveValue('5');
 
   await open(storePage, '/ru/cart');
   await storePage.getByTestId('send-orders').click();

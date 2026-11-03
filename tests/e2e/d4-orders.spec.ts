@@ -101,7 +101,7 @@ test('cart_with_three_suppliers_creates_three_orders_in_one_click', async () => 
     const input = storePage.getByTestId('list-table').getByRole('row').first().getByRole('textbox');
     await input.fill('2');
     await input.blur();
-    await expect(input).toHaveValue('2.000');
+    await expect(input).toHaveValue('2');
   }
 
   await open(storePage, '/ru/cart');

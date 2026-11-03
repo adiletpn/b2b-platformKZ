@@ -46,7 +46,7 @@ test.beforeAll(async ({ browser }, testInfo) => {
     .getByRole('textbox');
   await quantity.fill('5');
   await quantity.blur();
-  await expect(quantity).toHaveValue('5.000');
+  await expect(quantity).toHaveValue('5');
   await open(storePage, '/ru/cart');
   await storePage.getByTestId('send-orders').click();
   await storePage.waitForURL(/\/orders$/, { timeout: 30_000 });

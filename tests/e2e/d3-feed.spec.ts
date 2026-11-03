@@ -195,7 +195,7 @@ test('store_sets_quantity_in_list_mode', async () => {
     const input = row.getByRole('textbox');
     await input.fill('5');
     await input.blur();
-    await expect(input).toHaveValue('5.000');
+    await expect(input).toHaveValue('5');
   }
 
   await page.getByTestId('filter-reset').click();

@@ -104,7 +104,7 @@ test('store_pays_order_manually_and_sees_supplier_requisites', async ({}, testIn
     .getByRole('textbox');
   await quantity.fill('5');
   await quantity.blur();
-  await expect(quantity).toHaveValue('5.000');
+  await expect(quantity).toHaveValue('5');
 
   await open(storePage, '/ru/cart');
   await storePage.getByTestId('send-orders').click();

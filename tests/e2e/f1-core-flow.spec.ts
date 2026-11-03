@@ -139,7 +139,7 @@ test('real_company_path_from_supplier_registration_to_store_cart', async ({
   const quantity = rows.filter({ hasText: `${id.product}.1` }).getByRole('textbox');
   await quantity.fill('5');
   await quantity.blur();
-  await expect(quantity).toHaveValue('12.000');
+  await expect(quantity).toHaveValue('12');
   await expect(store.getByTestId('feed-notice')).toContainText('минимальной партии');
 
   await open(store, '/ru/cart');

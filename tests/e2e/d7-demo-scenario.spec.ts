@@ -183,7 +183,7 @@ test('criterion_3_store_picks_products_by_swipe_and_in_list', async ({}, testInf
     const input = row.getByRole('textbox');
     await input.fill('5');
     await input.blur();
-    await expect(input).toHaveValue('5.000');
+    await expect(input).toHaveValue('5');
   }
 
   await checkBothWidths(storePage);

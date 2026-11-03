@@ -61,7 +61,12 @@ export async function sendBroadcast(adminId: string, input: BroadcastInput) {
 export function integrationStatus() {
   const configured = (name: string) => Boolean(process.env[name]);
   return [
-    { key: 'sms', env: 'SMS_API_KEY', live: configured('SMS_API_KEY') },
+    {
+      key: 'sms',
+      env: 'NEXT_PUBLIC_FIREBASE_API_KEY',
+      live:
+        configured('NEXT_PUBLIC_FIREBASE_API_KEY') && configured('NEXT_PUBLIC_FIREBASE_PROJECT_ID'),
+    },
     { key: 'messengers', env: 'WHATSAPP_API_KEY', live: configured('WHATSAPP_API_KEY') },
     { key: 'payments', env: 'PAYMENT_API_KEY', live: configured('PAYMENT_API_KEY') },
     { key: 'webhook', env: 'PAYMENT_WEBHOOK_SECRET', live: configured('PAYMENT_WEBHOOK_SECRET') },

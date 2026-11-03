@@ -86,6 +86,8 @@ export function LoginForm() {
 
   return (
     <main className="mx-auto grid w-full max-w-5xl gap-6 px-4 py-8 sm:px-6 lg:grid-cols-[1.1fr_1fr] lg:items-center lg:py-16">
+      {/* Экран входа остаётся белым, как был: фон #FBFAF8 только у кабинета. */}
+      <div aria-hidden className="fixed inset-0 -z-10 bg-white" />
       <section className="hidden rounded-[28px] bg-[#3e342e] bg-[radial-gradient(40rem_20rem_at_100%_0%,rgb(245_130_12/0.55),transparent_60%)] p-10 text-white shadow-[var(--shadow-strong)] lg:block">
         <p className="text-sm font-medium tracking-wide text-white/70 uppercase">
           {t('side.kicker')}

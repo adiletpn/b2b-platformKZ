@@ -298,14 +298,14 @@ export function CatalogScreen({
 
       <section className="border-border bg-card shadow-card mt-6 rounded-xl border p-4 sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-lg font-medium">{t('listTitle')}</h2>
+          <h2 className="text-[15px] font-extrabold">{t('listTitle')}</h2>
           <p className="text-muted-foreground text-sm font-medium" data-testid="offers-total">
             {t('total', { count: total })}
           </p>
         </div>
 
         <Input
-          className="mt-3"
+          className="bg-muted mt-3 h-11 rounded-full border-0 px-4"
           placeholder={t('searchPlaceholder')}
           value={search}
           data-testid="catalog-search"
@@ -389,7 +389,7 @@ export function CatalogScreen({
       </section>
 
       <section className="border-border bg-card shadow-card mt-6 rounded-xl border p-4 sm:p-5">
-        <h2 className="text-lg font-medium">{t('zonesTitle')}</h2>
+        <h2 className="text-[15px] font-extrabold">{t('zonesTitle')}</h2>
         <p className="text-muted-foreground mt-1 text-xs font-semibold">{t('zonesHint')}</p>
 
         {selectedCities.length === 0 ? (

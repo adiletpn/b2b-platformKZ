@@ -20,7 +20,7 @@ import { OnlinePaymentPanel, type OnlinePayment } from './online-payment-panel';
 import { DocumentVersions, type VersionRow } from './document-versions';
 
 import type { DocumentType, OrderStatus as Status } from '@/generated/prisma/enums';
-import { money, quantity } from '@/lib/format';
+import { money, plainQuantity, quantity } from '@/lib/format';
 
 type Item = {
   id: string;
@@ -179,7 +179,10 @@ export function OrderDetail({
   >({});
   const [quantities, setQuantities] = useState<Record<string, string>>(
     Object.fromEntries(
-      order.items.map((item) => [item.id, item.quantityConfirmed ?? item.quantityOrdered]),
+      order.items.map((item) => [
+        item.id,
+        plainQuantity(item.quantityConfirmed ?? item.quantityOrdered),
+      ]),
     ),
   );
   const [reason, setReason] = useState('');
@@ -191,7 +194,7 @@ export function OrderDetail({
       order.items.map((item) => [
         item.id,
         {
-          accepted: item.quantityConfirmed ?? item.quantityOrdered,
+          accepted: plainQuantity(item.quantityConfirmed ?? item.quantityOrdered),
           defective: '0',
           mismatch: '0',
         },
@@ -503,7 +506,9 @@ export function OrderDetail({
                                 ...current,
                                 [item.id]: {
                                   offerId: event.target.value,
-                                  quantity: current[item.id]?.quantity ?? item.quantityOrdered,
+                                  quantity:
+                                    current[item.id]?.quantity ??
+                                    plainQuantity(item.quantityOrdered),
                                 },
                               }))
                             }
@@ -810,7 +815,7 @@ export function OrderDetail({
                       ) : null}
                     </td>
                     <td className="py-2 pr-3 text-right tabular-nums">
-                      {item.quantityConfirmed ?? item.quantityOrdered}
+                      {quantity(item.quantityConfirmed ?? item.quantityOrdered)}
                     </td>
                     {(['accepted', 'defective', 'mismatch'] as const).map((field) => (
                       <td key={field} className="py-2 pr-3 text-right">

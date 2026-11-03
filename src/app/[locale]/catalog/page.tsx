@@ -3,6 +3,7 @@ import { redirect } from '@/i18n/navigation';
 import { getActiveCompany } from '@/lib/auth/active-company';
 import { prisma } from '@/lib/prisma';
 import { CatalogScreen } from './catalog-screen';
+import { catalogRow, catalogRowInclude } from '@/lib/catalog/offer-row';
 
 export default async function CatalogPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -17,7 +18,7 @@ export default async function CatalogPage({ params }: { params: Promise<{ locale
     prisma.deliveryZone.findMany({ where: { supplierId } }),
     prisma.supplierOffer.findMany({
       where: { supplierId },
-      include: { product: { include: { unit: true } }, vatRate: true },
+      include: catalogRowInclude,
       orderBy: { product: { nameRu: 'asc' } },
       take: 100,
     }),
@@ -54,19 +55,7 @@ export default async function CatalogPage({ params }: { params: Promise<{ locale
         deliveryDays: zone.deliveryDays,
       }))}
       initialTotal={total}
-      initialOffers={offers.map((offer) => ({
-        id: offer.id,
-        barcode: offer.product.barcode,
-        nameRu: offer.product.nameRu,
-        nameKk: offer.product.nameKk,
-        unitRu: offer.product.unit.nameRu,
-        unitKk: offer.product.unit.nameKk,
-        priceWithoutVat: offer.priceWithoutVat.toFixed(2),
-        priceWithVat: offer.priceWithVat.toFixed(2),
-        vatRate: offer.vatRate.rate.toFixed(2),
-        stock: offer.stock.toFixed(3),
-        minBatch: offer.minBatch.toFixed(3),
-      }))}
+      initialOffers={offers.map(catalogRow)}
     />
   );
 }

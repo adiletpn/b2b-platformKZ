@@ -6,6 +6,7 @@ import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Field } from '@/components/ui/field';
 import { Page, PageHeader } from '@/components/ui/page';
+import type { CatalogRow } from '@/lib/catalog/offer-row';
 import { Notice } from '@/components/ui/field';
 import { CATALOG_COLUMNS } from '@/lib/catalog/columns';
 import { ManualOfferForm } from './manual-offer-form';
@@ -19,19 +20,7 @@ type Zone = {
   deliveryDays: number[];
 };
 const WEEKDAYS = [1, 2, 3, 4, 5, 6, 7] as const;
-type Offer = {
-  id: string;
-  barcode: string;
-  nameRu: string;
-  nameKk: string;
-  unitRu: string;
-  unitKk: string;
-  priceWithoutVat: string;
-  priceWithVat: string;
-  vatRate: string;
-  stock: string;
-  minBatch: string;
-};
+type Offer = CatalogRow;
 type Reference = { code: string; name: string };
 type ImportError = { row: number; column: string; code: string; hint?: string };
 

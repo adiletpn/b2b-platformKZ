@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { requirePermission } from '@/lib/auth/permissions';
 import { getActiveCompany } from '@/lib/auth/active-company';
 import { prisma } from '@/lib/prisma';
+import { catalogRow, catalogRowInclude } from '@/lib/catalog/offer-row';
 
 export async function GET(request: Request) {
   // Раздел 3.12 ТЗ: доступ определяется матрицей прав роли.
@@ -34,25 +35,13 @@ export async function GET(request: Request) {
           }
         : {}),
     },
-    include: { product: { include: { unit: true } }, vatRate: true },
+    include: catalogRowInclude,
     orderBy: { product: { nameRu: 'asc' } },
     take: 100,
   });
 
   return NextResponse.json({
     total: await prisma.supplierOffer.count({ where: { supplierId: active.companyId } }),
-    offers: offers.map((offer) => ({
-      id: offer.id,
-      barcode: offer.product.barcode,
-      nameRu: offer.product.nameRu,
-      nameKk: offer.product.nameKk,
-      unitRu: offer.product.unit.nameRu,
-      unitKk: offer.product.unit.nameKk,
-      priceWithoutVat: offer.priceWithoutVat.toFixed(2),
-      priceWithVat: offer.priceWithVat.toFixed(2),
-      vatRate: offer.vatRate.rate.toFixed(2),
-      stock: offer.stock.toFixed(3),
-      minBatch: offer.minBatch.toFixed(3),
-    })),
+    offers: offers.map(catalogRow),
   });
 }

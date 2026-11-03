@@ -1128,7 +1128,9 @@
     "companySwitch": "Переключиться",
     "companyActive": "Активная",
     "section": "Раздел",
-    "ownerTransferSmsSent": "Код отправлен вам по SMS"
+    "ownerTransferSmsSent": "Код отправлен вам по SMS",
+    "locationsColumn": "Точки",
+    "allLocationsShort": "Все точки"
   },
   "admin": {
     "title": "Админ-панель платформы",

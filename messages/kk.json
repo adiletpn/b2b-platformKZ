@@ -1128,7 +1128,9 @@
     "companySwitch": "Ауысу",
     "companyActive": "Белсенді",
     "section": "Бөлім",
-    "ownerTransferSmsSent": "Код сізге SMS арқылы жіберілді"
+    "ownerTransferSmsSent": "Код сізге SMS арқылы жіберілді",
+    "locationsColumn": "Нүктелер",
+    "allLocationsShort": "Барлық нүкте"
   },
   "admin": {
     "title": "Платформаның әкімші панелі",

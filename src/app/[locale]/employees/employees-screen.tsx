@@ -3,7 +3,9 @@
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { FileText, Plus } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Field } from '@/components/ui/field';
 import { Page, PageHeader } from '@/components/ui/page';
@@ -212,10 +214,30 @@ export function EmployeesScreen({
     : audit.slice(0, 20);
 
   return (
-    <Page width="md">
-      <PageHeader title={t('title')} description={t('hint')} />
+    <Page width="lg">
+      {/* Макет D07: в шапке «Журнал действий» и «Пригласить». */}
+      <PageHeader
+        title={t('title')}
+        description={t('hint')}
+        actions={
+          <>
+            <a href="#employees-audit" className={buttonVariants({ variant: 'outline' })}>
+              <FileText aria-hidden />
+              {t('auditTitle')}
+            </a>
+            <a href="#employees-invite" className={buttonVariants()}>
+              <Plus aria-hidden />
+              {t('invite')}
+            </a>
+          </>
+        }
+      />
 
-      <form className="mt-5 flex flex-wrap items-end gap-3" onSubmit={invite}>
+      <form
+        id="employees-invite"
+        className="mt-5 flex scroll-mt-4 flex-wrap items-end gap-3"
+        onSubmit={invite}
+      >
         <div className="min-w-48 flex-1">
           <Field label={t('phone')}>
             <Input
@@ -283,6 +305,7 @@ export function EmployeesScreen({
             <tr>
               <th className="px-3 py-2 font-medium">{t('phone')}</th>
               <th className="px-3 py-2 font-medium">{t('role')}</th>
+              <th className="px-3 py-2 font-medium">{t('locationsColumn')}</th>
               <th className="px-3 py-2 font-medium">{t('orderLimit')}</th>
               <th className="px-3 py-2 font-medium">{t('statusLabel')}</th>
               <th className="px-3 py-2" />
@@ -293,14 +316,27 @@ export function EmployeesScreen({
               <tr key={employee.id} data-testid={`employee-${employee.id}`}>
                 <td className="px-3 py-2 text-[13px] font-bold tabular-nums">{employee.phone}</td>
                 <td className="px-3 py-2">{roleLabel(employee.role)}</td>
+                <td className="px-3 py-2 text-[13px]">
+                  {employee.allowedLocationIds.length === 0
+                    ? t('allLocationsShort')
+                    : locations
+                        .filter((location) => employee.allowedLocationIds.includes(location.id))
+                        .map((location) => location.address)
+                        .join(', ')}
+                </td>
                 <td
                   className="px-3 py-2 tabular-nums"
                   data-testid={`employee-limit-${employee.id}`}
                 >
                   {employee.orderLimit ? `${money(employee.orderLimit)} ₸` : t('noLimit')}
                 </td>
-                <td className="px-3 py-2" data-testid={`employee-status-${employee.id}`}>
-                  {t(`statuses.${employee.status}`)}
+                <td className="px-3 py-2">
+                  <Badge
+                    tone={employee.status === 'ACTIVE' ? 'success' : 'danger'}
+                    data-testid={`employee-status-${employee.id}`}
+                  >
+                    {t(`statuses.${employee.status}`)}
+                  </Badge>
                 </td>
                 <td className="px-3 py-2 text-right whitespace-nowrap">
                   {employee.role === 'OWNER' ? null : (
@@ -342,7 +378,7 @@ export function EmployeesScreen({
               void saveAccess(employee, new FormData(event.currentTarget));
             }}
           >
-            <h2 className="text-lg font-medium">{t('accessTitle')}</h2>
+            <h2 className="text-[15px] font-extrabold">{t('accessTitle')}</h2>
             <p className="text-muted-foreground mt-1 text-[13px] font-semibold">
               {t('employee')}: {employee.phone} · {t('accessHint')}
             </p>
@@ -416,7 +452,7 @@ export function EmployeesScreen({
           className="border-border bg-card shadow-card mt-4 rounded-xl border p-4 sm:p-5"
           data-testid="owner-transfer"
         >
-          <h2 className="text-lg font-medium">{t('ownerTransferTitle')}</h2>
+          <h2 className="text-[15px] font-extrabold">{t('ownerTransferTitle')}</h2>
           <p className="text-muted-foreground mt-1 text-[13px] font-semibold">
             {t('ownerTransferHint')}
           </p>
@@ -514,7 +550,7 @@ export function EmployeesScreen({
         className="border-border bg-card shadow-card mt-4 rounded-xl border p-4 sm:p-5"
         onSubmit={createRole}
       >
-        <h2 className="text-lg font-medium">{t('customRoleTitle')}</h2>
+        <h2 className="text-[15px] font-extrabold">{t('customRoleTitle')}</h2>
         <p className="text-muted-foreground mt-1 text-[13px] font-semibold">
           {t('customRoleHint')}
         </p>
@@ -560,6 +596,8 @@ export function EmployeesScreen({
                     <td key={action} className="px-2 py-2">
                       <input
                         type="checkbox"
+                        // Макет D07: оранжевые галочки матрицы прав.
+                        className="accent-primary size-5 cursor-pointer rounded-[7px]"
                         aria-label={`${t(`sections.${section}`)} ${t(`permissionActions.${action}`)}`}
                         data-testid={`cell-${section}-${action}`}
                         checked={cells.some(
@@ -597,9 +635,12 @@ export function EmployeesScreen({
         </section>
       ) : null}
 
-      <section className="border-border bg-card shadow-card mt-6 rounded-xl border p-4 sm:p-5">
+      <section
+        id="employees-audit"
+        className="border-border bg-card shadow-card mt-6 scroll-mt-4 rounded-xl border p-4 sm:p-5"
+      >
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-base font-semibold">{t('auditTitle')}</h2>
+          <h2 className="text-[15px] font-extrabold">{t('auditTitle')}</h2>
           <Input
             value={actor}
             className="h-9 w-full sm:w-56"

@@ -289,7 +289,7 @@ export function FeedScreen({
               <MapPin aria-hidden className="text-primary size-[18px]" />
             </span>
             <div className="min-w-0">
-              <p className="text-muted-foreground text-[11px] font-semibold lg:hidden">
+              <p className="text-muted-foreground text-[11px] font-semibold whitespace-nowrap lg:hidden">
                 {t('cityDelivery')}
               </p>
               <p className="truncate text-base font-extrabold lg:text-sm" data-testid="feed-city">

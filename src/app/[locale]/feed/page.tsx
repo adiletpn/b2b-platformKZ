@@ -6,6 +6,7 @@ import { visibleSupplierWhere } from '@/lib/admin/settings';
 import { prisma } from '@/lib/prisma';
 import { FeedScreen } from './feed-screen';
 import { getCartGroups } from '@/lib/cart/cart';
+import { plainQuantity } from '@/lib/format';
 
 export default async function FeedPage({
   params,
@@ -53,7 +54,7 @@ export default async function FeedPage({
       brands={brands}
       initialCartGroups={cartGroups}
       cartQuantities={Object.fromEntries(
-        (cart?.items ?? []).map((item) => [item.offerId, item.quantity.toFixed(3)]),
+        (cart?.items ?? []).map((item) => [item.offerId, plainQuantity(item.quantity.toFixed(3))]),
       )}
     />
   );

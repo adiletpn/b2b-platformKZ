@@ -10,7 +10,7 @@ import { ProductPhoto } from '@/components/product-photo';
 import { ChipToggle, Chip, PillSelect, Segmented, Stepper } from '@/components/ui/controls';
 import { CartGroupCard } from '@/components/cart-group-card';
 import { Link } from '@/i18n/navigation';
-import { money, quantity as formatQuantity } from '@/lib/format';
+import { money, plainQuantity, quantity as formatQuantity } from '@/lib/format';
 import type { CartSupplierGroup } from '@/lib/cart/cart';
 import { SwipeDeck } from './swipe-deck';
 import { OfferDetailsPanel } from './offer-details-panel';
@@ -154,7 +154,7 @@ export function FeedScreen({
     await saving;
 
     if (action === 'LIKE') {
-      setQuantities((current) => ({ ...current, [offer.id]: offer.minBatch }));
+      setQuantities((current) => ({ ...current, [offer.id]: plainQuantity(offer.minBatch) }));
       void reloadCart();
     }
   }
@@ -217,7 +217,10 @@ export function FeedScreen({
       removed: boolean;
       rounded: boolean;
     };
-    setQuantities((current) => ({ ...current, [offer.id]: data.removed ? '' : data.quantity }));
+    setQuantities((current) => ({
+      ...current,
+      [offer.id]: data.removed ? '' : plainQuantity(data.quantity),
+    }));
     // Магазин должен видеть, что количество поменяли не просто так.
     if (data.rounded) setNotice('quantityAdjusted');
     void reloadCart();
@@ -233,7 +236,7 @@ export function FeedScreen({
           ? new Decimal(offer.minBatch)
           : current.plus(pack)
         : Decimal.max(current.minus(pack), 0);
-    void setQuantity(offer, next.isZero() ? '' : next.toFixed(3));
+    void setQuantity(offer, next.isZero() ? '' : plainQuantity(next.toFixed(3)));
   }
 
   async function repeatLastOrder() {

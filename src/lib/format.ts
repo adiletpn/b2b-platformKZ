@@ -54,6 +54,11 @@ export function money(value: string): string {
 }
 
 /** Количество без лишних нулей: «12», «0,5», «2,125». */
+/** Количество для поля ввода: «12.000» → «12», «1.500» → «1.5» (точка, как ждёт API). */
+export function plainQuantity(value: string): string {
+  return value.includes('.') ? value.replace(/\.?0+$/, '') : value;
+}
+
 export function quantity(value: string): string {
   const [whole = '0', fraction = ''] = value.split('.');
   const trimmed = fraction.replace(/0+$/, '');

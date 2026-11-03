@@ -8,18 +8,16 @@ import { Input } from '@/components/ui/input';
 import { DemoHint, Field } from '@/components/ui/field';
 import { formatPhone } from '@/lib/phone';
 import { Card } from '@/components/ui/card';
-import { Segmented } from '@/components/ui/controls';
-import { NotYetBadge, NotYetButton } from '@/components/ui/not-yet';
-import { FileCheck2, KeyRound, ShieldCheck, Zap } from 'lucide-react';
+import { FileCheck2, ShieldCheck, Zap } from 'lucide-react';
+import { usePhoneCode } from '@/lib/sms/use-phone-code';
 
 /** demoCode есть только у мока SMS; с настоящим провайдером код приходит в SMS. */
 type Step = { name: 'phone' } | { name: 'code'; phone: string; demoCode: string | null };
 
-/** passwordLogin — временный вход по паролю, выключается флагом в админке. */
-export function LoginForm({ passwordLogin }: { passwordLogin: boolean }) {
+/** Вход только по коду из SMS (Firebase, без ключей — мок с кодом на экране). */
+export function LoginForm() {
   const t = useTranslations('auth');
   const tApp = useTranslations('app');
-  const tSoon = useTranslations('common.notYetItems');
   const router = useRouter();
   const locale = useLocale();
   const [step, setStep] = useState<Step>({ name: 'phone' });
@@ -27,33 +25,7 @@ export function LoginForm({ passwordLogin }: { passwordLogin: boolean }) {
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
-  const [mode, setMode] = useState<'code' | 'password'>('code');
-  const [register, setRegister] = useState(false);
-  const [password, setPassword] = useState('');
-  const [passwordConfirm, setPasswordConfirm] = useState('');
-
-  async function submitPassword(event: React.FormEvent) {
-    event.preventDefault();
-    setError(null);
-    if (register && password !== passwordConfirm) {
-      setError('password_mismatch');
-      return;
-    }
-    setPending(true);
-    const response = await fetch('/api/auth/password', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ phone: phoneInput, password, mode: register ? 'register' : 'login' }),
-    });
-    const data = (await response.json()) as { hasCompany?: boolean; error?: string };
-    setPending(false);
-    if (!response.ok) {
-      setError(data.error ?? 'unknown');
-      return;
-    }
-    router.push(data.hasCompany ? '/dashboard' : '/onboarding');
-    router.refresh();
-  }
+  const phoneCode = usePhoneCode();
 
   async function requestCode(event: React.FormEvent) {
     event.preventDefault();
@@ -64,12 +36,24 @@ export function LoginForm({ passwordLogin }: { passwordLogin: boolean }) {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ phone: phoneInput, locale }),
     });
-    const data = (await response.json()) as { phone?: string; code?: string; error?: string };
-    setPending(false);
+    const data = (await response.json()) as {
+      phone?: string;
+      code?: string;
+      via?: 'firebase' | 'mock';
+      error?: string;
+    };
     if (!response.ok || !data.phone) {
+      setPending(false);
       setError(data.error ?? 'unknown');
       return;
     }
+    const sent = await phoneCode.send({ phone: data.phone, via: data.via });
+    setPending(false);
+    if (!sent.ok) {
+      setError(sent.error);
+      return;
+    }
+    setCode('');
     setStep({ name: 'code', phone: data.phone, demoCode: data.code ?? null });
   }
 
@@ -78,10 +62,16 @@ export function LoginForm({ passwordLogin }: { passwordLogin: boolean }) {
     if (step.name !== 'code') return;
     setPending(true);
     setError(null);
+    const proved = await phoneCode.prove(code);
+    if (!proved.ok) {
+      setPending(false);
+      setError(proved.error);
+      return;
+    }
     const response = await fetch('/api/auth/verify-code', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ phone: step.phone, code }),
+      body: JSON.stringify({ phone: step.phone, ...proved.proof }),
     });
     const data = (await response.json()) as { hasCompany?: boolean; error?: string };
     setPending(false);
@@ -129,99 +119,8 @@ export function LoginForm({ passwordLogin }: { passwordLogin: boolean }) {
         <h1 className="mt-6 text-2xl font-black tracking-[-0.02em] sm:mt-0">{t('title')}</h1>
         <p className="text-muted-foreground mt-2 text-[15px] font-medium">{t('subtitle')}</p>
 
-        {passwordLogin && step.name === 'phone' ? (
-          <Segmented
-            className="mt-6"
-            value={mode}
-            onChange={(value) => {
-              setMode(value);
-              setError(null);
-            }}
-            options={[
-              { value: 'code', label: t('modeCode'), testId: 'mode-code' },
-              { value: 'password', label: t('modePassword'), testId: 'mode-password' },
-            ]}
-          />
-        ) : null}
-
-        {mode === 'password' && step.name === 'phone' ? (
-          <form className="mt-6 space-y-4" onSubmit={submitPassword}>
-            <Field label={t('phoneLabel')}>
-              <Input
-                name="phone"
-                inputMode="tel"
-                autoComplete="tel"
-                data-testid="phone-input"
-                className="h-[60px] rounded-[18px] border-2 px-[18px] text-xl font-bold tracking-[0.02em]"
-                placeholder={t('phonePlaceholder')}
-                value={phoneInput}
-                onChange={(event) => setPhoneInput(event.target.value)}
-              />
-            </Field>
-            <Field label={t('passwordLabel')}>
-              <Input
-                type="password"
-                name="password"
-                autoComplete={register ? 'new-password' : 'current-password'}
-                data-testid="password-input"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-              />
-              {register ? (
-                <p className="text-muted-foreground mt-1.5 text-xs font-medium">
-                  {t('passwordHint')}
-                </p>
-              ) : null}
-            </Field>
-            {register ? (
-              <Field label={t('passwordConfirmLabel')}>
-                <Input
-                  type="password"
-                  name="password-confirm"
-                  autoComplete="new-password"
-                  data-testid="password-confirm"
-                  value={passwordConfirm}
-                  onChange={(event) => setPasswordConfirm(event.target.value)}
-                />
-              </Field>
-            ) : null}
-            <Button
-              type="submit"
-              size="lg"
-              className="w-full"
-              disabled={pending}
-              data-testid="password-submit"
-            >
-              {register ? t('register') : t('login')}
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              className="w-full"
-              data-testid="password-toggle"
-              onClick={() => {
-                setRegister(!register);
-                setError(null);
-              }}
-            >
-              {register ? t('toLogin') : t('toRegister')}
-            </Button>
-          </form>
-        ) : step.name === 'phone' ? (
+        {step.name === 'phone' ? (
           <form className="mt-6 space-y-4" onSubmit={requestCode}>
-            {/* Макет M01: канал кода. WhatsApp ждёт ключа WhatsApp Business API. */}
-            <div className="bg-muted flex rounded-full p-[3px]">
-              <span className="bg-card flex h-[38px] flex-1 items-center justify-center rounded-full text-[13px] font-bold shadow-[0_1px_4px_rgb(0_0_0/0.08)]">
-                {tSoon('smsCode')}
-              </span>
-              <span className="text-muted-foreground flex h-[38px] flex-1 cursor-not-allowed items-center justify-center rounded-full text-[13px] font-bold">
-                {tSoon('whatsappCode')}
-              </span>
-            </div>
-            <p className="text-muted-foreground -mt-2 flex items-center justify-end gap-1.5 text-xs font-semibold">
-              {tSoon('whatsappCode')}
-              <NotYetBadge />
-            </p>
             <Field label={t('phoneLabel')}>
               <Input
                 name="phone"
@@ -243,9 +142,6 @@ export function LoginForm({ passwordLogin }: { passwordLogin: boolean }) {
             >
               {t('requestCode')}
             </Button>
-            <NotYetButton icon={<KeyRound aria-hidden className="size-4" />}>
-              {tSoon('ecpLogin')}
-            </NotYetButton>
           </form>
         ) : (
           <form className="mt-6 space-y-4" onSubmit={verify}>

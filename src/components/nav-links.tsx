@@ -48,7 +48,7 @@ const ICONS: Record<string, LucideIcon> = {
 
 /**
  * Разделы кабинета. Одна разметка на все экраны: на телефоне — прокручиваемая строка
- * под шапкой, на компьютере — колонка бокового меню с подписями групп.
+ * под шапкой, на компьютере — колонка бокового меню одним списком, как в макете.
  */
 export function NavLinks({
   groups,
@@ -93,10 +93,8 @@ export function NavLinks({
   return (
     <nav className="order-3 -mx-1 hidden w-full scrollbar-none gap-1.5 overflow-x-auto [mask-image:linear-gradient(to_right,black_88%,transparent)] px-1 pt-1 pb-2.5 lg:order-3 lg:mx-0 lg:flex lg:flex-1 lg:flex-col lg:gap-0.5 lg:overflow-y-auto lg:[mask-image:none] lg:px-0 lg:pt-0 lg:pb-4">
       {groups.map((group) => (
-        <div key={group.label} className="contents lg:block lg:pt-4 lg:first:pt-1">
-          <p className="text-sidebar-muted hidden px-3 pb-1.5 text-[11px] font-bold tracking-wider uppercase lg:block">
-            {group.label}
-          </p>
+        // Макет D01–D10: разделы одним списком, без подписей групп.
+        <div key={group.label} className="contents lg:flex lg:flex-col lg:gap-0.5">
           {group.items.map((item) => {
             const Icon = ICONS[item.icon] ?? LayoutDashboard;
             const active = pathname === item.href || pathname.startsWith(`${item.href}/`);

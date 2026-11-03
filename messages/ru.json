@@ -205,10 +205,10 @@
     "feedLink": "Выбор товаров",
     "cartLink": "Корзина",
     "ordersLink": "Заявки",
-    "stockLink": "Остатки",
+    "stockLink": "Склад",
     "requisitesLink": "Реквизиты",
     "ratingsLink": "Рейтинги",
-    "chatLink": "Чат",
+    "chatLink": "Чаты",
     "adminLink": "Админка",
     "employeesLink": "Сотрудники",
     "settlementsLink": "Взаиморасчёты",
@@ -287,7 +287,7 @@
     }
   },
   "catalog": {
-    "title": "Каталог",
+    "title": "Каталог товаров",
     "subtitle": "Загрузите товары из Excel по шаблону или заведите карточку вручную",
     "downloadTemplate": "Скачать шаблон Excel",
     "uploadLabel": "Файл каталога",
@@ -397,7 +397,7 @@
     }
   },
   "feed": {
-    "title": "Выбор товаров",
+    "title": "Каталог",
     "cityLabel": "Город",
     "modeSwipe": "Лента",
     "modeList": "Список",
@@ -428,10 +428,10 @@
       "search": "Поиск по названию или штрихкоду",
       "all": "Все",
       "reset": "Сбросить",
-      "onlyPromo": "Только акции",
-      "onlyNew": "Только новинки",
+      "onlyPromo": "Акции",
+      "onlyNew": "Новинки",
       "onlyTomorrow": "Доставка завтра",
-      "onlyFavorites": "Только избранное"
+      "onlyFavorites": "Избранное"
     },
     "fewRatings": "Мало оценок",
     "photo": "Фото",
@@ -744,7 +744,7 @@
     "scanned": "отсканировано {count}"
   },
   "stock": {
-    "title": "Остатки",
+    "title": "Склад",
     "empty": "Остатков пока нет",
     "product": "Товар",
     "quantity": "Остаток",
@@ -1510,7 +1510,7 @@
     }
   },
   "chat": {
-    "title": "Чат",
+    "title": "Чаты",
     "subtitle": "Переписка с контрагентами и обсуждение заявок",
     "empty": "Переписок пока нет",
     "emptyHint": "Чат открывается из карточки заявки",

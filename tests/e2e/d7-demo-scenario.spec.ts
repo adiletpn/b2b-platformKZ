@@ -327,10 +327,10 @@ test('criterion_10_interface_switches_between_russian_and_kazakh', async ({}, te
   await storePage.goto('/kk/orders');
   await expect(storePage.getByRole('heading', { level: 1 })).toHaveText('Өтінімдер');
   await storePage.goto('/kk/stock');
-  await expect(storePage.getByRole('heading', { level: 1 })).toHaveText('Қалдықтар');
+  await expect(storePage.getByRole('heading', { level: 1 })).toHaveText('Қойма');
   await checkBothWidths(storePage);
 
   await storePage.getByTestId('locale-ru').click();
   await expect(storePage).toHaveURL(/\/ru\/stock$/);
-  await expect(storePage.getByRole('heading', { level: 1 })).toHaveText('Остатки');
+  await expect(storePage.getByRole('heading', { level: 1 })).toHaveText('Склад');
 });

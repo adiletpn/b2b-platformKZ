@@ -99,7 +99,14 @@ export async function navGroups(type: 'STORE' | 'SUPPLIER' | 'BOTH'): Promise<Na
       label: t('navGroups.main'),
       items: [
         item('/dashboard', 'dashboardLink', 'dashboard'),
-        ...(store ? [item('/feed', 'feedLink', 'feed'), item('/cart', 'cartLink', 'cart')] : []),
+        // Макет D01: у магазина лента списком называется «Каталог»; у «И то и другое»
+        // «Каталог» — свой ассортимент поставщика, поэтому там остаётся «Выбор товаров».
+        ...(store
+          ? [
+              item('/feed', supplier ? 'feedLink' : 'catalogLink', 'feed'),
+              item('/cart', 'cartLink', 'cart'),
+            ]
+          : []),
         item('/orders', 'ordersLink', 'orders'),
         item('/analytics', 'analyticsLink', 'analytics'),
         ...(supplier

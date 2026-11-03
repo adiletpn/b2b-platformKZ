@@ -1,6 +1,6 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Link, redirect } from '@/i18n/navigation';
-import { CalendarClock, ShoppingCart } from 'lucide-react';
+import { CalendarClock, Plus, ShoppingCart, Tag } from 'lucide-react';
 import { buttonVariants } from '@/components/ui/button';
 import { getStoreContext } from '@/lib/auth/store-context';
 import { prisma } from '@/lib/prisma';
@@ -13,6 +13,7 @@ import { RecommendationsPanel } from './recommendations-panel';
 import { getExpiring } from '@/lib/stock/batches';
 import { getLabels } from '@/lib/stock/pricing';
 import { PricingPanel } from './pricing-panel';
+import { StockTabs } from './stock-tabs';
 import { Card, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ProductPhoto } from '@/components/product-photo';
@@ -94,10 +95,28 @@ export default async function StockPage({ params }: { params: Promise<{ locale: 
 
   const t = await getTranslations('stock');
   const rows = await getStockOverview(access!.companyId, store!.locationId);
+  const storeAddress = locations.find((location) => location.id === store!.locationId)?.address;
 
   return (
     <Page width="lg">
-      <PageHeader title={t('title')} description={t('hint')} />
+      <PageHeader
+        title={t('title')}
+        actions={
+          // Макет D09: «Ценники» ведут к переоценке и печати, «Документ» — к документам движения.
+          <>
+            <a href="#pricing" className={buttonVariants({ variant: 'outline' })}>
+              <Tag aria-hidden />
+              {t('labelsButton')}
+            </a>
+            <a href="#documents" className={buttonVariants()}>
+              <Plus aria-hidden />
+              {t('documentButton')}
+            </a>
+          </>
+        }
+      />
+      <StockTabs />
+      <div id="balances" className="scroll-mt-4" />
 
       {/* Макет D09: две плашки-алерта над таблицей. */}
       {expiring.length > 0 || replenishment.length > 0 ? (
@@ -151,6 +170,7 @@ export default async function StockPage({ params }: { params: Promise<{ locale: 
               <thead className="text-left">
                 <tr>
                   <th className="px-4 py-2.5">{t('product')}</th>
+                  <th className="px-4 py-2.5">{t('location')}</th>
                   <th className="px-4 py-2.5 text-right">{t('quantity')}</th>
                   <th className="px-4 py-2.5 text-right">{t('minimum')}</th>
                   <th className="px-4 py-2.5 text-right">{t('averageCost')}</th>
@@ -177,6 +197,7 @@ export default async function StockPage({ params }: { params: Promise<{ locale: 
                           </div>
                         </div>
                       </td>
+                      <td className="px-4 py-3 text-[13px]">{storeAddress}</td>
                       <td
                         className={cn(
                           'px-4 py-3 text-right font-extrabold whitespace-nowrap tabular-nums',
@@ -220,6 +241,7 @@ export default async function StockPage({ params }: { params: Promise<{ locale: 
         </Card>
       )}
 
+      <div id="batches" className="scroll-mt-4" />
       {expiring.length > 0 ? (
         <Card className="mt-4" data-testid="expiring">
           <CardTitle className="text-[15px]">{t('expiringTitle')}</CardTitle>
@@ -246,6 +268,7 @@ export default async function StockPage({ params }: { params: Promise<{ locale: 
         </Card>
       ) : null}
 
+      <div id="pricing" className="scroll-mt-4" />
       <PricingPanel
         locale={locale === 'kk' ? 'kk' : 'ru'}
         categories={categories.map((category) => ({
@@ -294,6 +317,9 @@ export default async function StockPage({ params }: { params: Promise<{ locale: 
         }))}
       />
 
+      {/* Инвентаризация — тот же блок документов: опись проводится документом движения. */}
+      <div id="documents" className="scroll-mt-4" />
+      <div id="inventory" />
       <StockDocuments
         locations={locations.map((location) => ({
           id: location.id,

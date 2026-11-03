@@ -6,7 +6,7 @@ import { locales, type Locale } from '@/i18n/routing';
 import { cn } from '@/lib/utils';
 
 /** Переключатель языка сегментом, как в макете: «Қаз / Рус». */
-export function LanguageSwitcher() {
+export function LanguageSwitcher({ testIdPrefix = 'locale' }: { testIdPrefix?: string }) {
   const t = useTranslations('locale');
   const current = useLocale();
   const pathname = usePathname();
@@ -20,7 +20,7 @@ export function LanguageSwitcher() {
           type="button"
           title={t(locale)}
           aria-current={locale === current ? 'true' : undefined}
-          data-testid={`locale-${locale}`}
+          data-testid={`${testIdPrefix}-${locale}`}
           onClick={() => router.replace(pathname, { locale })}
           className={cn(
             'h-8 rounded-full px-3.5 text-[13px] font-bold whitespace-nowrap transition-colors',

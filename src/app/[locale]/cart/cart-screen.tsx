@@ -134,7 +134,11 @@ export function CartScreen({
           ) : undefined
         }
         actions={
-          <Link href="/feed" className={buttonVariants({ variant: 'outline', size: 'sm' })}>
+          // M06: на телефоне к товарам ведёт нижняя панель, кнопки в шапке нет.
+          <Link
+            href="/feed"
+            className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'max-lg:hidden')}
+          >
             {t('backToFeed')}
           </Link>
         }

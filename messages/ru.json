@@ -244,7 +244,8 @@
         "lowStock": "Ниже минимума",
         "offers": "Активных товаров"
       },
-      "companyPoints": "{count, plural, one {# точка} few {# точки} other {# точек}}"
+      "companyPoints": "{count, plural, one {# точка} few {# точки} other {# точек}}",
+      "language": "Язык"
     },
     "supportLink": "Поддержка",
     "banners": {

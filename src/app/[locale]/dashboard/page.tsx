@@ -1,5 +1,6 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import {
+  Globe,
   AlertTriangle,
   Boxes,
   Calculator,
@@ -27,6 +28,8 @@ import { activeBannersFor } from '@/lib/admin/banners';
 import { CabinetBanners } from '@/components/cabinet-banners';
 import { navGroups } from '@/components/app-header';
 import { NavLinks } from '@/components/nav-links';
+import { LanguageSwitcher } from '@/components/language-switcher';
+import { LogoutButton } from '@/components/logout-button';
 import { money } from '@/lib/format';
 import { Avatar } from '@/components/ui/controls';
 
@@ -69,7 +72,8 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
         title={tHome('greeting')}
         description={company.name}
         actions={
-          <>
+          // На телефоне разделы — в нижней панели и списке ниже (M13), кнопок в шапке нет.
+          <div className="hidden flex-wrap items-center gap-2.5 lg:flex">
             {store ? (
               <Link href="/feed" className={buttonVariants()} data-testid="quick-feed">
                 <ShoppingBasket aria-hidden />
@@ -91,7 +95,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
                 {tHome('actions.pos')}
               </Link>
             ) : null}
-          </>
+          </div>
         }
       />
 
@@ -261,6 +265,17 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
       {/* На телефоне разделы — списком внизу кабинета, как в макете M13. */}
       <div className="mt-4">
         <NavLinks groups={await navGroups(company.type)} variant="menu" />
+        {/* Язык и выход на телефоне живут здесь: верхней шапки там нет. */}
+        <div className="border-border bg-card divide-border mt-3 divide-y rounded-[22px] border px-4 py-0.5 lg:hidden">
+          <div className="flex items-center gap-3.5 py-[13px]">
+            <span className="bg-muted grid size-[38px] shrink-0 place-items-center rounded-xl">
+              <Globe aria-hidden className="size-[19px]" />
+            </span>
+            <span className="flex-1 text-[15px] font-bold">{tHome('language')}</span>
+            <LanguageSwitcher testIdPrefix="menu-locale" />
+          </div>
+          <LogoutButton label={t('logout')} variant="row" />
+        </div>
       </div>
     </Page>
   );

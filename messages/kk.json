@@ -244,7 +244,8 @@
         "lowStock": "Ең аздан төмен",
         "offers": "Белсенді тауарлар"
       },
-      "companyPoints": "{count} нүкте"
+      "companyPoints": "{count} нүкте",
+      "language": "Тіл"
     },
     "supportLink": "Қолдау",
     "banners": {

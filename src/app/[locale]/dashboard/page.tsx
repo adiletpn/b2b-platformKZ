@@ -30,7 +30,8 @@ import { navGroups } from '@/components/app-header';
 import { NavLinks } from '@/components/nav-links';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { LogoutButton } from '@/components/logout-button';
-import { money } from '@/lib/format';
+import { money, quantity } from '@/lib/format';
+import { getCompanyRating } from '@/lib/ratings/metrics';
 import { Avatar } from '@/components/ui/controls';
 
 export default async function DashboardPage({ params }: { params: Promise<{ locale: string }> }) {
@@ -48,7 +49,10 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
     },
   });
 
-  const [progress, summary, banners] = await Promise.all([
+  const [employeesCount, rating, progress, summary, banners] = await Promise.all([
+    // Правило 4: только сотрудники и оценки этой компании.
+    prisma.membership.count({ where: { companyId: company.id, status: 'ACTIVE' } }),
+    getCompanyRating(company.id),
     getOnboardingProgress(company.id),
     getDashboardSummary(company.id),
     activeBannersFor(company.type),
@@ -265,7 +269,21 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
 
       {/* На телефоне разделы — списком внизу кабинета, как в макете M13. */}
       <div className="mt-4">
-        <NavLinks groups={await navGroups(company.type)} variant="menu" />
+        <NavLinks
+          variant="menu"
+          groups={(await navGroups(company.type)).map((group) => ({
+            ...group,
+            items: group.items.map((item) => ({
+              ...item,
+              hint:
+                item.href === '/employees'
+                  ? String(employeesCount)
+                  : item.href === '/ratings' && rating.manualScore
+                    ? quantity(rating.manualScore)
+                    : undefined,
+            })),
+          }))}
+        />
         {/* Язык и выход на телефоне живут здесь: верхней шапки там нет. */}
         <div className="border-border bg-card divide-border mt-3 divide-y rounded-[22px] border px-4 py-0.5 lg:hidden">
           <div className="flex items-center gap-3.5 py-[13px]">

@@ -34,6 +34,8 @@ type NavItem = {
   icon: string;
   /** Счётчик справа от раздела (макет D01): корзина, заявки, чаты. */
   badge?: number;
+  /** Значение справа в меню «Кабинета» (макет M13): число сотрудников, оценка. */
+  hint?: string;
 };
 
 export type NavGroup = { label: string; items: NavItem[] };

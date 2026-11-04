@@ -82,6 +82,9 @@ export function NavLinks({
                   <Icon aria-hidden className="size-[19px]" />
                 </span>
                 <span className="flex-1 text-[15px] font-bold">{item.label}</span>
+                {item.hint ? (
+                  <span className="text-muted-foreground text-[13px] font-bold">{item.hint}</span>
+                ) : null}
                 <ChevronRight aria-hidden className="size-4 text-[#bdb5ab]" strokeWidth={2.4} />
               </Link>
             );

@@ -48,7 +48,7 @@ export default async function SettlementsPage({ params }: { params: Promise<{ lo
 
   return (
     <Page width="lg">
-      <PageHeader title={t('title')} description={t('subtitle')} />
+      <PageHeader title={t('title')} />
 
       {/* Макет D06: три плашки — должны, просрочено, оплачено за месяц. */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -199,7 +199,9 @@ export default async function SettlementsPage({ params }: { params: Promise<{ lo
                   <tr key={row.orderId}>
                     <td className="px-4 py-2.5 text-[13px] font-extrabold">{row.orderNumber}</td>
                     <td className="px-4 py-2.5 break-words">{row.storeName}</td>
-                    <td className="px-4 py-2.5 whitespace-nowrap">{row.dueDate ? formatDate(new Date(row.dueDate)) : '—'}</td>
+                    <td className="px-4 py-2.5 whitespace-nowrap">
+                      {row.dueDate ? formatDate(new Date(row.dueDate)) : '—'}
+                    </td>
                     <td className="px-4 py-2.5 text-right font-bold whitespace-nowrap tabular-nums">
                       {money(row.amount)} ₸
                     </td>

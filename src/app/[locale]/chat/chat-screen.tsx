@@ -509,7 +509,21 @@ export function ChatScreen({
                   ) : null}
                 </div>
 
-                <div className="mt-4 flex-1 space-y-2 overflow-y-auto" data-testid="chat-messages">
+                {active.orderNumber ? (
+                  <div
+                    className="bg-muted mt-3 flex items-center gap-2.5 rounded-2xl px-3.5 py-2.5"
+                    data-testid="chat-pinned-order"
+                  >
+                    <FileText aria-hidden className="size-[18px] shrink-0" />
+                    <span className="min-w-0 flex-1 truncate text-[13px] font-bold">
+                      {t('byOrder', { number: active.orderNumber })}
+                    </span>
+                  </div>
+                ) : null}
+                <div
+                  className="mt-4 flex-1 space-y-2.5 overflow-y-auto"
+                  data-testid="chat-messages"
+                >
                   {messages.length === 0 ? (
                     <p className="text-muted-foreground text-sm font-medium">{t('noMessages')}</p>
                   ) : (

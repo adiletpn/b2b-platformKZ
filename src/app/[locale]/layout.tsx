@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { notFound } from 'next/navigation';
 import { hasLocale, NextIntlClientProvider } from 'next-intl';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { Onest, Pacifico } from 'next/font/google';
+import { Courgette, Onest } from 'next/font/google';
 import { routing } from '@/i18n/routing';
 import { AppShell } from '@/components/app-header';
 import { ServiceWorkerRegistration } from '@/components/service-worker';
@@ -25,7 +25,7 @@ const onest = Onest({
 
 // Рукописный шрифт названия в логотипе (просьба заказчика 3.11.2026). Только латиница:
 // «Arbafind» пишется латиницей на обоих языках.
-const brand = Pacifico({
+const brand = Courgette({
   subsets: ['latin'],
   weight: '400',
   variable: '--font-script',

@@ -64,7 +64,7 @@ export function Brand({
       />
       <span
         // Название — рукописным шрифтом (просьба заказчика 3.11.2026), значок — Onest-сетка рядом.
-        className={`font-brand text-foreground truncate pr-1 pb-0.5 text-[23px] leading-tight font-normal ${compact ? 'hidden sm:inline lg:inline' : ''}`}
+        className={`font-brand text-foreground truncate pr-1 text-[24px] leading-tight font-normal ${compact ? 'hidden sm:inline lg:inline' : ''}`}
       >
         {name}
       </span>

@@ -33,7 +33,7 @@
   --shadow-card: var(--shadow-soft);
   --shadow-lift: var(--shadow-strong);
   --shadow-cta: var(--shadow-primary);
-  --font-brand: var(--font-script), 'Pacifico', cursive;
+  --font-brand: var(--font-script), 'Courgette', cursive;
   --font-sans: var(--font-onest), 'Onest', 'SF Pro Text', 'Segoe UI', 'Roboto', Arial, sans-serif;
 }
 

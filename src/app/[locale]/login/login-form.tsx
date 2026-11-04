@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DemoHint, Field } from '@/components/ui/field';
 import { formatPhone } from '@/lib/phone';
-import { Card } from '@/components/ui/card';
+import { LanguageSwitcher } from '@/components/language-switcher';
 import { FileCheck2, ShieldCheck, Zap } from 'lucide-react';
 import { usePhoneCode } from '@/lib/sms/use-phone-code';
 
@@ -15,7 +15,7 @@ import { usePhoneCode } from '@/lib/sms/use-phone-code';
 type Step = { name: 'phone' } | { name: 'code'; phone: string; demoCode: string | null };
 
 /** Вход только по коду из SMS (Firebase, без ключей — мок с кодом на экране). */
-export function LoginForm() {
+export function LoginForm({ brand }: { brand: React.ReactNode }) {
   const t = useTranslations('auth');
   const tApp = useTranslations('app');
   const router = useRouter();
@@ -85,123 +85,129 @@ export function LoginForm() {
   }
 
   return (
-    <main className="mx-auto grid w-full max-w-5xl gap-6 px-4 py-8 sm:px-6 lg:grid-cols-[1.1fr_1fr] lg:items-center lg:py-16">
-      {/* Экран входа остаётся белым, как был: фон #FBFAF8 только у кабинета. */}
-      <div aria-hidden className="fixed inset-0 -z-10 bg-white" />
-      <section className="hidden rounded-[28px] bg-[#3e342e] bg-[radial-gradient(40rem_20rem_at_100%_0%,rgb(245_130_12/0.55),transparent_60%)] p-10 text-white shadow-[var(--shadow-strong)] lg:block">
-        <p className="text-sm font-medium tracking-wide text-white/70 uppercase">
-          {t('side.kicker')}
-        </p>
-        <h2 className="mt-3 text-[32px] leading-[1.05] font-black tracking-[-0.025em]">
-          {t('side.title')}
-        </h2>
-        <ul className="mt-8 space-y-5">
-          {(
-            [
-              ['p1', Zap],
-              ['p2', FileCheck2],
-              ['p3', ShieldCheck],
-            ] as const
-          ).map(([key, Icon]) => (
-            <li key={key} className="flex gap-3">
-              <span className="grid size-10 shrink-0 place-items-center rounded-[14px] bg-white/12 text-[#ff9a2e]">
-                <Icon className="size-4" aria-hidden />
-              </span>
-              <span className="text-sm leading-relaxed text-white/85">{t(`side.${key}`)}</span>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      {/* На телефоне — как макет M01: без карточки, крупный заголовок и поле телефона. */}
-      <Card className="mx-auto w-full max-w-md max-sm:border-0 max-sm:bg-transparent max-sm:p-0 max-sm:shadow-none sm:p-8">
-        <p className="text-[32px] leading-[1.05] font-black tracking-[-0.025em] sm:hidden">
-          {tApp('tagline')}
-        </p>
-        <h1 className="mt-6 text-2xl font-black tracking-[-0.02em] sm:mt-0">{t('title')}</h1>
-        <p className="text-muted-foreground mt-2 text-[15px] font-medium">{t('subtitle')}</p>
-
-        {step.name === 'phone' ? (
-          <form className="mt-6 space-y-4" onSubmit={requestCode}>
-            <Field label={t('phoneLabel')}>
-              <Input
-                name="phone"
-                inputMode="tel"
-                autoComplete="tel"
-                data-testid="phone-input"
-                className="h-[60px] rounded-[18px] border-2 px-[18px] text-xl font-bold tracking-[0.02em]"
-                placeholder={t('phonePlaceholder')}
-                value={phoneInput}
-                onChange={(event) => setPhoneInput(event.target.value)}
-              />
-            </Field>
-            <Button
-              type="submit"
-              size="lg"
-              className="w-full"
-              disabled={pending}
-              data-testid="request-code"
-            >
-              {t('requestCode')}
-            </Button>
-          </form>
-        ) : (
-          <form className="mt-6 space-y-4" onSubmit={verify}>
-            <p className="text-muted-foreground text-sm font-medium">
-              {t('codeSentTo', { phone: formatPhone(step.phone) })}
-            </p>
-            {step.demoCode ? (
-              <DemoHint title={t('demoCodeTitle')}>
-                {t('demoCodeHint')}:{' '}
-                <span
-                  className="text-foreground font-mono text-base font-semibold"
-                  data-testid="demo-code"
-                >
-                  {step.demoCode}
-                </span>
-              </DemoHint>
-            ) : null}
-            <Field label={t('codeLabel')}>
-              <Input
-                name="code"
-                inputMode="numeric"
-                maxLength={6}
-                autoComplete="one-time-code"
-                data-testid="code-input"
-                value={code}
-                onChange={(event) => setCode(event.target.value)}
-              />
-            </Field>
-            <Button
-              type="submit"
-              size="lg"
-              className="w-full"
-              disabled={pending}
-              data-testid="verify-code"
-            >
-              {t('verify')}
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              className="w-full"
-              onClick={() => setStep({ name: 'phone' })}
-            >
-              {t('changePhone')}
-            </Button>
-          </form>
-        )}
-
-        {error ? (
-          <p
-            className="text-danger mt-4 text-sm font-semibold"
-            role="alert"
-            data-testid="auth-error"
-          >
-            {t(`errors.${error}` as 'errors.unknown')}
+    // Единая карточка ровно по центру экрана на размытом оранжевом градиенте.
+    <main data-login-screen className="grid min-h-dvh place-items-center px-4 py-6 sm:px-6">
+      <div aria-hidden className="login-aurora" />
+      <div className="bg-card grid w-full max-w-md overflow-hidden rounded-[32px] shadow-[0_40px_90px_-30px_rgb(62_52_46/0.65)] lg:max-w-[60rem] lg:grid-cols-[1.05fr_1fr]">
+        <section className="hidden flex-col justify-center bg-[#3e342e] bg-[radial-gradient(40rem_20rem_at_100%_0%,rgb(245_130_12/0.55),transparent_60%)] p-10 text-white lg:flex">
+          <p className="text-sm font-medium tracking-wide text-white/70 uppercase">
+            {t('side.kicker')}
           </p>
-        ) : null}
-      </Card>
+          <h2 className="mt-3 text-[32px] leading-[1.05] font-black tracking-[-0.025em]">
+            {t('side.title')}
+          </h2>
+          <ul className="mt-8 space-y-5">
+            {(
+              [
+                ['p1', Zap],
+                ['p2', FileCheck2],
+                ['p3', ShieldCheck],
+              ] as const
+            ).map(([key, Icon]) => (
+              <li key={key} className="flex gap-3">
+                <span className="grid size-10 shrink-0 place-items-center rounded-[14px] bg-white/12 text-[#ff9a2e]">
+                  <Icon className="size-4" aria-hidden />
+                </span>
+                <span className="text-sm leading-relaxed text-white/85">{t(`side.${key}`)}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        {/* На телефоне — как макет M01: без карточки, крупный заголовок и поле телефона. */}
+        <div className="p-6 sm:p-10">
+          <div className="mb-7 flex items-center justify-between gap-3">
+            {brand}
+            <LanguageSwitcher testIdPrefix="login-locale" />
+          </div>
+          <p className="mb-5 text-[26px] leading-[1.1] font-black tracking-[-0.025em] lg:hidden">
+            {tApp('tagline')}
+          </p>
+          <h1 className="text-2xl font-black tracking-[-0.02em]">{t('title')}</h1>
+          <p className="text-muted-foreground mt-2 text-[15px] font-medium">{t('subtitle')}</p>
+
+          {step.name === 'phone' ? (
+            <form className="mt-6 space-y-4" onSubmit={requestCode}>
+              <Field label={t('phoneLabel')}>
+                <Input
+                  name="phone"
+                  inputMode="tel"
+                  autoComplete="tel"
+                  data-testid="phone-input"
+                  className="h-[60px] rounded-[18px] border-2 px-[18px] text-xl font-bold tracking-[0.02em]"
+                  placeholder={t('phonePlaceholder')}
+                  value={phoneInput}
+                  onChange={(event) => setPhoneInput(event.target.value)}
+                />
+              </Field>
+              <Button
+                type="submit"
+                size="lg"
+                className="w-full"
+                disabled={pending}
+                data-testid="request-code"
+              >
+                {t('requestCode')}
+              </Button>
+            </form>
+          ) : (
+            <form className="mt-6 space-y-4" onSubmit={verify}>
+              <p className="text-muted-foreground text-sm font-medium">
+                {t('codeSentTo', { phone: formatPhone(step.phone) })}
+              </p>
+              {step.demoCode ? (
+                <DemoHint title={t('demoCodeTitle')}>
+                  {t('demoCodeHint')}:{' '}
+                  <span
+                    className="text-foreground font-mono text-base font-semibold"
+                    data-testid="demo-code"
+                  >
+                    {step.demoCode}
+                  </span>
+                </DemoHint>
+              ) : null}
+              <Field label={t('codeLabel')}>
+                <Input
+                  name="code"
+                  inputMode="numeric"
+                  maxLength={6}
+                  autoComplete="one-time-code"
+                  data-testid="code-input"
+                  value={code}
+                  onChange={(event) => setCode(event.target.value)}
+                />
+              </Field>
+              <Button
+                type="submit"
+                size="lg"
+                className="w-full"
+                disabled={pending}
+                data-testid="verify-code"
+              >
+                {t('verify')}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full"
+                onClick={() => setStep({ name: 'phone' })}
+              >
+                {t('changePhone')}
+              </Button>
+            </form>
+          )}
+
+          {error ? (
+            <p
+              className="text-danger mt-4 text-sm font-semibold"
+              role="alert"
+              data-testid="auth-error"
+            >
+              {t(`errors.${error}` as 'errors.unknown')}
+            </p>
+          ) : null}
+        </div>
+      </div>
     </main>
   );
 }

@@ -156,3 +156,47 @@ tbody tr:hover {
     display: none;
   }
 }
+
+/* Экран входа: размытый градиент фирменного оранжевого на весь экран, шапка гостя не нужна. */
+body:has([data-login-screen]) [data-guest-header] {
+  display: none;
+}
+.login-aurora {
+  position: fixed;
+  inset: 0;
+  z-index: -10;
+  overflow: hidden;
+  background: linear-gradient(135deg, #ffb25a 0%, var(--primary) 48%, var(--primary-text) 100%);
+}
+.login-aurora::before,
+.login-aurora::after {
+  content: '';
+  position: absolute;
+  width: 62vmax;
+  height: 62vmax;
+  border-radius: 50%;
+  filter: blur(90px);
+  animation: login-drift 18s ease-in-out infinite alternate;
+}
+.login-aurora::before {
+  top: -24vmax;
+  left: -14vmax;
+  background: rgb(255 226 184 / 0.85);
+}
+.login-aurora::after {
+  right: -18vmax;
+  bottom: -28vmax;
+  background: rgb(62 52 46 / 0.55);
+  animation-direction: alternate-reverse;
+}
+@keyframes login-drift {
+  to {
+    transform: translate(6vmax, 4vmax) scale(1.08);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .login-aurora::before,
+  .login-aurora::after {
+    animation: none;
+  }
+}

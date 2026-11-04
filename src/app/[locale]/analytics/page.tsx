@@ -234,7 +234,7 @@ export default async function AnalyticsPage({
           className={store ? 'mt-8 space-y-4' : 'space-y-4'}
           data-testid="analytics-supplier"
         >
-          {store ? <h2 className="text-lg font-semibold">{t('supplierTitle')}</h2> : null}
+          {store ? <h2 className="text-[15px] font-extrabold">{t('supplierTitle')}</h2> : null}
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
             <StatCard
               icon={Truck}

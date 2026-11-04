@@ -85,11 +85,11 @@ export function LoginForm({ brand }: { brand: React.ReactNode }) {
   }
 
   return (
-    // Единая карточка ровно по центру экрана на размытом оранжевом градиенте.
+    // Единая карточка ровно по центру экрана на спокойном тёплом фоне.
     <main data-login-screen className="grid min-h-dvh place-items-center px-4 py-6 sm:px-6">
-      <div aria-hidden className="login-aurora" />
-      <div className="bg-card grid w-full max-w-md overflow-hidden rounded-[32px] shadow-[0_40px_90px_-30px_rgb(62_52_46/0.65)] lg:max-w-[60rem] lg:grid-cols-[1.05fr_1fr]">
-        <section className="hidden flex-col justify-center bg-[#3e342e] bg-[radial-gradient(40rem_20rem_at_100%_0%,rgb(245_130_12/0.55),transparent_60%)] p-10 text-white lg:flex">
+      <div aria-hidden className="login-backdrop" />
+      <div className="border-border bg-card grid w-full max-w-md overflow-hidden rounded-[28px] border shadow-[0_30px_60px_-32px_rgb(70_50_15/0.22)] lg:max-w-[60rem] lg:grid-cols-[1.05fr_1fr]">
+        <section className="hidden flex-col justify-center bg-[#3e342e] bg-[radial-gradient(34rem_18rem_at_100%_0%,rgb(245_130_12/0.2),transparent_65%)] p-10 text-white lg:flex">
           <p className="text-sm font-medium tracking-wide text-white/70 uppercase">
             {t('side.kicker')}
           </p>

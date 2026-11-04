@@ -5,6 +5,7 @@ import { getSession } from '@/lib/auth/session';
 import { prisma } from '@/lib/prisma';
 import { maskPhone } from '@/lib/phone';
 import { EmployeesScreen } from './employees-screen';
+import { formatDate, formatDateTime } from '@/lib/format';
 
 export default async function EmployeesPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -80,13 +81,13 @@ export default async function EmployeesPage({ params }: { params: Promise<{ loca
         id: invitation.id,
         phone: maskPhone(invitation.phone),
         role: invitation.role.code,
-        expiresAt: invitation.expiresAt.toLocaleDateString('ru-RU'),
+        expiresAt: formatDate(invitation.expiresAt),
       }))}
       audit={audit.map((entry) => ({
         id: entry.id,
         action: entry.action,
         actorPhone: entry.user ? maskPhone(entry.user.phone) : '—',
-        createdAt: entry.createdAt.toLocaleString('ru-RU'),
+        createdAt: formatDateTime(entry.createdAt),
       }))}
     />
   );

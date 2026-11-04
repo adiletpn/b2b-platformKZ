@@ -218,7 +218,6 @@ export function EmployeesScreen({
       {/* Макет D07: в шапке «Журнал действий» и «Пригласить». */}
       <PageHeader
         title={t('title')}
-        description={t('hint')}
         actions={
           <>
             <a href="#employees-audit" className={buttonVariants({ variant: 'outline' })}>

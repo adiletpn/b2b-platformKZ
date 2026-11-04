@@ -1008,10 +1008,25 @@ export function OrderDetail({
         <section className="border-border bg-card mt-5 rounded-[20px] border p-[18px] sm:p-5">
           <h2 className="text-[17px] font-extrabold">{tPayment('title')}</h2>
 
+          {/* Макет M10: сумма к оплате крупно, с учётом акта расхождений. */}
+          <p className="text-muted-foreground mt-3 text-[13px] font-semibold">
+            {tPayment('toPayTitle')}
+          </p>
+          <p
+            className="mt-0.5 text-[34px] leading-tight font-black tracking-[-0.025em] tabular-nums"
+            data-testid="payment-due"
+          >
+            {money(order.total)} ₸
+          </p>
+
           <dl className="mt-3 space-y-1 text-sm" data-testid="payment-requisites">
             <p className="text-muted-foreground text-xs font-semibold">{tPayment('payTo')}</p>
             {order.supplierRequisites.iik ? (
               <>
+                <div className="flex justify-between gap-3">
+                  <dt className="text-muted-foreground">{tPayment('recipient')}</dt>
+                  <dd className="text-right font-bold">{order.counterparty}</dd>
+                </div>
                 <div className="flex justify-between gap-3">
                   <dt className="text-muted-foreground">{tPayment('iik')}</dt>
                   <dd className="tabular-nums" data-testid="payment-iik">

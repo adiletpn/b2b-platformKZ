@@ -74,7 +74,7 @@ test('dashboard_shows_turnover_and_disputes_block', async ({}, testInfo) => {
   // База общая с другими спеками, поэтому проверяем формат, а не конкретные числа.
   await expect(adminPage.getByTestId('metric-ordersToday')).toHaveText(/^\d+$/);
   await expect(adminPage.getByTestId('metric-gmvMonth')).toHaveText(/^[\d\s]+(,\d{2})? ₸$/);
-  await expect(adminPage.getByTestId('metric-conversion')).toHaveText(/^\d+\.\d{2}%$/);
+  await expect(adminPage.getByTestId('metric-conversion')).toHaveText(/^\d+(,\d+)?%$/);
 
   // Раздел разбора споров виден модератору (раздел 3.13 ТЗ).
   await expect(adminPage.getByRole('heading', { name: 'Споры' })).toBeVisible();

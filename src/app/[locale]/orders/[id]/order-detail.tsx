@@ -175,6 +175,34 @@ export function OrderDetail({
       [item.id]: { ...current[item.id]!, accepted: String(count) },
     }));
   }
+  const [substitutes, setSubstitutes] = useState<
+    Record<string, { offerId: string; quantity: string }>
+  >({});
+  const [quantities, setQuantities] = useState<Record<string, string>>(
+    Object.fromEntries(
+      order.items.map((item) => [
+        item.id,
+        plainQuantity(item.quantityConfirmed ?? item.quantityOrdered),
+      ]),
+    ),
+  );
+  const [reason, setReason] = useState('');
+  const [cancelReason, setCancelReason] = useState('');
+  const [acceptance, setAcceptance] = useState<
+    Record<string, { accepted: string; defective: string; mismatch: string }>
+  >(
+    Object.fromEntries(
+      order.items.map((item) => [
+        item.id,
+        {
+          accepted: plainQuantity(item.quantityConfirmed ?? item.quantityOrdered),
+          defective: '0',
+          mismatch: '0',
+        },
+      ]),
+    ),
+  );
+  const [acceptanceResult, setAcceptanceResult] = useState<string | null>(null);
   /**
    * Предпросмотр акта (макет M09): сервер считает к оплате принятое × цену, поэтому
    * разница — непринятое × цену. Пока в поле недописанное число, строка не считается.
@@ -206,34 +234,6 @@ export function OrderDetail({
   const checkedPercent = order.items.length
     ? Math.round((checkedCount / order.items.length) * 100)
     : 0;
-  const [substitutes, setSubstitutes] = useState<
-    Record<string, { offerId: string; quantity: string }>
-  >({});
-  const [quantities, setQuantities] = useState<Record<string, string>>(
-    Object.fromEntries(
-      order.items.map((item) => [
-        item.id,
-        plainQuantity(item.quantityConfirmed ?? item.quantityOrdered),
-      ]),
-    ),
-  );
-  const [reason, setReason] = useState('');
-  const [cancelReason, setCancelReason] = useState('');
-  const [acceptance, setAcceptance] = useState<
-    Record<string, { accepted: string; defective: string; mismatch: string }>
-  >(
-    Object.fromEntries(
-      order.items.map((item) => [
-        item.id,
-        {
-          accepted: plainQuantity(item.quantityConfirmed ?? item.quantityOrdered),
-          defective: '0',
-          mismatch: '0',
-        },
-      ]),
-    ),
-  );
-  const [acceptanceResult, setAcceptanceResult] = useState<string | null>(null);
   const [payment, setPayment] = useState({
     amount: order.total,
     method: 'ON_DELIVERY' as 'PREPAY' | 'ON_DELIVERY' | 'DEFERRED',

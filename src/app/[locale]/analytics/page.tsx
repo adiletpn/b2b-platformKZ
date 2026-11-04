@@ -153,8 +153,8 @@ export default async function AnalyticsPage({
                   {store.abc.map((row) => (
                     <tr key={row.productId}>
                       <td className={td}>{name(row)}</td>
-                      <td className={num}>{row.revenue}</td>
-                      <td className={num}>{row.share}%</td>
+                      <td className={num}>{money(row.revenue)} ₸</td>
+                      <td className={num}>{quantity(row.share)}%</td>
                       <td className={td}>
                         <Badge
                           tone={

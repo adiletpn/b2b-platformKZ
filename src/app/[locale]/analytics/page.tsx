@@ -106,7 +106,7 @@ export default async function AnalyticsPage({
                   title={t('byDay')}
                   seriesLabels={[t('revenue'), t('profit')]}
                   data={store.byDay.map((row) => ({
-                    label: row.day.slice(5),
+                    label: `${row.day.slice(8)}.${row.day.slice(5, 7)}`,
                     value: Number(row.revenue),
                     second: Number(row.profit),
                   }))}

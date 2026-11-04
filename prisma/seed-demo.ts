@@ -5,6 +5,7 @@
  * Запуск: npm run db:seed && npm run db:seed:demo
  */
 import Decimal from 'decimal.js';
+import { MOCKUP_DAIRY, MOCKUP_GROCERY, PHOTO_BY_BARCODE } from './demo-products';
 import { prisma } from '../src/lib/prisma';
 import { registerCompany } from '../src/lib/registration/register-company';
 import { recordSwipe } from '../src/lib/feed/swipe';
@@ -382,7 +383,11 @@ async function fillCatalog(supplierId: string, products: ProductSeed[]) {
         country: 'Казахстан',
         categoryId: category?.id ?? null,
         unitId: unit.id,
-        photoUrls: PHOTO_BY_CATEGORY[item.category] ? [PHOTO_BY_CATEGORY[item.category]!] : [],
+        photoUrls: PHOTO_BY_BARCODE[item.barcode]
+          ? [PHOTO_BY_BARCODE[item.barcode]!]
+          : PHOTO_BY_CATEGORY[item.category]
+            ? [PHOTO_BY_CATEGORY[item.category]!]
+            : [],
       },
     });
 
@@ -496,8 +501,8 @@ async function main() {
     });
   }
 
-  await fillCatalog(grocery.companyId, GROCERY);
-  await fillCatalog(dairy.companyId, DAIRY);
+  await fillCatalog(grocery.companyId, [...GROCERY, ...MOCKUP_GROCERY]);
+  await fillCatalog(dairy.companyId, [...DAIRY, ...MOCKUP_DAIRY]);
   await fillCatalog(drinks.companyId, DRINKS);
 
   // Минимальные суммы заказа, чтобы на показе было видно «не хватает до минимума».

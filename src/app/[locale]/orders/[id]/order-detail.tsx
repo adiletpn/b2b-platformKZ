@@ -481,12 +481,12 @@ export function OrderDetail({
 
       <section className="border-border bg-card mt-4 overflow-x-auto rounded-[20px] border">
         <table className="w-full text-sm md:min-w-[560px]">
-          <thead className="text-muted-foreground text-left max-md:hidden">
+          <thead className="text-left max-md:hidden">
             <tr>
-              <th className="px-3 py-2 font-medium">{t('items')}</th>
-              <th className="px-3 py-2 text-right font-medium">{t('ordered')}</th>
-              <th className="px-3 py-2 text-right font-medium">{t('confirmed')}</th>
-              <th className="px-3 py-2 text-right font-medium">{t('lineTotal')}</th>
+              <th className="px-3 py-2">{t('items')}</th>
+              <th className="px-3 py-2 text-right">{t('ordered')}</th>
+              <th className="px-3 py-2 text-right">{t('confirmed')}</th>
+              <th className="px-3 py-2 text-right">{t('lineTotal')}</th>
             </tr>
           </thead>
           <tbody className="divide-border divide-y" data-testid="order-items">
@@ -876,13 +876,13 @@ export function OrderDetail({
           <div className="mt-3 overflow-x-auto">
             {/* На телефоне строки складываются в карточки (M09), без горизонтальной прокрутки. */}
             <table className="w-full text-sm max-md:block md:min-w-[560px]">
-              <thead className="text-muted-foreground text-left max-md:hidden">
+              <thead className="text-left max-md:hidden">
                 <tr>
-                  <th className="py-2 pr-3 font-medium">{t('items')}</th>
-                  <th className="py-2 pr-3 text-right font-medium">{tAcceptance('shipped')}</th>
-                  <th className="py-2 pr-3 text-right font-medium">{tAcceptance('accepted')}</th>
-                  <th className="py-2 pr-3 text-right font-medium">{tAcceptance('defective')}</th>
-                  <th className="py-2 pr-3 text-right font-medium">{tAcceptance('mismatch')}</th>
+                  <th className="py-2 pr-3">{t('items')}</th>
+                  <th className="py-2 pr-3 text-right">{tAcceptance('shipped')}</th>
+                  <th className="py-2 pr-3 text-right">{tAcceptance('accepted')}</th>
+                  <th className="py-2 pr-3 text-right">{tAcceptance('defective')}</th>
+                  <th className="py-2 pr-3 text-right">{tAcceptance('mismatch')}</th>
                 </tr>
               </thead>
               <tbody className="divide-border divide-y max-md:block" data-testid="acceptance-items">

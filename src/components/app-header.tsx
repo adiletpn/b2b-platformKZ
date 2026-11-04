@@ -39,7 +39,7 @@ type NavItem = {
 export type NavGroup = { label: string; items: NavItem[] };
 
 /** Знак Arbafind: значок из макета и название платформы. */
-function Brand({
+export function Brand({
   name,
   href,
   compact = false,

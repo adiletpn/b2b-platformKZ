@@ -58,7 +58,7 @@ export function DeliveriesScreen({
   }
 
   return (
-    <Page>
+    <Page width="lg">
       <PageHeader title={title} description={t('subtitle')} />
       {children}
       {initial.length === 0 ? (

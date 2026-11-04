@@ -1764,7 +1764,7 @@
       "QR": "QR (Kaspi)",
       "MIXED": "Аралас"
     },
-    "sell": "Сату",
+    "sell": "Төлеу",
     "refund": "{number} чегі бойынша қайтару",
     "queued": "Жіберуді күтуде: {count}",
     "notices": {
@@ -1892,7 +1892,8 @@
       "redeem": "Бонуспен төлеу (чектің {share}%-ына дейін)",
       "paidByBonus": "Бонуспен төлем",
       "earned": "Бонус есептелді: {bonus} ₸"
-    }
+    },
+    "payAmount": "{amount} ₸ төлеу"
   },
   "files": {
     "orderTitle": "Өтінім файлдары",

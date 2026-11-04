@@ -1764,7 +1764,7 @@
       "QR": "QR (Kaspi)",
       "MIXED": "Смешанная"
     },
-    "sell": "Продать",
+    "sell": "Оплатить",
     "refund": "Возврат по чеку {number}",
     "queued": "Ждут отправки: {count}",
     "notices": {
@@ -1892,7 +1892,8 @@
       "redeem": "Списать бонусами (до {share}% чека)",
       "paidByBonus": "Оплата бонусами",
       "earned": "Начислено бонусов: {bonus} ₸"
-    }
+    },
+    "payAmount": "Оплатить {amount} ₸"
   },
   "files": {
     "orderTitle": "Файлы заявки",

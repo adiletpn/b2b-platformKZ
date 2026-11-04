@@ -1164,7 +1164,7 @@ export function PosScreen({
               data-testid="pos-sell"
               onClick={() => void sell()}
             >
-              {t('sell')}
+              {cart.length > 0 ? t('payAmount', { amount: formatMoney(money(toPay)) }) : t('sell')}
             </Button>
             <Button
               size="lg"

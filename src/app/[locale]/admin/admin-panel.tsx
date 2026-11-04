@@ -427,12 +427,12 @@ export function AdminPanel({
 
           <div className="mt-3 overflow-x-auto">
             <table className="w-full min-w-[560px] text-sm">
-              <thead className="text-muted-foreground text-left">
+              <thead className="text-left">
                 <tr>
-                  <th className="px-2 py-2 font-medium">{t('plan')}</th>
-                  <th className="px-2 py-2 font-medium">{t('planPrice')}</th>
-                  <th className="px-2 py-2 font-medium">{t('planLimits')}</th>
-                  <th className="px-2 py-2 font-medium">{t('planTrial')}</th>
+                  <th className="px-2 py-2">{t('plan')}</th>
+                  <th className="px-2 py-2">{t('planPrice')}</th>
+                  <th className="px-2 py-2">{t('planLimits')}</th>
+                  <th className="px-2 py-2">{t('planTrial')}</th>
                 </tr>
               </thead>
               <tbody className="divide-border divide-y" data-testid="plans-table">

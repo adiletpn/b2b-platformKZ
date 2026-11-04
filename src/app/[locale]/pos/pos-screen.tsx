@@ -1076,11 +1076,7 @@ export function PosScreen({
             </label>
           ) : null}
 
-          <div
-            className="mt-3 grid grid-cols-4 gap-1.5"
-            role="radiogroup"
-            aria-label={t('payment')}
-          >
+          <div className="mt-3 grid grid-cols-2 gap-2" role="radiogroup" aria-label={t('payment')}>
             {PAYMENTS.map((type) => {
               const Icon = PAYMENT_ICONS[type];
               return (
@@ -1091,15 +1087,15 @@ export function PosScreen({
                   aria-checked={payment === type}
                   data-testid={`pos-pay-${type}`}
                   className={cn(
-                    'flex flex-col items-center gap-1 rounded-2xl border px-1 py-2 text-[11px] transition-colors',
+                    'flex h-[52px] items-center gap-2.5 rounded-2xl border-2 px-3.5 text-left text-sm font-extrabold transition-colors',
                     payment === type
-                      ? 'border-primary bg-primary-soft text-primary'
-                      : 'border-border hover:bg-muted',
+                      ? 'border-primary bg-primary-soft text-primary-text'
+                      : 'bg-muted hover:bg-border border-transparent',
                   )}
                   onClick={() => setPayment(type)}
                 >
-                  <Icon aria-hidden className="size-4" />
-                  {t(`payments.${type}`)}
+                  <Icon aria-hidden className="size-5 shrink-0" />
+                  <span className="min-w-0 truncate">{t(`payments.${type}`)}</span>
                 </button>
               );
             })}

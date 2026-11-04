@@ -695,7 +695,8 @@
       "shipped": "Отгружена",
       "acceptance": "Приемка",
       "payment": "Оплата"
-    }
+    },
+    "orderedAndStock": "Заказ {ordered} · остаток {stock}"
   },
   "documents": {
     "title": "Документы",

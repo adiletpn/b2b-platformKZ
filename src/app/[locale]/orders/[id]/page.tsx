@@ -134,6 +134,8 @@ export default async function OrderPage({
           priceWithVat: item.priceWithVat.toFixed(2),
           substituteForId: item.substituteForId,
           barcode: item.offer.product.barcode,
+          // Остаток поставщика видит только сам поставщик (макет M12).
+          stock: side === 'supplier' ? item.offer.stock.toFixed(3) : null,
           photoUrl: item.offer.product.photoUrls[0] ?? null,
           // Суммы строки считаются в Decimal (правило 1): по подтверждённому, иначе по заказанному.
           lineTotal: item.priceWithVat

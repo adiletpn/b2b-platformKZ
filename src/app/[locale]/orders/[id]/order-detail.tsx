@@ -37,6 +37,7 @@ type Item = {
   /** Позиция предложена поставщиком вместо другой (раздел 3.4 ТЗ). */
   substituteForId: string | null;
   barcode: string;
+  stock: string | null;
   photoUrl: string | null;
   lineTotal: string;
   orderedTotal: string;
@@ -540,6 +541,17 @@ export function OrderDetail({
                         {t('substituteFor', { name: itemName(item.substituteForId) })}
                       </p>
                     </div>
+                  ) : null}
+                  {canConfirm && item.stock !== null ? (
+                    <p
+                      className="text-muted-foreground mt-1 text-xs font-semibold"
+                      data-testid={`order-stock-${item.id}`}
+                    >
+                      {t('orderedAndStock', {
+                        ordered: quantity(item.quantityOrdered),
+                        stock: quantity(item.stock),
+                      })}
+                    </p>
                   ) : null}
                   {canConfirm ? (
                     <div className="mt-1.5 flex flex-wrap items-center gap-1.5">

@@ -695,7 +695,8 @@
       "shipped": "Жөнелтілді",
       "acceptance": "Қабылдау",
       "payment": "Төлем"
-    }
+    },
+    "orderedAndStock": "Тапсырыс {ordered} · қалдық {stock}"
   },
   "documents": {
     "title": "Құжаттар",

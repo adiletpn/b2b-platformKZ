@@ -874,8 +874,9 @@ export function OrderDetail({
           </div>
 
           <div className="mt-3 overflow-x-auto">
-            <table className="w-full min-w-[560px] text-sm">
-              <thead className="text-muted-foreground text-left">
+            {/* На телефоне строки складываются в карточки (M09), без горизонтальной прокрутки. */}
+            <table className="w-full text-sm max-md:block md:min-w-[560px]">
+              <thead className="text-muted-foreground text-left max-md:hidden">
                 <tr>
                   <th className="py-2 pr-3 font-medium">{t('items')}</th>
                   <th className="py-2 pr-3 text-right font-medium">{tAcceptance('shipped')}</th>
@@ -884,10 +885,13 @@ export function OrderDetail({
                   <th className="py-2 pr-3 text-right font-medium">{tAcceptance('mismatch')}</th>
                 </tr>
               </thead>
-              <tbody className="divide-border divide-y" data-testid="acceptance-items">
+              <tbody className="divide-border divide-y max-md:block" data-testid="acceptance-items">
                 {order.items.map((item) => (
-                  <tr key={item.id}>
-                    <td className="py-2 pr-3 break-words">
+                  <tr
+                    key={item.id}
+                    className="max-md:grid max-md:grid-cols-3 max-md:gap-2 max-md:py-3"
+                  >
+                    <td className="py-2 pr-3 font-bold break-words max-md:col-span-3 max-md:p-0">
                       {locale === 'kk' ? item.nameKk : item.nameRu}
                       {scanned[item.id] ? (
                         <Badge tone="success" className="ml-2" data-testid={`scanned-${item.id}`}>
@@ -895,13 +899,17 @@ export function OrderDetail({
                         </Badge>
                       ) : null}
                     </td>
-                    <td className="py-2 pr-3 text-right tabular-nums">
+                    <td className="text-muted-foreground py-2 pr-3 text-right font-bold tabular-nums max-md:col-span-3 max-md:p-0 max-md:text-left max-md:text-xs">
+                      <span className="md:hidden">{tAcceptance('shipped')} </span>
                       {quantity(item.quantityConfirmed ?? item.quantityOrdered)}
                     </td>
                     {(['accepted', 'defective', 'mismatch'] as const).map((field) => (
-                      <td key={field} className="py-2 pr-3 text-right">
+                      <td key={field} className="py-2 pr-3 text-right max-md:p-0">
+                        <span className="text-muted-foreground mb-1 block text-left text-[11px] font-semibold md:hidden">
+                          {tAcceptance(field)}
+                        </span>
                         <Input
-                          className="ml-auto h-9 w-24 text-right"
+                          className="ml-auto h-9 w-24 text-right max-md:w-full"
                           inputMode="decimal"
                           value={acceptance[item.id]?.[field] ?? ''}
                           data-testid={`acceptance-${field}-${item.id}`}

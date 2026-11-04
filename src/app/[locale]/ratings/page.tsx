@@ -27,7 +27,7 @@ export default async function RatingsPage({ params }: { params: Promise<{ locale
   const t = await getTranslations('ratings');
 
   return (
-    <Page width="md">
+    <Page width="lg">
       <PageHeader title={t('title')} />
 
       <section className="border-border bg-card shadow-card mt-5 rounded-xl border p-4 sm:p-5">

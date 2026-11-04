@@ -194,7 +194,7 @@ export function AdminPanel({
         id="admin-disputes"
         className="border-border bg-card shadow-card mt-4 scroll-mt-4 rounded-xl border p-4 sm:p-5"
       >
-        <h2 className="text-lg font-medium">{t('disputesTitle')}</h2>
+        <h2 className="text-[15px] font-extrabold">{t('disputesTitle')}</h2>
 
         {disputes.length === 0 ? (
           <p className="text-muted-foreground mt-2 text-sm" data-testid="disputes-empty">
@@ -283,7 +283,7 @@ export function AdminPanel({
         id="admin-queue"
         className="border-border bg-card shadow-card mt-4 scroll-mt-4 rounded-xl border p-4 sm:p-5"
       >
-        <h2 className="text-lg font-medium">{t('queueTitle')}</h2>
+        <h2 className="text-[15px] font-extrabold">{t('queueTitle')}</h2>
 
         {queue.length === 0 ? (
           <p className="text-muted-foreground mt-2 text-sm" data-testid="queue-empty">
@@ -361,7 +361,7 @@ export function AdminPanel({
 
       {canImpersonate ? (
         <section className="border-border bg-card shadow-card mt-4 rounded-xl border p-4 sm:p-5">
-          <h2 className="text-lg font-medium">{t('impersonationTitle')}</h2>
+          <h2 className="text-[15px] font-extrabold">{t('impersonationTitle')}</h2>
           <div className="mt-3 flex flex-wrap items-end gap-3">
             <Field label={t('company')}>
               <select
@@ -417,7 +417,7 @@ export function AdminPanel({
           className="border-border bg-card shadow-card mt-4 scroll-mt-4 rounded-xl border p-4 sm:p-5"
           data-testid="tariffs"
         >
-          <h2 className="text-lg font-medium">{t('tariffsTitle')}</h2>
+          <h2 className="text-[15px] font-extrabold">{t('tariffsTitle')}</h2>
           <p className="text-muted-foreground mt-1 text-[13px] font-semibold">{t('tariffsHint')}</p>
 
           <div className="mt-3 overflow-x-auto">
@@ -528,7 +528,7 @@ export function AdminPanel({
         className="border-border bg-card shadow-card mt-4 scroll-mt-4 rounded-xl border p-4 sm:p-5"
         data-testid="reference"
       >
-        <h2 className="text-lg font-medium">{t('referenceTitle')}</h2>
+        <h2 className="text-[15px] font-extrabold">{t('referenceTitle')}</h2>
         <p className="text-muted-foreground mt-1 text-[13px] font-semibold">{t('referenceHint')}</p>
 
         <dl className="mt-3 grid grid-cols-2 gap-3 text-sm lg:grid-cols-4">

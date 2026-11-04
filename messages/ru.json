@@ -893,7 +893,8 @@
       "batches": "Партии и сроки"
     },
     "labelsButton": "Ценники",
-    "documentButton": "Документ"
+    "documentButton": "Документ",
+    "writeOffOrDiscount": "Списать или уценить"
   },
   "payment": {
     "title": "Оплата",

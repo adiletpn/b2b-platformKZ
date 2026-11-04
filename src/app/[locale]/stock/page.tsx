@@ -134,6 +134,9 @@ export default async function StockPage({ params }: { params: Promise<{ locale: 
                   {t('alertExpiringHint')}
                 </p>
               </div>
+              <a href="#documents" className="text-primary ml-auto text-[13px] font-extrabold">
+                {t('writeOffOrDiscount')}
+              </a>
             </Card>
           ) : null}
           {replenishment.length > 0 ? (

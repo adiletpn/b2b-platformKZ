@@ -893,7 +893,8 @@
       "batches": "Партиялар мен мерзімдер"
     },
     "labelsButton": "Баға белгілері",
-    "documentButton": "Құжат"
+    "documentButton": "Құжат",
+    "writeOffOrDiscount": "Есептен шығару немесе арзандату"
   },
   "payment": {
     "title": "Төлем",

@@ -4,7 +4,7 @@ import { redirect } from '@/i18n/navigation';
 import { getAccess, hasPermission } from '@/lib/auth/permissions';
 import { prisma } from '@/lib/prisma';
 import { parsePeriod, storeAnalytics, supplierAnalytics } from '@/lib/analytics/analytics';
-import { kzDayKey, money } from '@/lib/format';
+import { kzDayKey, money, quantity } from '@/lib/format';
 import { Badge } from '@/components/ui/badge';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardTitle, StatCard } from '@/components/ui/card';
@@ -196,8 +196,8 @@ export default async function AnalyticsPage({
                         </Badge>
                       ) : null}
                     </td>
-                    <td className={num}>{row.stock}</td>
-                    <td className={num}>{row.sold}</td>
+                    <td className={num}>{quantity(row.stock)}</td>
+                    <td className={num}>{quantity(row.sold)}</td>
                     <td className={num}>{row.daysOfStock ?? '—'}</td>
                   </tr>
                 ))}

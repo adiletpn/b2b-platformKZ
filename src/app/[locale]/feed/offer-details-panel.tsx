@@ -46,7 +46,10 @@ export function OfferDetailsPanel({
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="text-lg font-medium break-words" data-testid="details-name">
+          <h2
+            className="text-[21px] font-black tracking-[-0.02em] break-words"
+            data-testid="details-name"
+          >
             {name}
           </h2>
           <p className="text-muted-foreground text-[13px] font-bold tabular-nums">

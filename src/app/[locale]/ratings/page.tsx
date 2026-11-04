@@ -5,6 +5,7 @@ import { getCompanyRating } from '@/lib/ratings/metrics';
 import { prisma } from '@/lib/prisma';
 import { RatingReviews } from './rating-reviews';
 import { Page, PageHeader } from '@/components/ui/page';
+import { quantity } from '@/lib/format';
 
 export default async function RatingsPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -93,11 +94,11 @@ export default async function RatingsPage({ params }: { params: Promise<{ locale
               </div>
               <div className="flex justify-between gap-3">
                 <dt className="text-muted-foreground">{t('averageDelay')}</dt>
-                <dd className="tabular-nums">{rating.store.averagePaymentDelayDays}</dd>
+                <dd className="tabular-nums">{quantity(rating.store.averagePaymentDelayDays)}</dd>
               </div>
               <div className="flex justify-between gap-3">
                 <dt className="text-muted-foreground">{t('cancelledShare')}</dt>
-                <dd className="tabular-nums">{rating.store.cancelledShare}%</dd>
+                <dd className="tabular-nums">{quantity(rating.store.cancelledShare)}%</dd>
               </div>
             </>
           ) : null}

@@ -521,10 +521,10 @@ export function ChatScreen({
                       >
                         <div
                           className={cn(
-                            'rounded-2xl px-3 py-2 text-sm break-words',
+                            'rounded-[20px] px-3.5 py-2.5 text-sm leading-[1.4] font-medium break-words',
                             message.mine
-                              ? 'bg-primary text-primary-foreground rounded-br-md'
-                              : 'bg-muted rounded-bl-md',
+                              ? 'bg-primary-soft rounded-br-md'
+                              : 'border-border bg-card rounded-bl-md border',
                           )}
                           data-testid={message.mine ? 'chat-message-mine' : 'chat-message-theirs'}
                         >

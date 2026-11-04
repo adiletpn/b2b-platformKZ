@@ -12,6 +12,7 @@ import { EmptyState, Page, PageHeader } from '@/components/ui/page';
 import { DocumentSignatures, type SignatureMark } from '@/components/document-signatures';
 import { AttachmentsPanel, type FileRow } from '@/components/attachments-panel';
 import { ExportsPanel } from './exports-panel';
+import { formatDate, money } from '@/lib/format';
 
 type Row = {
   id: string;
@@ -160,9 +161,13 @@ export function ArchiveScreen({
                     <td className="px-4 py-2.5">
                       <Badge tone={row.outgoing ? 'info' : 'neutral'}>{tTypes(row.type)}</Badge>
                     </td>
-                    <td className="px-4 py-2.5 whitespace-nowrap">{row.issuedAt}</td>
+                    <td className="px-4 py-2.5 whitespace-nowrap">
+                      {formatDate(new Date(row.issuedAt))}
+                    </td>
                     <td className="px-4 py-2.5 break-words">{row.counterpartyName}</td>
-                    <td className="px-4 py-2.5 text-right tabular-nums">{row.totalWithVat}</td>
+                    <td className="px-4 py-2.5 text-right font-extrabold whitespace-nowrap tabular-nums">
+                      {money(row.totalWithVat)} ₸
+                    </td>
                     <td className="px-4 py-2.5">
                       <DocumentSignatures
                         documentId={row.id}

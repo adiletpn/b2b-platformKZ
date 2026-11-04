@@ -256,7 +256,12 @@ export default async function OrdersPage({
                                 </span>
                               ) : null}
                             </td>
-                            <td className="px-4 py-3.5 text-right max-md:order-6 max-md:p-0 min-[1400px]:hidden">
+                            <td
+                              className={cn(
+                                'px-4 py-3.5 text-right max-md:order-6 max-md:p-0 min-[1400px]:hidden',
+                                !action && 'max-md:-mt-1.5',
+                              )}
+                            >
                               {/* Ссылка растянута на всю карточку на телефоне: карточка нажимается целиком. */}
                               <Link
                                 href={`/orders/${order.id}`}
@@ -268,12 +273,15 @@ export default async function OrdersPage({
                                 data-testid={`order-open-${order.number}`}
                               >
                                 <span className="max-md:hidden">{t('open')}</span>
-                                {action ? (
-                                  <ChevronRight
-                                    aria-hidden
-                                    className="text-muted-foreground size-4 md:hidden"
-                                  />
-                                ) : null}
+                                <ChevronRight
+                                  aria-hidden
+                                  className={cn(
+                                    'text-muted-foreground size-4 md:hidden',
+                                    // Без строки действия стрелки в макете нет: место она не занимает,
+                                    // а ссылка остаётся непустой для клавиатуры и экранного диктора.
+                                    !action && 'max-md:size-px max-md:opacity-0',
+                                  )}
+                                />
                               </Link>
                             </td>
                           </tr>

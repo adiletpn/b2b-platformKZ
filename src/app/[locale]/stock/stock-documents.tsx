@@ -129,7 +129,7 @@ export function StockDocuments({
         data-testid="stock-document-form"
         onSubmit={submit}
       >
-        <h2 className="text-lg font-medium">{t('documentsTitle')}</h2>
+        <h2 className="text-[15px] font-extrabold">{t('documentsTitle')}</h2>
         <p className="text-muted-foreground mt-1 text-[13px] font-semibold">{t('documentsHint')}</p>
 
         <div className="mt-3 flex flex-wrap items-end gap-3">

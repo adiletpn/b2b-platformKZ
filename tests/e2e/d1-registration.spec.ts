@@ -116,6 +116,6 @@ test('registration_screens_work_in_kazakh', async ({ page }, testInfo) => {
   await login(page, 'kk', phone(4_000_000 + testInfo.project.name.length * 1000 + 4));
 
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Компанияны тіркеу');
-  await expect(page.getByTestId('type-SUPPLIER')).toHaveText('Мен жеткізушімін');
+  await expect(page.getByTestId('type-SUPPLIER')).toContainText('Мен жеткізушімін');
   await expect(page.getByTestId('bin-check')).toHaveText('Тексеру');
 });

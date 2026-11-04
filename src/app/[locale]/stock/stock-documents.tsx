@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Field } from '@/components/ui/field';
 import { Card, CardTitle } from '@/components/ui/card';
 import { CameraScanButton } from '@/components/camera-scanner';
+import { quantity as formatQuantity } from '@/lib/format';
 
 type Location = { id: string; address: string };
 type Balance = { productId: string; name: string; quantity: string; barcode: string };
@@ -356,7 +357,7 @@ export function StockDocuments({
                     ) : null}
                     <span className="text-muted-foreground"> · {entry.locationAddress}</span>
                   </span>
-                  <span className="tabular-nums">{entry.quantity}</span>
+                  <span className="tabular-nums">{formatQuantity(entry.quantity)}</span>
                 </li>
               ))}
             </ul>

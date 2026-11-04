@@ -700,38 +700,6 @@ export function PosScreen({
         ) : null}
 
         {showReport && report ? <ReportPanel report={report} /> : null}
-
-        <div
-          className="border-border mt-4 flex flex-wrap items-end gap-2 border-t pt-4"
-          data-testid="pos-period"
-        >
-          <p className="w-full text-sm font-medium">{t('periodTitle')}</p>
-          <Field label={t('periodFrom')}>
-            <Input
-              type="date"
-              className="w-40"
-              value={period.from}
-              data-testid="pos-period-from"
-              onChange={(event) => setPeriod({ ...period, from: event.target.value })}
-            />
-          </Field>
-          <Field label={t('periodTo')}>
-            <Input
-              type="date"
-              className="w-40"
-              value={period.to}
-              data-testid="pos-period-to"
-              onChange={(event) => setPeriod({ ...period, to: event.target.value })}
-            />
-          </Field>
-          <a
-            href={`/api/pos/report/xlsx?from=${period.from}&to=${period.to}&locale=${locale}`}
-            className={buttonVariants({ variant: 'outline' })}
-            data-testid="pos-period-xlsx"
-          >
-            {t('downloadSales')}
-          </a>
-        </div>
       </Card>
 
       <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_24rem]">
@@ -1334,6 +1302,39 @@ export function PosScreen({
             </p>
           ) : null}
         </Card>
+      </div>
+
+      {/* Макет D08: сначала продажа, отчёт за период — ниже рабочей области. */}
+      <div
+        className="border-border bg-card mt-4 flex flex-wrap items-end gap-2 rounded-[20px] border p-[18px] sm:p-5"
+        data-testid="pos-period"
+      >
+        <p className="w-full text-sm font-medium">{t('periodTitle')}</p>
+        <Field label={t('periodFrom')}>
+          <Input
+            type="date"
+            className="w-40"
+            value={period.from}
+            data-testid="pos-period-from"
+            onChange={(event) => setPeriod({ ...period, from: event.target.value })}
+          />
+        </Field>
+        <Field label={t('periodTo')}>
+          <Input
+            type="date"
+            className="w-40"
+            value={period.to}
+            data-testid="pos-period-to"
+            onChange={(event) => setPeriod({ ...period, to: event.target.value })}
+          />
+        </Field>
+        <a
+          href={`/api/pos/report/xlsx?from=${period.from}&to=${period.to}&locale=${locale}`}
+          className={buttonVariants({ variant: 'outline' })}
+          data-testid="pos-period-xlsx"
+        >
+          {t('downloadSales')}
+        </a>
       </div>
     </Page>
   );

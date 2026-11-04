@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import Decimal from 'decimal.js';
 import { AlertTriangle, Check, ChevronLeft, FileText, MessageCircle, ScanLine } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useRouter, Link } from '@/i18n/navigation';
@@ -22,6 +21,7 @@ import { DocumentVersions, type VersionRow } from './document-versions';
 
 import type { DocumentType, OrderStatus as Status } from '@/generated/prisma/enums';
 import { money, plainQuantity, quantity } from '@/lib/format';
+import { previewDiscrepancy } from '@/lib/acceptance/preview';
 
 type Item = {
   id: string;
@@ -203,32 +203,14 @@ export function OrderDetail({
     ),
   );
   const [acceptanceResult, setAcceptanceResult] = useState<string | null>(null);
-  /**
-   * Предпросмотр акта (макет M09): сервер считает к оплате принятое × цену, поэтому
-   * разница — непринятое × цену. Пока в поле недописанное число, строка не считается.
-   */
-  const discrepancy = order.items.reduce(
-    (sum, item) => {
-      const row = acceptance[item.id];
-      try {
-        const shipped = new Decimal(item.quantityConfirmed ?? item.quantityOrdered);
-        const accepted = new Decimal(row?.accepted || '0');
-        const flagged =
-          !accepted.equals(shipped) ||
-          new Decimal(row?.defective || '0').greaterThan(0) ||
-          new Decimal(row?.mismatch || '0').greaterThan(0);
-        if (!flagged) return sum;
-        return {
-          count: sum.count + 1,
-          amount: new Decimal(sum.amount)
-            .plus(shipped.minus(accepted).mul(item.priceWithVat))
-            .toFixed(2),
-        };
-      } catch {
-        return sum;
-      }
-    },
-    { count: 0, amount: '0.00' },
+  const discrepancy = previewDiscrepancy(
+    order.items.map((item) => ({
+      shipped: item.quantityConfirmed ?? item.quantityOrdered,
+      priceWithVat: item.priceWithVat,
+      accepted: acceptance[item.id]?.accepted ?? '',
+      defective: acceptance[item.id]?.defective ?? '',
+      mismatch: acceptance[item.id]?.mismatch ?? '',
+    })),
   );
   const checkedCount = order.items.filter((item) => scanned[item.id]).length;
   const checkedPercent = order.items.length

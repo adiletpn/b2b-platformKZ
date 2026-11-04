@@ -702,7 +702,7 @@ export function PosScreen({
         {showReport && report ? <ReportPanel report={report} /> : null}
       </Card>
 
-      <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_24rem]">
+      <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_24rem] xl:grid-cols-[1fr_27.5rem]">
         <Card>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Field label={t('scan')}>

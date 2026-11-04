@@ -28,7 +28,7 @@ import { BrandsPanel, ProductMergePanel } from './catalog-panel';
 import { listBrands } from '@/lib/admin/products';
 import { BannersPanel } from './banners-panel';
 import { listBanners } from '@/lib/admin/banners';
-import { kzDayKey } from '@/lib/format';
+import { kzDayKey, formatDateTime } from '@/lib/format';
 
 export default async function AdminPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -113,7 +113,7 @@ export default async function AdminPage({ params }: { params: Promise<{ locale: 
           action: entry.action,
           admin: entry.admin.name,
           reason: entry.reason,
-          createdAt: entry.createdAt.toLocaleString('ru-RU'),
+          createdAt: formatDateTime(entry.createdAt),
         }))}
         activeImpersonation={
           impersonations[0]

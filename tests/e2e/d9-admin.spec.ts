@@ -137,7 +137,7 @@ test('superadmin_enters_company_on_behalf_with_reason', async ({}, testInfo) => 
   test.skip(testInfo.project.name !== ONLY_PROJECT, 'админ-панель');
 
   await adminLogin(adminPage, SUPERADMIN_PHONE);
-  await expect(adminPage.getByTestId('admin-role')).toHaveText('SUPERADMIN');
+  await expect(adminPage.getByTestId('admin-role')).toHaveText('Суперадмин');
 
   await adminPage.getByTestId('impersonation-reason').fill('обращение в поддержку №7');
   await adminPage.getByTestId('impersonation-start').click();

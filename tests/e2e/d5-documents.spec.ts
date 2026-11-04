@@ -133,6 +133,9 @@ test('store_accepts_delivery_with_defect_and_act_is_created', async () => {
   const row = storePage.getByTestId('acceptance-items').getByRole('row').first();
   await row.getByRole('textbox').nth(0).fill('8');
   await row.getByRole('textbox').nth(1).fill('2');
+  // Макет M09: до подтверждения виден итог расхождений.
+  await expect(storePage.getByTestId('acceptance-discrepancy')).toContainText('1 расхождение');
+  await expect(storePage.getByTestId('acceptance-progress')).toBeVisible();
   await storePage.getByTestId('submit-acceptance').click();
 
   await expect(storePage.getByTestId('acceptance-result')).toContainText('с расхождениями');

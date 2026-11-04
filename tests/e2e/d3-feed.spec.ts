@@ -258,7 +258,7 @@ test('tap_on_card_opens_details_with_price_comparison', async () => {
   await page.getByTestId('swipe-details').click();
   await expect(page.getByTestId('offer-details')).toBeVisible();
   // Сравнение цен: в таблице минимум одно предложение города.
-  await expect(page.getByTestId('details-offers').getByRole('row')).not.toHaveCount(0);
+  await expect(page.getByTestId('details-offers').getByRole('listitem')).not.toHaveCount(0);
   await page.getByTestId('details-close').click();
   await expect(page.getByTestId('offer-details')).toBeHidden();
 });

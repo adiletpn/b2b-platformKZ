@@ -2,11 +2,14 @@
 
 import { useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
+import Decimal from 'decimal.js';
+import { Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ProductPhoto } from '@/components/product-photo';
 import type { OfferDetails } from '@/lib/feed/offer-details';
-import { money } from '@/lib/format';
+import { money, quantity } from '@/lib/format';
+import { cn } from '@/lib/utils';
 
 /** Тап по карточке: подробности товара и сравнение цен (раздел 3.3 ТЗ). */
 export function OfferDetailsPanel({
@@ -37,6 +40,15 @@ export function OfferDetailsPanel({
       ['licensed', details.isLicensed],
     ] as const
   ).filter(([, value]) => value);
+
+  // Лучшая цена среди тех, у кого товар есть; сравнение в Decimal (правило 1).
+  const bestOfferId = details.offers
+    .filter((offer) => offer.inStock)
+    .reduce<(typeof details.offers)[number] | null>(
+      (best, offer) =>
+        !best || new Decimal(offer.priceWithVat).lessThan(best.priceWithVat) ? offer : best,
+      null,
+    )?.offerId;
 
   return (
     <div
@@ -102,50 +114,68 @@ export function OfferDetailsPanel({
         </div>
       ) : null}
 
-      <h3 className="mt-4 text-sm font-medium">{t('details.comparison')}</h3>
-      <div className="mt-2 overflow-x-auto">
-        <table className="w-full min-w-[480px] text-sm">
-          <thead className="text-muted-foreground text-left">
-            <tr>
-              <th className="px-2 py-2 font-medium">{t('supplier')}</th>
-              <th className="px-2 py-2 font-medium">{t('details.price')}</th>
-              <th className="px-2 py-2 font-medium">{t('minBatch')}</th>
-              <th className="px-2 py-2 font-medium">{t('details.lead')}</th>
-              <th className="px-2 py-2" />
-            </tr>
-          </thead>
-          <tbody className="divide-border divide-y" data-testid="details-offers">
-            {details.offers.map((offer) => (
-              <tr key={offer.offerId} data-testid={`details-offer-${offer.offerId}`}>
-                <td className="px-2 py-2 break-words">
+      <h3 className="mt-4 text-[15px] font-extrabold">{t('details.comparison')}</h3>
+      {/* Макет M04: поставщики карточками, лучшая цена зелёным. */}
+      <ul className="mt-2 space-y-2" data-testid="details-offers">
+        {details.offers.map((offer) => {
+          const best = offer.offerId === bestOfferId;
+          return (
+            <li
+              key={offer.offerId}
+              className={cn(
+                'flex flex-wrap items-center gap-2.5 rounded-2xl px-3.5 py-3',
+                best ? 'bg-success-soft' : 'border-border bg-card border',
+              )}
+              data-testid={`details-offer-${offer.offerId}`}
+            >
+              <div className="min-w-40 flex-1">
+                <p className="text-sm font-bold break-words">
                   {offer.supplierName}
-                  {offer.supplierRating ? ` · ★ ${offer.supplierRating}` : ''}
-                  {offer.isCurrent ? ` · ${t('details.current')}` : ''}
-                </td>
-                <td className="px-2 py-2 tabular-nums">{money(offer.priceWithVat)} ₸</td>
-                <td className="px-2 py-2 tabular-nums">{offer.minBatch}</td>
-                <td className="px-2 py-2 tabular-nums">{offer.leadTimeDays}</td>
-                <td className="px-2 py-2 text-right">
-                  {offer.inStock ? (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      data-testid={`details-take-${offer.offerId}`}
-                      onClick={() => onTake(offer.offerId)}
-                    >
-                      {t('take')}
-                    </Button>
-                  ) : (
-                    <span className="text-muted-foreground text-xs font-semibold">
-                      {t('outOfStock')}
+                  {offer.isCurrent ? (
+                    <span className="text-muted-foreground font-semibold">
+                      {' '}
+                      · {t('details.current')}
                     </span>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+                  ) : null}
+                </p>
+                <p className="text-muted-foreground mt-0.5 text-xs font-semibold">
+                  {offer.supplierRating ? (
+                    <span className="inline-flex items-center gap-[3px] font-bold">
+                      <Star aria-hidden className="fill-primary text-primary size-[13px]" />
+                      {offer.supplierRating}
+                      {' · '}
+                    </span>
+                  ) : null}
+                  {t('minBatch')} {quantity(offer.minBatch)} · {t('details.lead')}{' '}
+                  {offer.leadTimeDays}
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-[15px] font-black tabular-nums">{money(offer.priceWithVat)} ₸</p>
+                {best ? (
+                  <p className="text-success text-[11px] font-extrabold">
+                    {t('details.bestPrice')}
+                  </p>
+                ) : null}
+              </div>
+              {offer.inStock ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  data-testid={`details-take-${offer.offerId}`}
+                  onClick={() => onTake(offer.offerId)}
+                >
+                  {t('take')}
+                </Button>
+              ) : (
+                <span className="text-muted-foreground text-xs font-semibold">
+                  {t('outOfStock')}
+                </span>
+              )}
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }

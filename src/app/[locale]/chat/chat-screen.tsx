@@ -595,7 +595,7 @@ export function ChatScreen({
                             message.text
                           )}
                           {message.mine ? (
-                            <span className="mt-0.5 block text-[0.65rem] opacity-70">
+                            <span className="text-muted-foreground mt-1 block text-right text-[11px] font-semibold">
                               {message.read ? t('read') : t('delivered')}
                             </span>
                           ) : null}

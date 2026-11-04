@@ -97,7 +97,11 @@ export function OfferDetailsPanel({
                 className="mt-0.5 text-sm font-extrabold break-words"
                 data-testid={`details-${key}`}
               >
-                {value ?? '—'}
+                {value === null || value === undefined
+                  ? '—'
+                  : key === 'packSize' || key === 'minBatch'
+                    ? quantity(value)
+                    : value}
               </dd>
             </div>
           ))}

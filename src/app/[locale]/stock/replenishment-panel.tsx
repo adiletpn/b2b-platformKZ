@@ -6,6 +6,7 @@ import { useRouter } from '@/i18n/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardTitle } from '@/components/ui/card';
+import { quantity } from '@/lib/format';
 
 type Row = {
   productId: string;
@@ -113,7 +114,7 @@ export function ReplenishmentPanel({
                   {row.name}
                   <span className="text-muted-foreground">
                     {' '}
-                    · {row.quantity} / {row.minQuantity}
+                    · {quantity(row.quantity)} / {quantity(row.minQuantity)}
                     {row.supplierName ? ` · ${row.supplierName}` : ''}
                   </span>
                 </span>

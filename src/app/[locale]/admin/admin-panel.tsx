@@ -293,17 +293,17 @@ export function AdminPanel({
             {t('queueEmpty')}
           </p>
         ) : (
-          <ul className="mt-3 space-y-3" data-testid="moderation-queue">
+          <ul className="mt-3 space-y-2.5" data-testid="moderation-queue">
             {queue.map((item) => (
               <li
                 key={item.id}
-                className="border-border flex flex-wrap items-end gap-3 border-b pb-3 last:border-0"
+                className="border-border bg-card flex flex-wrap items-end gap-3 rounded-[18px] border px-4 py-3.5"
                 data-testid={`queue-item-${item.id}`}
               >
                 <div className="min-w-48 flex-1">
-                  <p className="font-medium break-words">{item.companyName}</p>
-                  <p className="text-muted-foreground text-[13px] font-bold tabular-nums">
-                    {t('bin')}: {item.bin}
+                  <p className="text-sm font-extrabold break-words">{item.companyName}</p>
+                  <p className="text-muted-foreground mt-0.5 text-xs font-semibold tabular-nums">
+                    {t('bin')} {item.bin}
                   </p>
                   <p className="text-muted-foreground text-xs break-words">{item.legalAddress}</p>
                   <div className="mt-1 flex flex-wrap gap-1.5">

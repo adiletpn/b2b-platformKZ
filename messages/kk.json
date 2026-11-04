@@ -946,7 +946,10 @@
       }
     },
     "toPayTitle": "Алшақтық актісін ескергенде төлеуге",
-    "recipient": "Алушы"
+    "recipient": "Алушы",
+    "dueBy": "{date} дейін",
+    "creditLimit": "Жеткізушідегі кредит лимиті",
+    "creditUsed": "{limit} ₸ ішінен {debt}"
   },
   "requisites": {
     "title": "Компания деректемелері",

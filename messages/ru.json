@@ -946,7 +946,10 @@
       }
     },
     "toPayTitle": "К оплате с учётом акта расхождений",
-    "recipient": "Получатель"
+    "recipient": "Получатель",
+    "dueBy": "До {date}",
+    "creditLimit": "Кредитный лимит у поставщика",
+    "creditUsed": "{debt} из {limit} ₸"
   },
   "requisites": {
     "title": "Реквизиты компании",

@@ -66,6 +66,10 @@ type Order = {
   number: string;
   status: Status;
   total: string;
+  /** Срок оплаты коротко: «24 окт» (макет M10). */
+  paymentDue: string | null;
+  /** Кредитный лимит у поставщика и занятая сумма; только у магазина. */
+  credit: { limit: string; debt: string } | null;
   originalTotal: string;
   counterparty: string;
   /** Дата создания коротко: «чт, 23 окт». */
@@ -1008,6 +1012,11 @@ export function OrderDetail({
           >
             {money(order.total)} ₸
           </p>
+          {order.paymentDue ? (
+            <Badge tone="warning" className="mt-2.5" data-testid="payment-due-date">
+              {tPayment('dueBy', { date: order.paymentDue })}
+            </Badge>
+          ) : null}
 
           <dl className="mt-3 space-y-1 text-sm" data-testid="payment-requisites">
             <p className="text-muted-foreground text-xs font-semibold">{tPayment('payTo')}</p>
@@ -1038,6 +1047,28 @@ export function OrderDetail({
               <p className="text-danger text-sm font-semibold">{tPayment('noRequisites')}</p>
             )}
           </dl>
+
+          {order.credit ? (
+            <div className="mt-4" data-testid="payment-credit">
+              <div className="flex justify-between gap-3 text-xs font-bold">
+                <span>{tPayment('creditLimit')}</span>
+                <span className="text-muted-foreground tabular-nums">
+                  {tPayment('creditUsed', {
+                    debt: money(order.credit.debt),
+                    limit: money(order.credit.limit),
+                  })}
+                </span>
+              </div>
+              <div className="bg-track mt-1.5 h-[5px] overflow-hidden rounded-full">
+                <div
+                  className="bg-foreground h-full rounded-full"
+                  style={{
+                    width: `${Math.min(100, (Number(order.credit.debt) / Number(order.credit.limit)) * 100)}%`,
+                  }}
+                />
+              </div>
+            </div>
+          ) : null}
 
           <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Field label={tPayment('amount')}>

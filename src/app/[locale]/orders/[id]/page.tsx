@@ -4,6 +4,7 @@ import { redirect } from '@/i18n/navigation';
 import { getActiveCompany } from '@/lib/auth/active-company';
 import { getAccess, hasPermission, permissionFlags } from '@/lib/auth/permissions';
 import { formatDateTime, formatShortDate } from '@/lib/format';
+import { checkCredit } from '@/lib/orders/credit';
 import { getOnlinePayment } from '@/lib/payments/online';
 import { listDocumentVersions } from '@/lib/documents/versions';
 import { listAttachments } from '@/lib/files/attachments';
@@ -66,6 +67,8 @@ export default async function OrderPage({
   const versions = await Promise.all(
     order.documents.map((document) => listDocumentVersions(document.id, active!.companyId)),
   );
+  // Макет M10: занятый кредитный лимит у этого поставщика. Видит только сам магазин.
+  const credit = side === 'store' ? await checkCredit(order.storeId, order.supplierId, 0) : null;
   const onlinePayment =
     side === 'store' ? await getOnlinePayment(order.id, active!.companyId) : null;
   // Раздел 3.4 ТЗ: вместо отсутствующей позиции поставщик предлагает свой товар.
@@ -105,6 +108,8 @@ export default async function OrderPage({
         number: order.number,
         status: order.status,
         total: order.totalWithVat.toFixed(2),
+        paymentDue: order.paymentDueDate ? formatShortDate(order.paymentDueDate, locale) : null,
+        credit: credit?.limit ? { limit: credit.limit, debt: credit.debt } : null,
         // «Было» в макете M08: сумма по заказанным количествам, до правок поставщика.
         originalTotal: order.items
           .reduce(

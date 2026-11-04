@@ -174,6 +174,10 @@ export function OrderDetail({
       [item.id]: { ...current[item.id]!, accepted: String(count) },
     }));
   }
+  const checkedCount = order.items.filter((item) => scanned[item.id]).length;
+  const checkedPercent = order.items.length
+    ? Math.round((checkedCount / order.items.length) * 100)
+    : 0;
   const [substitutes, setSubstitutes] = useState<
     Record<string, { offerId: string; quantity: string }>
   >({});
@@ -822,6 +826,22 @@ export function OrderDetail({
                   {tAcceptance('scanMiss', { code: scanMiss })}
                 </span>
               ) : null}
+            </div>
+          </div>
+
+          {/* Макет M09: сколько позиций уже проверено сканером. */}
+          <div className="mt-4" data-testid="acceptance-progress">
+            <div className="flex justify-between text-[13px] font-bold">
+              <span>
+                {tAcceptance('checked', { done: checkedCount, total: order.items.length })}
+              </span>
+              <span className="text-muted-foreground">{checkedPercent}%</span>
+            </div>
+            <div className="bg-track mt-1.5 h-1.5 overflow-hidden rounded-full">
+              <div
+                className="bg-success h-full rounded-full"
+                style={{ width: `${checkedPercent}%` }}
+              />
             </div>
           </div>
 

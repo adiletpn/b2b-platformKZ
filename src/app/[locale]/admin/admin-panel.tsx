@@ -167,7 +167,10 @@ export function AdminPanel({
         ).map(([key, value]) => (
           <Card key={key} className="p-3 sm:p-4">
             <p className="text-muted-foreground text-xs font-semibold">{t(key)}</p>
-            <p className="mt-1 text-lg font-semibold tabular-nums" data-testid={`metric-${key}`}>
+            <p
+              className="mt-1 text-2xl font-black tracking-[-0.02em] tabular-nums"
+              data-testid={`metric-${key}`}
+            >
               {value}
             </p>
           </Card>

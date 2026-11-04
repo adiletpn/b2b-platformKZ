@@ -478,9 +478,7 @@ export function ChatScreen({
                       {active.counterpartyName}
                     </p>
                     <p className="text-muted-foreground text-xs font-semibold">
-                      {active.orderNumber
-                        ? t('byOrder', { number: active.orderNumber })
-                        : t('general')}
+                      {active.orderNumber ? null : t('general')}
                     </p>
                     <p
                       className="text-muted-foreground mt-0.5 flex items-center gap-1.5 text-[0.7rem]"

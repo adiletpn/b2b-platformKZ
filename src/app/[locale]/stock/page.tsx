@@ -255,7 +255,7 @@ export default async function StockPage({ params }: { params: Promise<{ locale: 
                   {locale === 'kk' ? row.nameKk : row.nameRu}
                   <span className="text-muted-foreground">
                     {' '}
-                    · {row.quantity} · {row.locationAddress}
+                    · {quantity(row.quantity)} · {row.locationAddress}
                   </span>
                 </span>
                 <span className={row.daysLeft < 0 ? 'text-danger' : 'text-muted-foreground'}>

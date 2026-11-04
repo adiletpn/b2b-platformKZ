@@ -336,6 +336,7 @@ export function AdminPanel({
 
                 <Button
                   size="sm"
+                  variant="success"
                   disabled={pending}
                   data-testid={`queue-approve-${item.id}`}
                   onClick={() => void post(`/api/admin/moderation/${item.id}`, { approve: true })}
@@ -344,7 +345,7 @@ export function AdminPanel({
                 </Button>
                 <Button
                   size="sm"
-                  variant="outline"
+                  variant="danger"
                   disabled={pending}
                   data-testid={`queue-reject-${item.id}`}
                   onClick={() =>

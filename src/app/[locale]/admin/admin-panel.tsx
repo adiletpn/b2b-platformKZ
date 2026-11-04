@@ -109,7 +109,7 @@ export function AdminPanel({
   return (
     <Page width="lg">
       <header className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold">{t('title')}</h1>
+        <h1 className="text-2xl font-black tracking-[-0.02em]">{t('title')}</h1>
         <span className="text-muted-foreground flex items-center gap-3 text-sm">
           <span>
             {t('roleLabel')}: <span data-testid="admin-role">{tRoles(role as 'SUPERADMIN')}</span>

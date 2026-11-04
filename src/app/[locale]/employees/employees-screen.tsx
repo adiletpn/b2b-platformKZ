@@ -363,6 +363,30 @@ export function EmployeesScreen({
               </tr>
             ))}
           </tbody>
+          {/* Макет D07: приглашённые в той же таблице, статус — оранжевая плашка. */}
+          {invitations.length > 0 ? (
+            <tbody
+              className="divide-border border-border divide-y border-t"
+              data-testid="invitations"
+            >
+              {invitations.map((invitation) => (
+                <tr key={invitation.id}>
+                  <td className="px-3 py-2 text-[13px] font-bold tabular-nums">
+                    {invitation.phone}
+                  </td>
+                  <td className="px-3 py-2">{roleLabel(invitation.role)}</td>
+                  <td className="px-3 py-2 text-[13px]">{t('allLocationsShort')}</td>
+                  <td className="px-3 py-2">—</td>
+                  <td className="px-3 py-2">
+                    <Badge tone="warning">{t('statuses.INVITED')}</Badge>
+                  </td>
+                  <td className="text-muted-foreground px-3 py-2 text-right text-xs font-semibold whitespace-nowrap">
+                    {t('expires')}: {invitation.expiresAt}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          ) : null}
         </table>
       </section>
 
@@ -520,7 +544,10 @@ export function EmployeesScreen({
       ) : null}
 
       {companies.length > 1 ? (
-        <section className="border-border mt-4 rounded-2xl border-[1.5px] border-dashed p-4">
+        <section
+          id="my-companies"
+          className="border-border mt-4 scroll-mt-4 rounded-2xl border-[1.5px] border-dashed p-4"
+        >
           <h2 className="text-[15px] font-extrabold">{t('companySwitchTitle')}</h2>
           <ul className="mt-2 space-y-1 text-sm" data-testid="my-companies">
             {companies.map((company) => (
@@ -617,23 +644,6 @@ export function EmployeesScreen({
           {pending ? t('creatingRole') : t('createRole')}
         </Button>
       </form>
-
-      {invitations.length > 0 ? (
-        <section className="border-border mt-4 rounded-2xl border-[1.5px] border-dashed p-4">
-          <h2 className="text-[15px] font-extrabold">{t('pending')}</h2>
-          <ul className="mt-2 space-y-1 text-sm" data-testid="invitations">
-            {invitations.map((invitation) => (
-              <li key={invitation.id} className="flex flex-wrap justify-between gap-2">
-                <span className="text-[13px] font-bold tabular-nums">{invitation.phone}</span>
-                <span>{roleLabel(invitation.role)}</span>
-                <span className="text-muted-foreground text-xs font-semibold">
-                  {t('expires')}: {invitation.expiresAt}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
 
       <section
         id="employees-audit"

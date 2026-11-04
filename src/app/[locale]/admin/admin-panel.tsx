@@ -13,7 +13,7 @@ import type { DashboardMetrics, DisputeRow, DisputeResolution } from '@/lib/admi
 import type { PlanRow, SubscriptionRow } from '@/lib/admin/tariffs';
 import type { ReferenceData, ReferenceKind } from '@/lib/admin/reference';
 import { Page } from '@/components/ui/page';
-import { money } from '@/lib/format';
+import { money, quantity } from '@/lib/format';
 
 type QueueItem = {
   id: string;
@@ -162,7 +162,7 @@ export function AdminPanel({
             ['gmvMonth', `${money(metrics.gmvMonth)} ₸`],
             ['activeStores', String(metrics.activeStores)],
             ['activeSuppliers', String(metrics.activeSuppliers)],
-            ['conversion', `${metrics.conversion}%`],
+            ['conversion', `${quantity(metrics.conversion)}%`],
             ['openDisputes', String(metrics.openDisputes)],
           ] as const
         ).map(([key, value]) => (

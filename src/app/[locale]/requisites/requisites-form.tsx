@@ -97,7 +97,7 @@ export function RequisitesForm({
   }
 
   return (
-    <Page width="md">
+    <Page width="lg">
       <PageHeader title={t('title')} description={t('hint')} />
 
       <Card>

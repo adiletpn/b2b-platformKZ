@@ -69,6 +69,9 @@ test.afterAll(async () => {
 test('supplier_marks_out_of_stock_and_offers_substitute', async () => {
   const { supplierPage, storePage } = pair;
   const row = supplierPage.getByTestId('order-items').getByRole('row').first();
+  // Макет M12: поставщик видит заказ и свой остаток, а карточку магазина — с дисциплиной.
+  await expect(supplierPage.getByTestId('order-store-discipline')).toBeVisible();
+  await expect(row.getByText(/остаток/)).toBeVisible();
   await row.getByRole('button', { name: 'Нет в наличии' }).click();
   await row.getByRole('combobox', { name: 'Предложить замену' }).selectOption({
     label: `Тестовый товар ${substituteIndex} · 58 ₸`,
@@ -82,6 +85,9 @@ test('supplier_marks_out_of_stock_and_offers_substitute', async () => {
   await expect(storePage.getByTestId('order-items')).toContainText(
     `Тестовый товар ${substituteIndex}`,
   );
+  // Остаток и карточка магазина — только у поставщика.
+  await expect(storePage.getByTestId('order-items').getByText(/остаток/)).toHaveCount(0);
+  await expect(storePage.getByTestId('order-store-card')).toHaveCount(0);
   await expect(storePage.getByTestId('order-items')).toContainText('замена для');
   await storePage.getByTestId('agree-changes').click();
   await expect(storePage.getByTestId('agree-changes')).toHaveCount(0);

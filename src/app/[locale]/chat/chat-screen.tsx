@@ -654,7 +654,7 @@ export function ChatScreen({
                         {templates.map((template) => (
                           <li
                             key={template.id}
-                            className="bg-primary-soft text-primary flex items-center rounded-full text-xs"
+                            className="border-border bg-card flex h-9 items-center rounded-full border text-[13px] font-bold"
                           >
                             <button
                               type="button"

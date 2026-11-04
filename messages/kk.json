@@ -250,7 +250,8 @@
         "offers": "Белсенді тауарлар"
       },
       "companyPoints": "{count} нүкте",
-      "language": "Тіл"
+      "language": "Тіл",
+      "switchCompany": "Компанияны ауыстыру"
     },
     "supportLink": "Қолдау",
     "banners": {

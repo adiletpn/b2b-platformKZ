@@ -32,6 +32,7 @@ import { LanguageSwitcher } from '@/components/language-switcher';
 import { LogoutButton } from '@/components/logout-button';
 import { money, quantity } from '@/lib/format';
 import { getCompanyRating } from '@/lib/ratings/metrics';
+import { getSession } from '@/lib/auth/session';
 import { Avatar } from '@/components/ui/controls';
 
 export default async function DashboardPage({ params }: { params: Promise<{ locale: string }> }) {
@@ -67,6 +68,10 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
     locale === 'kk' ? city.nameKk : city.nameRu;
 
   const verified = company.verificationStatus === 'VERIFIED';
+  // Макет M13: ссылка видна, только если у пользователя больше одной компании.
+  const session = await getSession();
+  const switchable =
+    (session?.user.memberships.filter((item) => item.status === 'ACTIVE').length ?? 0) > 1;
   const store = company.type !== 'SUPPLIER';
   const supplier = company.type !== 'STORE';
 
@@ -143,6 +148,15 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
               {tSoon('ecpVerified')}
               <NotYetBadge />
             </span>
+            {switchable ? (
+              <Link
+                href="/employees#my-companies"
+                className="text-primary ml-auto text-[13px] font-extrabold"
+                data-testid="switch-company-link"
+              >
+                {tHome('switchCompany')}
+              </Link>
+            ) : null}
           </div>
         </section>
 

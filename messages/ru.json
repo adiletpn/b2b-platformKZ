@@ -250,7 +250,8 @@
         "offers": "Активных товаров"
       },
       "companyPoints": "{count, plural, one {# точка} few {# точки} other {# точек}}",
-      "language": "Язык"
+      "language": "Язык",
+      "switchCompany": "Сменить компанию"
     },
     "supportLink": "Поддержка",
     "banners": {

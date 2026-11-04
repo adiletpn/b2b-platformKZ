@@ -18,7 +18,7 @@ import { Card, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ProductPhoto } from '@/components/product-photo';
 import { getStockOverview } from '@/lib/stock/overview';
-import { formatDate, money, quantity } from '@/lib/format';
+import { formatDate, money, quantity, formatDateTime } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
 export default async function StockPage({ params }: { params: Promise<{ locale: string }> }) {
@@ -330,7 +330,7 @@ export default async function StockPage({ params }: { params: Promise<{ locale: 
           id: document.id,
           type: document.type,
           number: document.number,
-          createdAt: document.createdAt.toLocaleString('ru-RU'),
+          createdAt: formatDateTime(document.createdAt),
           locationAddress: '',
           targetAddress: document.targetLocation?.address ?? null,
           reason: document.reason,

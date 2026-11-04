@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { AlertTriangle, Check, ChevronLeft, FileText, MessageCircle } from 'lucide-react';
+import { AlertTriangle, Check, ChevronLeft, FileText, MessageCircle, ScanLine } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useRouter, Link } from '@/i18n/navigation';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -787,30 +787,42 @@ export function OrderDetail({
           <h2 className="text-lg font-medium">{tAcceptance('title')}</h2>
           <p className="text-muted-foreground mt-1 text-xs font-semibold">{tAcceptance('hint')}</p>
 
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <Input
-              className="h-10 max-w-xs tabular-nums"
-              placeholder={tAcceptance('scanPlaceholder')}
-              aria-label={tAcceptance('scanPlaceholder')}
-              value={scan}
-              data-testid="acceptance-scan"
-              onChange={(event) => setScan(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key !== 'Enter') return;
-                event.preventDefault();
-                acceptScan(scan);
-              }}
-            />
-            <CameraScanButton onCode={acceptScan} />
-            {scanMiss !== null ? (
-              <span
-                className="text-danger text-sm font-semibold"
-                role="alert"
-                data-testid="acceptance-scan-miss"
-              >
-                {tAcceptance('scanMiss', { code: scanMiss })}
+          {/* Макет M09: тёмный блок сканера над списком позиций. */}
+          <div className="bg-foreground mt-3 rounded-[22px] p-[18px] text-white">
+            <div className="flex items-center gap-3.5">
+              <span className="grid size-[52px] shrink-0 place-items-center rounded-2xl bg-white/12">
+                <ScanLine aria-hidden className="size-[26px]" />
               </span>
-            ) : null}
+              <div className="min-w-0">
+                <p className="text-[17px] font-extrabold">{tAcceptance('scanTitle')}</p>
+                <p className="text-[13px] font-medium text-[#cfc7be]">{tAcceptance('scanHint')}</p>
+              </div>
+            </div>
+            <div className="mt-3.5 flex flex-wrap items-center gap-2">
+              <Input
+                className="text-foreground h-10 max-w-xs tabular-nums"
+                placeholder={tAcceptance('scanPlaceholder')}
+                aria-label={tAcceptance('scanPlaceholder')}
+                value={scan}
+                data-testid="acceptance-scan"
+                onChange={(event) => setScan(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key !== 'Enter') return;
+                  event.preventDefault();
+                  acceptScan(scan);
+                }}
+              />
+              <CameraScanButton onCode={acceptScan} />
+              {scanMiss !== null ? (
+                <span
+                  className="text-sm font-semibold text-[#ffb4ad]"
+                  role="alert"
+                  data-testid="acceptance-scan-miss"
+                >
+                  {tAcceptance('scanMiss', { code: scanMiss })}
+                </span>
+              ) : null}
+            </div>
           </div>
 
           <div className="mt-3 overflow-x-auto">

@@ -766,7 +766,9 @@
     },
     "scanPlaceholder": "Сканер: штрихкод или DataMatrix",
     "scanMiss": "Кода {code} нет в накладной — проверьте пересорт",
-    "scanned": "отсканировано {count}"
+    "scanned": "отсканировано {count}",
+    "scanTitle": "Сканировать штрихкод",
+    "scanHint": "или отмечайте по списку"
   },
   "stock": {
     "title": "Склад",

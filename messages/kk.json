@@ -1504,6 +1504,13 @@
       "disputes": "Даулар",
       "tariffs": "Тарифтер",
       "audit": "Аудит журналы"
+    },
+    "roles": {
+      "SUPERADMIN": "Суперадмин",
+      "MODERATOR": "Модератор",
+      "SUPPORT": "Қолдау",
+      "FINANCE": "Қаржы",
+      "CONTENT_MANAGER": "Контент-менеджер"
     }
   },
   "ratings": {

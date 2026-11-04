@@ -1504,6 +1504,13 @@
       "disputes": "Споры",
       "tariffs": "Тарифы",
       "audit": "Журнал аудита"
+    },
+    "roles": {
+      "SUPERADMIN": "Суперадмин",
+      "MODERATOR": "Модератор",
+      "SUPPORT": "Поддержка",
+      "FINANCE": "Финансы",
+      "CONTENT_MANAGER": "Контент-менеджер"
     }
   },
   "ratings": {

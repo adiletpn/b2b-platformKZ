@@ -6,6 +6,7 @@ import { listPlans, listSubscriptions } from '@/lib/admin/tariffs';
 import { getReferenceData } from '@/lib/admin/reference';
 import { AdminLogin } from './admin-login';
 import { AdminPanel } from './admin-panel';
+import { AdminShell, type AdminNavItem } from './admin-shell';
 import { TemplateEditor } from './template-editor';
 import { getTemplateEditorData, TEMPLATE_EDITOR_ROLES } from '@/lib/admin/templates';
 import { Page } from '@/components/ui/page';
@@ -91,8 +92,26 @@ export default async function AdminPage({ params }: { params: Promise<{ locale: 
       : Promise.resolve(null),
   ]);
 
+  const tRoles = await getTranslations('admin.roles');
+  const navItems: AdminNavItem[] = [
+    { id: 'admin-dashboard', key: 'dashboard' },
+    { id: 'admin-queue', key: 'companies', badge: queue.length },
+    ...(is('SUPPORT') ? [{ id: 'admin-users', key: 'users' }] : []),
+    { id: 'admin-reference', key: 'reference' },
+    ...(complaints
+      ? [{ id: 'admin-moderation', key: 'moderation', badge: complaints.length }]
+      : []),
+    { id: 'admin-disputes', key: 'disputes', badge: disputes.length },
+    ...(role === 'SUPERADMIN' ? [{ id: 'admin-tariffs', key: 'tariffs' }] : []),
+    { id: 'admin-audit', key: 'audit' },
+  ];
+
   return (
-    <>
+    <AdminShell
+      items={navItems}
+      adminName={session.admin.name}
+      roleLabel={tRoles(role as 'SUPERADMIN')}
+    >
       <AdminPanel
         role={session.admin.role}
         metrics={metrics}
@@ -125,9 +144,11 @@ export default async function AdminPage({ params }: { params: Promise<{ locale: 
         ).map((company) => ({ id: company.id, name: company.name }))}
       />
       <Page width="lg" className="space-y-4 pt-0 sm:pt-0">
+        <div id="admin-moderation" className="scroll-mt-4" />
         {complaints ? <ComplaintsPanel initial={complaints} /> : null}
         {ratingDisputes ? <RatingDisputesPanel initial={ratingDisputes} /> : null}
         {tickets ? <TicketsPanel initial={tickets} /> : null}
+        <div id="admin-users" className="scroll-mt-4" />
         {is('SUPPORT') ? <UsersPanel /> : null}
         {is('FINANCE') ? <ReportsPanel /> : null}
         {cities ? (
@@ -156,6 +177,6 @@ export default async function AdminPage({ params }: { params: Promise<{ locale: 
         ) : null}
         {role === 'SUPERADMIN' ? <IntegrationsPanel rows={integrationStatus()} /> : null}
       </Page>
-    </>
+    </AdminShell>
   );
 }

@@ -148,7 +148,11 @@ export function AdminPanel({
         </div>
       ) : null}
 
-      <section className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4" data-testid="admin-metrics">
+      <section
+        id="admin-dashboard"
+        className="mt-5 grid scroll-mt-4 grid-cols-2 gap-3 lg:grid-cols-4"
+        data-testid="admin-metrics"
+      >
         {(
           [
             ['newCompanies', String(metrics.newCompaniesToday)],
@@ -186,7 +190,10 @@ export function AdminPanel({
         </Card>
       ) : null}
 
-      <section className="border-border bg-card shadow-card mt-4 rounded-xl border p-4 sm:p-5">
+      <section
+        id="admin-disputes"
+        className="border-border bg-card shadow-card mt-4 scroll-mt-4 rounded-xl border p-4 sm:p-5"
+      >
         <h2 className="text-lg font-medium">{t('disputesTitle')}</h2>
 
         {disputes.length === 0 ? (
@@ -272,7 +279,10 @@ export function AdminPanel({
         )}
       </section>
 
-      <section className="border-border bg-card shadow-card mt-4 rounded-xl border p-4 sm:p-5">
+      <section
+        id="admin-queue"
+        className="border-border bg-card shadow-card mt-4 scroll-mt-4 rounded-xl border p-4 sm:p-5"
+      >
         <h2 className="text-lg font-medium">{t('queueTitle')}</h2>
 
         {queue.length === 0 ? (
@@ -403,7 +413,8 @@ export function AdminPanel({
 
       {canBill ? (
         <section
-          className="border-border bg-card shadow-card mt-4 rounded-xl border p-4 sm:p-5"
+          id="admin-tariffs"
+          className="border-border bg-card shadow-card mt-4 scroll-mt-4 rounded-xl border p-4 sm:p-5"
           data-testid="tariffs"
         >
           <h2 className="text-lg font-medium">{t('tariffsTitle')}</h2>
@@ -513,7 +524,8 @@ export function AdminPanel({
       ) : null}
 
       <section
-        className="border-border bg-card shadow-card mt-4 rounded-xl border p-4 sm:p-5"
+        id="admin-reference"
+        className="border-border bg-card shadow-card mt-4 scroll-mt-4 rounded-xl border p-4 sm:p-5"
         data-testid="reference"
       >
         <h2 className="text-lg font-medium">{t('referenceTitle')}</h2>
@@ -612,7 +624,7 @@ export function AdminPanel({
         ) : null}
       </section>
 
-      <section className="mt-6">
+      <section id="admin-audit" className="mt-6 scroll-mt-4">
         <h2 className="text-[15px] font-extrabold">{t('auditTitle')}</h2>
         <p className="text-muted-foreground mt-1 text-xs font-semibold">{t('auditHint')}</p>
 

@@ -149,3 +149,10 @@ tbody tr:hover {
     transform: none;
   }
 }
+
+/* В админке на компьютере логотип и язык — в её боковом меню: шапка гостя дублировала бы их. */
+@media (min-width: 64rem) {
+  body:has([data-testid='admin-sidebar']) [data-guest-header] {
+    display: none;
+  }
+}

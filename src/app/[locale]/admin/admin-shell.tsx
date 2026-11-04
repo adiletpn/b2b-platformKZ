@@ -11,6 +11,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { Brand } from '@/components/app-header';
+import { LanguageSwitcher } from '@/components/language-switcher';
 
 export type AdminNavItem = { id: string; key: string; badge?: number };
 
@@ -84,6 +85,9 @@ export async function AdminShell({
             );
           })}
         </nav>
+        <div className="pb-3">
+          <LanguageSwitcher testIdPrefix="admin-locale" />
+        </div>
         <div className="border-border flex items-center gap-2.5 border-t py-3 pl-1">
           <span
             aria-hidden

@@ -22,6 +22,8 @@ import { DocumentVersions, type VersionRow } from './document-versions';
 import type { DocumentType, OrderStatus as Status } from '@/generated/prisma/enums';
 import { money, plainQuantity, quantity } from '@/lib/format';
 import { previewDiscrepancy } from '@/lib/acceptance/preview';
+import type { PaymentDiscipline } from '@/lib/ratings/criteria';
+import { Avatar } from '@/components/ui/controls';
 
 type Item = {
   id: string;
@@ -70,6 +72,8 @@ type Order = {
   paymentDue: string | null;
   /** Кредитный лимит у поставщика и занятая сумма; только у магазина. */
   credit: { limit: string; debt: string } | null;
+  /** Карточка магазина у поставщика (макет M12): город, адрес, платёжная дисциплина. */
+  storeCard: { city: string; address: string; discipline: PaymentDiscipline } | null;
   originalTotal: string;
   counterparty: string;
   /** Дата создания коротко: «чт, 23 окт». */
@@ -427,6 +431,37 @@ export function OrderDetail({
       />
 
       <OrderProgress status={order.status} history={order.statusLogs.map((log) => log.toStatus)} />
+
+      {order.storeCard ? (
+        <section
+          className="border-border bg-card mt-4 rounded-[22px] border px-4 py-3.5"
+          data-testid="order-store-card"
+        >
+          <div className="flex items-center gap-2.5">
+            <Avatar name={order.counterparty} size={40} letters={1} />
+            <div className="min-w-0">
+              <p className="text-[15px] font-extrabold break-words">{order.counterparty}</p>
+              <p className="text-muted-foreground text-xs font-semibold break-words">
+                {order.storeCard.city}, {order.storeCard.address}
+              </p>
+            </div>
+          </div>
+          <div className="mt-2.5 flex flex-wrap gap-1.5">
+            <Badge
+              tone={
+                order.storeCard.discipline === 'on_time'
+                  ? 'success'
+                  : order.storeCard.discipline === 'delays_up_to_7'
+                    ? 'warning'
+                    : 'danger'
+              }
+              data-testid="order-store-discipline"
+            >
+              {tRatings(`discipline.${order.storeCard.discipline}`)}
+            </Badge>
+          </div>
+        </section>
+      ) : null}
 
       {order.creditHold && side === 'store' ? (
         <div

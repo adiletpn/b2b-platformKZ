@@ -5,6 +5,7 @@ import { getActiveCompany } from '@/lib/auth/active-company';
 import { getAccess, hasPermission, permissionFlags } from '@/lib/auth/permissions';
 import { formatDateTime, formatShortDate } from '@/lib/format';
 import { checkCredit } from '@/lib/orders/credit';
+import { storeDiscipline } from '@/lib/ratings/metrics';
 import { getOnlinePayment } from '@/lib/payments/online';
 import { listDocumentVersions } from '@/lib/documents/versions';
 import { listAttachments } from '@/lib/files/attachments';
@@ -44,6 +45,7 @@ export default async function OrderPage({
     where: { id },
     include: {
       store: { select: { name: true } },
+      location: { include: { city: true } },
       items: { include: { offer: { include: { product: { include: { unit: true } } } } } },
       statusLogs: { orderBy: { createdAt: 'asc' }, include: { user: { select: { name: true } } } },
       documents: {
@@ -139,6 +141,14 @@ export default async function OrderPage({
             .toFixed(2),
           orderedTotal: item.priceWithVat.mul(item.quantityOrdered).toFixed(2),
         })),
+        storeCard:
+          side === 'supplier'
+            ? {
+                city: locale === 'kk' ? order.location.city.nameKk : order.location.city.nameRu,
+                address: order.location.address,
+                discipline: await storeDiscipline(order.storeId),
+              }
+            : null,
         statusLogs: order.statusLogs.map((log) => ({
           toStatus: log.toStatus,
           // Время по Казахстану, как и остальные даты (src/lib/format.ts).

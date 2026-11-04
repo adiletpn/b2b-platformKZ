@@ -816,7 +816,7 @@ export function OrderDetail({
 
       {canAccept ? (
         <section className="border-border bg-card mt-5 rounded-[20px] border p-[18px] sm:p-5">
-          <h2 className="text-lg font-medium">{tAcceptance('title')}</h2>
+          <h2 className="text-[17px] font-extrabold">{tAcceptance('title')}</h2>
           <p className="text-muted-foreground mt-1 text-xs font-semibold">{tAcceptance('hint')}</p>
 
           {/* Макет M09: тёмный блок сканера над списком позиций. */}
@@ -1006,7 +1006,7 @@ export function OrderDetail({
 
       {canPay ? (
         <section className="border-border bg-card mt-5 rounded-[20px] border p-[18px] sm:p-5">
-          <h2 className="text-lg font-medium">{tPayment('title')}</h2>
+          <h2 className="text-[17px] font-extrabold">{tPayment('title')}</h2>
 
           <dl className="mt-3 space-y-1 text-sm" data-testid="payment-requisites">
             <p className="text-muted-foreground text-xs font-semibold">{tPayment('payTo')}</p>
@@ -1117,7 +1117,7 @@ export function OrderDetail({
       ) : null}
       {canRate ? (
         <section className="border-border bg-card mt-5 rounded-[20px] border p-[18px] sm:p-5">
-          <h2 className="text-lg font-medium">{tRatings('rateOrder')}</h2>
+          <h2 className="text-[17px] font-extrabold">{tRatings('rateOrder')}</h2>
           <p className="text-muted-foreground mt-1 text-xs font-semibold">{tRatings('rateHint')}</p>
 
           <div className="mt-3 space-y-2">

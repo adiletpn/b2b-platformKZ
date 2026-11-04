@@ -130,8 +130,8 @@ export default async function AnalyticsPage({
                   {store.byCategory.map((row) => (
                     <tr key={row.nameRu}>
                       <td className={td}>{name(row)}</td>
-                      <td className={num}>{row.revenue}</td>
-                      <td className={num}>{row.profit}</td>
+                      <td className={num}>{money(row.revenue)} ₸</td>
+                      <td className={num}>{money(row.profit)} ₸</td>
                     </tr>
                   ))}
                 </tbody>

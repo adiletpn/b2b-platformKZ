@@ -289,7 +289,7 @@ export default async function AnalyticsPage({
                     <tr key={row.storeId}>
                       <td className={td}>{row.name}</td>
                       <td className={num}>{row.orders}</td>
-                      <td className={num}>{row.amount}</td>
+                      <td className={num}>{money(row.amount)} ₸</td>
                     </tr>
                   ))}
                 </tbody>
@@ -309,8 +309,8 @@ export default async function AnalyticsPage({
                   {supplier.byProduct.map((row) => (
                     <tr key={row.nameRu}>
                       <td className={td}>{name(row)}</td>
-                      <td className={num}>{row.quantity}</td>
-                      <td className={num}>{row.amount}</td>
+                      <td className={num}>{quantity(row.quantity)}</td>
+                      <td className={num}>{money(row.amount)} ₸</td>
                     </tr>
                   ))}
                 </tbody>

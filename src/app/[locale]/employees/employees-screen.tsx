@@ -301,13 +301,13 @@ export function EmployeesScreen({
 
       <section className="border-border bg-card shadow-card mt-5 overflow-x-auto rounded-xl border">
         <table className="w-full min-w-[520px] text-sm">
-          <thead className="text-muted-foreground text-left">
+          <thead className="text-left">
             <tr>
-              <th className="px-3 py-2 font-medium">{t('phone')}</th>
-              <th className="px-3 py-2 font-medium">{t('role')}</th>
-              <th className="px-3 py-2 font-medium">{t('locationsColumn')}</th>
-              <th className="px-3 py-2 font-medium">{t('orderLimit')}</th>
-              <th className="px-3 py-2 font-medium">{t('statusLabel')}</th>
+              <th className="px-3 py-2">{t('phone')}</th>
+              <th className="px-3 py-2">{t('role')}</th>
+              <th className="px-3 py-2">{t('locationsColumn')}</th>
+              <th className="px-3 py-2">{t('orderLimit')}</th>
+              <th className="px-3 py-2">{t('statusLabel')}</th>
               <th className="px-3 py-2" />
             </tr>
           </thead>
@@ -578,11 +578,11 @@ export function EmployeesScreen({
 
         <div className="mt-3 overflow-x-auto">
           <table className="w-full min-w-[640px] text-sm">
-            <thead className="text-muted-foreground text-left">
+            <thead className="text-left">
               <tr>
-                <th className="px-2 py-2 font-medium">{t('section')}</th>
+                <th className="px-2 py-2">{t('section')}</th>
                 {PERMISSION_ACTIONS.map((action) => (
-                  <th key={action} className="px-2 py-2 font-medium">
+                  <th key={action} className="px-2 py-2">
                     {t(`permissionActions.${action}`)}
                   </th>
                 ))}

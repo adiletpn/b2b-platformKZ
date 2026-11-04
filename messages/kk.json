@@ -769,7 +769,9 @@
     "scanned": "сканерленді {count}",
     "scanTitle": "Штрихкодты сканерлеу",
     "scanHint": "немесе тізім бойынша белгілеңіз",
-    "checked": "{total} ішінен {done} тексерілді"
+    "checked": "{total} ішінен {done} тексерілді",
+    "discrepancyCount": "{count} алшақтық",
+    "discrepancyHint": "Алшақтық актісі жасалады"
   },
   "stock": {
     "title": "Қойма",

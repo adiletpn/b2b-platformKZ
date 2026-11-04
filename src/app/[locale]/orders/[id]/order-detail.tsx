@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Decimal from 'decimal.js';
 import { AlertTriangle, Check, ChevronLeft, FileText, MessageCircle, ScanLine } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useRouter, Link } from '@/i18n/navigation';
@@ -174,6 +175,33 @@ export function OrderDetail({
       [item.id]: { ...current[item.id]!, accepted: String(count) },
     }));
   }
+  /**
+   * Предпросмотр акта (макет M09): сервер считает к оплате принятое × цену, поэтому
+   * разница — непринятое × цену. Пока в поле недописанное число, строка не считается.
+   */
+  const discrepancy = order.items.reduce(
+    (sum, item) => {
+      const row = acceptance[item.id];
+      try {
+        const shipped = new Decimal(item.quantityConfirmed ?? item.quantityOrdered);
+        const accepted = new Decimal(row?.accepted || '0');
+        const flagged =
+          !accepted.equals(shipped) ||
+          new Decimal(row?.defective || '0').greaterThan(0) ||
+          new Decimal(row?.mismatch || '0').greaterThan(0);
+        if (!flagged) return sum;
+        return {
+          count: sum.count + 1,
+          amount: new Decimal(sum.amount)
+            .plus(shipped.minus(accepted).mul(item.priceWithVat))
+            .toFixed(2),
+        };
+      } catch {
+        return sum;
+      }
+    },
+    { count: 0, amount: '0.00' },
+  );
   const checkedCount = order.items.filter((item) => scanned[item.id]).length;
   const checkedPercent = order.items.length
     ? Math.round((checkedCount / order.items.length) * 100)
@@ -891,6 +919,25 @@ export function OrderDetail({
               </tbody>
             </table>
           </div>
+
+          {discrepancy.count > 0 ? (
+            <div
+              className="bg-danger-soft mt-4 flex items-center justify-between gap-3 rounded-[18px] px-4 py-3"
+              data-testid="acceptance-discrepancy"
+            >
+              <div>
+                <p className="text-sm font-extrabold">
+                  {tAcceptance('discrepancyCount', { count: discrepancy.count })}
+                </p>
+                <p className="text-xs font-semibold text-[#9a4a42]">
+                  {tAcceptance('discrepancyHint')}
+                </p>
+              </div>
+              <span className="text-danger text-base font-black whitespace-nowrap tabular-nums">
+                −{money(discrepancy.amount)} ₸
+              </span>
+            </div>
+          ) : null}
 
           <Button
             className="mt-3"

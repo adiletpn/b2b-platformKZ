@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DemoHint, Field, Notice } from '@/components/ui/field';
 import { Page } from '@/components/ui/page';
+import { LayoutGrid, Store, Truck } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 type CompanyType = 'STORE' | 'SUPPLIER' | 'BOTH';
 type City = { id: string; name: string };
@@ -121,22 +123,56 @@ export function OnboardingForm({ cities, demoBins }: { cities: City[]; demoBins:
 
   return (
     <Page width="sm">
-      <h1 className="text-2xl font-semibold">{t('title')}</h1>
+      <h1 className="text-[28px] font-black tracking-[-0.025em] lg:text-2xl">{t('title')}</h1>
 
       <form className="mt-6 space-y-8" onSubmit={submit}>
         <section className="space-y-3">
           <h2 className="text-[15px] font-extrabold">{t('stepType')}</h2>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+          {/* Макет M02: радио-карточки с иконкой и пояснением. */}
+          <div className="grid grid-cols-1 gap-2.5" role="radiogroup" aria-label={t('stepType')}>
             {TYPES.map((value) => (
-              <Button
+              <button
                 key={value}
                 type="button"
-                variant={type === value ? 'default' : 'outline'}
+                role="radio"
+                aria-checked={type === value}
                 data-testid={`type-${value}`}
                 onClick={() => setType(value)}
+                className={cn(
+                  'flex items-center gap-3.5 rounded-[20px] border-2 p-4 text-left transition-colors',
+                  type === value ? 'border-primary bg-primary-soft' : 'border-border bg-card',
+                )}
               >
-                {t(`type.${value}`)}
-              </Button>
+                <span
+                  className={cn(
+                    'grid size-11 shrink-0 place-items-center rounded-[14px]',
+                    type === value ? 'bg-primary text-white' : 'bg-muted',
+                  )}
+                >
+                  {value === 'STORE' ? (
+                    <Store aria-hidden className="size-[22px]" />
+                  ) : value === 'SUPPLIER' ? (
+                    <Truck aria-hidden className="size-[22px]" />
+                  ) : (
+                    <LayoutGrid aria-hidden className="size-[22px]" />
+                  )}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-base font-extrabold">{t(`type.${value}`)}</span>
+                  <span className="text-muted-foreground mt-0.5 block text-[13px] font-medium">
+                    {t(`typeHint.${value}`)}
+                  </span>
+                </span>
+                <span
+                  aria-hidden
+                  className={cn(
+                    'grid size-[22px] shrink-0 place-items-center rounded-full border-2',
+                    type === value ? 'border-primary' : 'border-[#d6d0c8]',
+                  )}
+                >
+                  {type === value ? <span className="bg-primary size-2.5 rounded-full" /> : null}
+                </span>
+              </button>
             ))}
           </div>
         </section>

@@ -62,7 +62,7 @@ test('admin_signs_in_with_second_factor', async ({}, testInfo) => {
   test.skip(testInfo.project.name !== ONLY_PROJECT, 'админ-панель');
 
   await adminLogin(adminPage, MODERATOR_PHONE);
-  await expect(adminPage.getByTestId('admin-role')).toHaveText('MODERATOR');
+  await expect(adminPage.getByTestId('admin-role')).toHaveText('Модератор');
   await expect(adminPage.getByTestId('admin-audit')).toContainText('Вход администратора');
 });
 

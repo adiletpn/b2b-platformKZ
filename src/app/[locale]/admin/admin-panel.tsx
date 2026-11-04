@@ -56,6 +56,7 @@ export function AdminPanel({
   activeImpersonation: { id: string; companyName: string } | null;
 }) {
   const t = useTranslations('admin');
+  const tRoles = useTranslations('admin.roles');
   const tSoon = useTranslations('common.notYetItems');
   const router = useRouter();
 
@@ -111,7 +112,7 @@ export function AdminPanel({
         <h1 className="text-2xl font-semibold">{t('title')}</h1>
         <span className="text-muted-foreground flex items-center gap-3 text-sm">
           <span>
-            {t('roleLabel')}: <span data-testid="admin-role">{role}</span>
+            {t('roleLabel')}: <span data-testid="admin-role">{tRoles(role as 'SUPERADMIN')}</span>
           </span>
           <Button
             variant="outline"

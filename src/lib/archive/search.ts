@@ -2,6 +2,7 @@ import type { Prisma } from '@/generated/prisma/client';
 import type { DocumentType } from '@/generated/prisma/enums';
 import { formatDateTime } from '@/lib/format';
 import { prisma } from '@/lib/prisma';
+import { kzDayKey } from '@/lib/format';
 
 export type ArchiveFilters = {
   type?: DocumentType;
@@ -83,7 +84,7 @@ export async function searchDocuments(
       id: document.id,
       type: document.type,
       number: document.number,
-      issuedAt: document.issuedAt.toISOString().slice(0, 10),
+      issuedAt: kzDayKey(document.issuedAt),
       counterpartyName: outgoing ? document.recipient.name : document.issuer.name,
       orderNumber: document.order.number,
       totalWithVat: document.totalWithVat.toFixed(2),

@@ -268,10 +268,12 @@ export default async function OrdersPage({
                                 data-testid={`order-open-${order.number}`}
                               >
                                 <span className="max-md:hidden">{t('open')}</span>
-                                <ChevronRight
-                                  aria-hidden
-                                  className="text-muted-foreground size-4 md:hidden"
-                                />
+                                {action ? (
+                                  <ChevronRight
+                                    aria-hidden
+                                    className="text-muted-foreground size-4 md:hidden"
+                                  />
+                                ) : null}
                               </Link>
                             </td>
                           </tr>

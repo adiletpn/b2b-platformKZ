@@ -64,7 +64,8 @@ export function OfferDetailsPanel({
       <div className="mt-3 flex flex-wrap items-start gap-4">
         <ProductPhoto size="md" src={details.photoUrls[0] ?? null} name={name} />
 
-        <dl className="grid min-w-56 flex-1 grid-cols-2 gap-3 text-sm">
+        {/* Макет M04: характеристики плитками на сером. */}
+        <dl className="grid min-w-56 flex-1 grid-cols-2 gap-2 text-sm sm:grid-cols-3">
           {(
             [
               ['brand', details.brand],
@@ -76,9 +77,14 @@ export function OfferDetailsPanel({
               ['tnved', details.tnvedCode],
             ] as const
           ).map(([key, value]) => (
-            <div key={key}>
-              <dt className="text-muted-foreground text-xs font-semibold">{t(`details.${key}`)}</dt>
-              <dd className="break-words" data-testid={`details-${key}`}>
+            <div key={key} className="bg-muted rounded-[14px] px-3 py-2.5">
+              <dt className="text-muted-foreground text-[11px] font-semibold">
+                {t(`details.${key}`)}
+              </dt>
+              <dd
+                className="mt-0.5 text-sm font-extrabold break-words"
+                data-testid={`details-${key}`}
+              >
                 {value ?? '—'}
               </dd>
             </div>

@@ -45,16 +45,18 @@ export function Brand({
   name,
   href,
   compact = false,
+  testId = 'brand',
 }: {
   name: string;
   href: '/' | '/dashboard';
   compact?: boolean;
+  testId?: string;
 }) {
   return (
-    <Link href={href} className="flex min-w-0 items-center gap-2.5" data-testid="brand">
+    <Link href={href} className="flex min-w-0 items-center gap-2.5" data-testid={testId}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src="/brand/arbafind-mark.png"
+        src="/brand/arbafind-mark.svg"
         alt=""
         width={32}
         height={32}

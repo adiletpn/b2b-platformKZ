@@ -108,7 +108,7 @@ export function AdminPanel({
 
   return (
     <Page width="lg">
-      <header className="flex flex-wrap items-center justify-between gap-3">
+      <header className="border-border flex flex-wrap items-center justify-between gap-3 pt-3 lg:-mx-8 lg:min-h-20 lg:border-b lg:px-8 lg:pt-0">
         <h1 className="text-2xl font-black tracking-[-0.02em]">{t('title')}</h1>
         <span className="text-muted-foreground flex items-center gap-3 text-sm">
           <span>

@@ -401,7 +401,7 @@ export function OrderDetail({
   const canRespond = side === 'store' && order.status === 'CHANGED_BY_SUPPLIER';
 
   return (
-    <Page>
+    <Page width="lg">
       <PageHeader
         leading={
           <Link
